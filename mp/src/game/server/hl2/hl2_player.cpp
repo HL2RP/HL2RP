@@ -30,7 +30,6 @@
 #include "effect_color_tables.h"
 #include "vphysics/player_controller.h"
 #include "player_pickup.h"
-#include "weapon_physcannon.h"
 #include "script_intro.h"
 #include "effect_dispatch_data.h"
 #include "te_effect_dispatch.h" 
@@ -54,6 +53,12 @@
 #ifdef PORTAL
 #include "portal_player.h"
 #endif // PORTAL
+
+#ifdef HL2MP
+#include <hl2mp/weapon_physcannon.h>
+#else
+#include "weapon_physcannon.h"
+#endif // HL2MP
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -3177,11 +3182,12 @@ void CHL2_Player::ForceDropOfCarriedPhysObjects( CBaseEntity *pOnlyIfHoldingThis
 	}
 #endif
 
-	// Drop any objects being handheld.
-	ClearUseEntity();
-
-	// Then force the physcannon to drop anything it's holding, if it's our active weapon
-	PhysCannonForceDrop( GetActiveWeapon(), NULL );
+	// Force the physcannon to drop anything it's holding, if it's our active weapon
+	if (PhysCannonForceDrop( GetActiveWeapon(), pOnlyIfHoldingThis ))
+	{
+		// Drop any objects being handheld
+		ClearUseEntity();
+	}
 }
 
 void CHL2_Player::InputForceDropPhysObjects( inputdata_t &data )

@@ -41,9 +41,12 @@
 #include "tf_gamerules.h"
 #endif
 
-#ifdef HL2_DLL
+#ifdef HL2MP
+#include <hl2mp_player.h>
+#include <hl2mp/weapon_physcannon.h>
+#elif (defined HL2_DLL)
 #include "weapon_physcannon.h"
-#endif
+#endif // HL2MP
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"

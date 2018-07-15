@@ -3543,20 +3543,22 @@ void CWeaponPhysCannon::NotifyShouldTransmit( ShouldTransmitState_t state )
 //-----------------------------------------------------------------------------
 // EXTERNAL API
 //-----------------------------------------------------------------------------
-void PhysCannonForceDrop( CBaseCombatWeapon *pActiveWeapon, CBaseEntity *pOnlyIfHoldingThis )
+bool PhysCannonForceDrop( CBaseCombatWeapon *pActiveWeapon, CBaseEntity *pOnlyIfHoldingThis )
 {
 	CWeaponPhysCannon *pCannon = dynamic_cast<CWeaponPhysCannon *>(pActiveWeapon);
 	if ( pCannon )
 	{
 		if ( pOnlyIfHoldingThis )
 		{
-			pCannon->DropIfEntityHeld( pOnlyIfHoldingThis );
+			return pCannon->DropIfEntityHeld( pOnlyIfHoldingThis );
 		}
 		else
 		{
 			pCannon->ForceDrop();
 		}
 	}
+
+	return false;
 }
 
 bool PlayerPickupControllerIsHoldingEntity( CBaseEntity *pPickupControllerEntity, CBaseEntity *pHeldEntity )
