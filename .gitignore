@@ -20,6 +20,7 @@ ipch
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.vpc_crc
+.vs
 *.sln
 
 # OSX/Linux build products
