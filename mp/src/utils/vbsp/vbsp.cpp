@@ -33,6 +33,7 @@ qboolean	glview;
 qboolean	nodetail;
 qboolean	fulldetail;
 qboolean	onlyents;
+qboolean	exportents;
 bool		onlyprops;
 qboolean	nomerge;
 qboolean	nomergewater = false;
@@ -989,6 +990,11 @@ int RunVBSP( int argc, char **argv )
 			Msg ("onlyents = true\n");
 			onlyents = true;
 		}
+		else if (!Q_stricmp(argv[i], "-exportents"))
+		{
+			Msg("exportents = true\n");
+			exportents = true;
+		}
 		else if (!Q_stricmp(argv[i], "-onlyprops"))
 		{
 			Msg ("onlyprops = true\n");
@@ -1175,6 +1181,7 @@ int RunVBSP( int argc, char **argv )
 			"\n"
 			"  -onlyents   : This option causes vbsp only import the entities from the .vmf\n"
 			"                file. -onlyents won't reimport brush models.\n"
+			"  -exportents: This option causes vbsp only export entities to a .MAP file.\n"
 			"  -onlyprops  : Only update the static props and detail props.\n"
 			"  -glview     : Writes .gl files in the current directory that can be viewed\n"
 			"                with glview.exe. If you use -tmpout, it will write the files\n"
@@ -1377,6 +1384,23 @@ int RunVBSP( int argc, char **argv )
 		EmitDetailObjects();
 
 		WriteBSPFile (mapFile);
+	}
+	else if (exportents)
+	{
+		LoadMapFile(name);
+		char path[1024];
+		Q_snprintf(path, sizeof(path), "%s.map", source);
+
+		// Ignore 'worldspawn' during save
+		if (num_entities > 0)
+		{
+			entities[0].epairs = NULL;
+		}
+
+		UnparseEntities();
+		FileHandle_t handle = SafeOpenWrite(path);
+		SafeWrite(handle, dentdata.Base(), dentdata.Count() * sizeof(char));
+		g_pFileSystem->Close(handle);
 	}
 	else
 	{

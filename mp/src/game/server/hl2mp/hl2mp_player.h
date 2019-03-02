@@ -138,7 +138,7 @@ public:
 	virtual bool	CanHearAndReadChatFrom( CBasePlayer *pPlayer );
 
 		
-private:
+protected:
 
 	CNetworkQAngle( m_angEyeAngles );
 	CPlayerAnimState   m_PlayerAnimState;

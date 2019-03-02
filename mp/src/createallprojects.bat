@@ -1,1 +1,1 @@
-devtools\bin\vpc.exe /hl2mp +everything /mksln everything.sln
+devtools\bin\vpc.exe /hl2dm_rp /hl2rp +everything /mksln everything.sln

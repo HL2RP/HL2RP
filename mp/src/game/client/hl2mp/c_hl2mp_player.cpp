@@ -20,7 +20,9 @@
 #undef CHL2MP_Player	
 #endif
 
+#ifndef HL2RP
 LINK_ENTITY_TO_CLASS( player, C_HL2MP_Player );
+#endif // !HL2RP
 
 IMPLEMENT_CLIENTCLASS_DT(C_HL2MP_Player, DT_HL2MP_Player, CHL2MP_Player)
 	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
@@ -593,6 +595,28 @@ void C_HL2MP_Player::StopSprinting( void )
 	m_fIsSprinting = false;
 }
 
+void C_HL2MP_Player::EndHandleSpeedChanges(int buttonsChanged)
+{
+	if( !(buttonsChanged & IN_SPEED) && buttonsChanged & IN_WALK )
+	{
+		if ( IsSuitEquipped() )
+		{
+			// The state of the WALK button has changed. 
+			if( IsWalking() && !(m_afButtonPressed & IN_WALK) )
+			{
+				StopWalking();
+			}
+			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
+			{
+				StartWalking();
+			}
+		}
+	}
+
+	if ( IsSuitEquipped() && m_fIsWalking && !(m_nButtons & IN_WALK)  ) 
+		StopWalking();
+}
+
 void C_HL2MP_Player::HandleSpeedChanges( void )
 {
 	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
@@ -620,24 +644,8 @@ void C_HL2MP_Player::HandleSpeedChanges( void )
 			}
 		}
 	}
-	else if( buttonsChanged & IN_WALK )
-	{
-		if ( IsSuitEquipped() )
-		{
-			// The state of the WALK button has changed. 
-			if( IsWalking() && !(m_afButtonPressed & IN_WALK) )
-			{
-				StopWalking();
-			}
-			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
-			{
-				StartWalking();
-			}
-		}
-	}
 
-	if ( IsSuitEquipped() && m_fIsWalking && !(m_nButtons & IN_WALK)  ) 
-		StopWalking();
+	EndHandleSpeedChanges(buttonsChanged);
 }
 
 //-----------------------------------------------------------------------------

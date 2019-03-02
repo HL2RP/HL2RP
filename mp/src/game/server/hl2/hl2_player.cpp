@@ -478,6 +478,34 @@ void CHL2_Player::RemoveSuit( void )
 	m_HL2Local.m_bDisplayReticle = false;
 }
 
+void CHL2_Player::EndHandleSpeedChanges(int buttonsChanged)
+{
+	bool bIsWalking = IsWalking();
+	// have suit, pressing button, not sprinting or ducking
+	bool bWantWalking;
+	
+	if( IsSuitEquipped() )
+	{
+		bWantWalking = (m_nButtons & IN_WALK) && !IsSprinting() && !(m_nButtons & IN_DUCK);
+	}
+	else
+	{
+		bWantWalking = true;
+	}
+	
+	if( bIsWalking != bWantWalking )
+	{
+		if ( bWantWalking )
+		{
+			StartWalking();
+		}
+		else
+		{
+			StopWalking();
+		}
+	}
+}
+
 void CHL2_Player::HandleSpeedChanges( void )
 {
 	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
@@ -512,30 +540,7 @@ void CHL2_Player::HandleSpeedChanges( void )
 		}
 	}
 
-	bool bIsWalking = IsWalking();
-	// have suit, pressing button, not sprinting or ducking
-	bool bWantWalking;
-	
-	if( IsSuitEquipped() )
-	{
-		bWantWalking = (m_nButtons & IN_WALK) && !IsSprinting() && !(m_nButtons & IN_DUCK);
-	}
-	else
-	{
-		bWantWalking = true;
-	}
-	
-	if( bIsWalking != bWantWalking )
-	{
-		if ( bWantWalking )
-		{
-			StartWalking();
-		}
-		else
-		{
-			StopWalking();
-		}
-	}
+	EndHandleSpeedChanges(buttonsChanged);
 }
 
 //-----------------------------------------------------------------------------

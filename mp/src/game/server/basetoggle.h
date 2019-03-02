@@ -21,6 +21,7 @@ public:
 	virtual bool		KeyValue( const char *szKeyName, const char *szValue );
 	virtual bool		KeyValue( const char *szKeyName, Vector vec ) { return BaseClass::KeyValue( szKeyName, vec ); };
 	virtual bool		KeyValue( const char *szKeyName, float flValue ) { return BaseClass::KeyValue( szKeyName, flValue ); };
+	VIRTUAL bool		IsLocked();
 
 	TOGGLE_STATE		m_toggle_state;
 	float				m_flMoveDistance;// how far a door should slide or rotate

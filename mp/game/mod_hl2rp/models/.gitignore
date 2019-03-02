@@ -1,0 +1,8 @@
+# Build models
+*.dx80.vtx
+*.dx90.vtx
+*.mdl
+*.phy
+*.sw.vtx
+*.vvd
+*.xbox.vtx

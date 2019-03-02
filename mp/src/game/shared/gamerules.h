@@ -83,7 +83,6 @@ enum
 	GR_NEUTRAL,
 };
 
-
 // This class has the data tables and gets the CGameRules data to the client.
 class CGameRulesProxy : public CBaseEntity
 {
@@ -419,6 +418,8 @@ public:
 	virtual bool IsHolidayActive( /*EHoliday*/ int eHoliday ) const { return false; }
 
 	virtual bool IsManualMapChangeOkay( const char **pszReason ){ return true; }
+
+	VIRTUAL void NetworkIdValidated(const char *pNetworkIdString) { }
 
 #ifndef CLIENT_DLL
 private:

@@ -159,6 +159,9 @@
 typedef unsigned char uint8;
 typedef signed char int8;
 
+// Use this to emphasize the 'virtual' keyword for any reason
+#define VIRTUAL	virtual
+
 #if defined( _WIN32 )
 
 	typedef __int16					int16;

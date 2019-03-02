@@ -5,6 +5,7 @@
 //=============================================================================//
 
 #include "cbase.h"
+#include "weapon_frag.h"
 #include "npcevent.h"
 #include "in_buttons.h"
 
@@ -19,74 +20,15 @@
 
 #include "weapon_ar2.h"
 #include "effect_dispatch_data.h"
-#include "weapon_hl2mpbasehlmpcombatweapon.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
-#define GRENADE_TIMER	2.5f //Seconds
 
 #define GRENADE_PAUSED_NO			0
 #define GRENADE_PAUSED_PRIMARY		1
 #define GRENADE_PAUSED_SECONDARY	2
 
 #define GRENADE_RADIUS	4.0f // inches
-
-#define GRENADE_DAMAGE_RADIUS 250.0f
-
-#ifdef CLIENT_DLL
-#define CWeaponFrag C_WeaponFrag
-#endif
-
-//-----------------------------------------------------------------------------
-// Fragmentation grenades
-//-----------------------------------------------------------------------------
-class CWeaponFrag: public CBaseHL2MPCombatWeapon
-{
-	DECLARE_CLASS( CWeaponFrag, CBaseHL2MPCombatWeapon );
-public:
-
-	DECLARE_NETWORKCLASS(); 
-	DECLARE_PREDICTABLE();
-
-	CWeaponFrag();
-
-	void	Precache( void );
-	void	PrimaryAttack( void );
-	void	SecondaryAttack( void );
-	void	DecrementAmmo( CBaseCombatCharacter *pOwner );
-	void	ItemPostFrame( void );
-
-	bool	Deploy( void );
-	bool	Holster( CBaseCombatWeapon *pSwitchingTo = NULL );
-	
-	bool	Reload( void );
-
-#ifndef CLIENT_DLL
-	void Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator );
-#endif
-
-	void	ThrowGrenade( CBasePlayer *pPlayer );
-	bool	IsPrimed( bool ) { return ( m_AttackPaused != 0 );	}
-	
-private:
-
-	void	RollGrenade( CBasePlayer *pPlayer );
-	void	LobGrenade( CBasePlayer *pPlayer );
-	// check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
-	void	CheckThrowPosition( CBasePlayer *pPlayer, const Vector &vecEye, Vector &vecSrc );
-
-	CNetworkVar( bool,	m_bRedraw );	//Draw the weapon again after throwing a grenade
-	
-	CNetworkVar( int,	m_AttackPaused );
-	CNetworkVar( bool,	m_fDrawbackFinished );
-
-	CWeaponFrag( const CWeaponFrag & );
-
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
-};
 
 #ifndef CLIENT_DLL
 
@@ -129,7 +71,6 @@ BEGIN_PREDICTION_DATA( CWeaponFrag )
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS( weapon_frag, CWeaponFrag );
 PRECACHE_WEAPON_REGISTER(weapon_frag);
 
 CWeaponFrag::CWeaponFrag( void ) :

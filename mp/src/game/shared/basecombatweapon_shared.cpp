@@ -143,21 +143,49 @@ void CBaseCombatWeapon::GiveDefaultAmmo( void )
 	// If I use clips, set my clips to the default
 	if ( UsesClipsForAmmo1() )
 	{
-		m_iClip1 = AutoFiresFullClip() ? 0 : GetDefaultClip1();
+#ifdef HL2RP
+		// Is default clip1 excessive for weapon's max?
+		if (GetDefaultClip1() > GetMaxClip1())
+		{
+			// Yes. Transfer excess to the reserve ammo. Default code on pickup
+			// used to calculate and give this excess there, we don't want that.
+			// This way the ammo transfer between owner changes uses current ammo.
+			SetClip1(AutoFiresFullClip() ? 0 : GetMaxClip1());
+			SetPrimaryAmmoCount(GetDefaultClip1() - GetMaxClip1());
+		}
+		else
+#endif // HL2RP
+		{
+			SetClip1(AutoFiresFullClip() ? 0 : GetDefaultClip1());
+		}
 	}
 	else
 	{
 		SetPrimaryAmmoCount( GetDefaultClip1() );
-		m_iClip1 = WEAPON_NOCLIP;
+		SetClip1(WEAPON_NOCLIP);
 	}
 	if ( UsesClipsForAmmo2() )
 	{
-		m_iClip2 = GetDefaultClip2();
+#ifdef HL2RP
+		// Is default clip2 excessive for weapon's max?
+		if (GetDefaultClip2() > GetMaxClip2())
+		{
+			// Yes. Transfer excess to the reserve ammo. Default code on pickup
+			// used to calculate and give this excess there, we don't want that.
+			// This way the ammo transfer between owner changes uses current ammo.
+			SetClip2(GetMaxClip2());
+			SetSecondaryAmmoCount(GetDefaultClip2() - GetMaxClip2());
+		}
+		else
+#endif // HL2RP
+		{
+			SetClip2(GetDefaultClip2());
+		}
 	}
 	else
 	{
 		SetSecondaryAmmoCount( GetDefaultClip2() );
-		m_iClip2 = WEAPON_NOCLIP;
+		SetClip2(WEAPON_NOCLIP);
 	}
 }
 
@@ -1573,6 +1601,30 @@ bool CBaseCombatWeapon::CanReload( void )
 	return true;
 }
 
+void CBaseCombatWeapon::SetClip1(int clip1)
+{
+	m_iClip1 = clip1;
+
+#ifndef CLIENT_DLL
+	if (GetOwner() != NULL)
+	{
+		GetOwner()->OnSetWeaponClip1(this);
+	}
+#endif // !CLIENT_DLL
+}
+
+void CBaseCombatWeapon::SetClip2(int clip2)
+{
+	m_iClip2 = clip2;
+
+#ifndef CLIENT_DLL
+	if (GetOwner() != NULL)
+	{
+		GetOwner()->OnSetWeaponClip2(this);
+	}
+#endif // !CLIENT_DLL
+}
+
 #if defined ( TF_CLIENT_DLL ) || defined ( TF_DLL )
 //-----------------------------------------------------------------------------
 // Purpose: Anti-hack
@@ -1733,7 +1785,7 @@ void CBaseCombatWeapon::ItemPostFrame( void )
 				if (m_iClip2 < 1)
 				{
 					pOwner->RemoveAmmo( 1, m_iSecondaryAmmoType );
-					m_iClip2 = m_iClip2 + 1;
+					AddClip2(1);
 				}
 			}
 		}
@@ -2142,7 +2194,8 @@ void CBaseCombatWeapon::CheckReload( void )
 			else if (m_iClip1 < GetMaxClip1())
 			{
 				// Add them to the clip
-				m_iClip1 += 1;
+				AddClip1(1);
+
 				pOwner->RemoveAmmo( 1, m_iPrimaryAmmoType );
 
 				Reload();
@@ -2183,7 +2236,7 @@ void CBaseCombatWeapon::FinishReload( void )
 		if ( UsesClipsForAmmo1() )
 		{
 			int primary	= MIN( GetMaxClip1() - m_iClip1, pOwner->GetAmmoCount(m_iPrimaryAmmoType));	
-			m_iClip1 += primary;
+			AddClip1(primary);
 			pOwner->RemoveAmmo( primary, m_iPrimaryAmmoType);
 		}
 
@@ -2191,7 +2244,7 @@ void CBaseCombatWeapon::FinishReload( void )
 		if ( UsesClipsForAmmo2() )
 		{
 			int secondary = MIN( GetMaxClip2() - m_iClip2, pOwner->GetAmmoCount(m_iSecondaryAmmoType));
-			m_iClip2 += secondary;
+			AddClip2(secondary);
 			pOwner->RemoveAmmo( secondary, m_iSecondaryAmmoType );
 		}
 
@@ -2312,7 +2365,7 @@ void CBaseCombatWeapon::PrimaryAttack( void )
 	if ( UsesClipsForAmmo1() )
 	{
 		info.m_iShots = MIN( info.m_iShots, m_iClip1 );
-		m_iClip1 -= info.m_iShots;
+		SubstractClip1(info.m_iShots);
 	}
 	else
 	{

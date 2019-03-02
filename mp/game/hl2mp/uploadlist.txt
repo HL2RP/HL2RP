@@ -1,0 +1,40 @@
+// List of default HL2RP downloadable assets for HL2DM.
+// As a gameserver manager, you are not required to edit this file in order to register extra downloads.
+// Instead, you may drag your files inside the folder linked to your "upload" Search Path (see gameinfo.txt),
+// and they will become automatically ready for download on server startup.
+
+materials/models/weapons/w_Molotov/molotov.vmt
+materials/models/weapons/w_Molotov/molotov.vtf
+materials/models/weapons/w_Molotov/rag.vmt
+materials/models/weapons/w_Molotov/rag.vtf
+models/weapons/V_molotov.dx80.vtx
+models/weapons/V_molotov.dx90.vtx
+models/weapons/v_molotov.mdl
+models/weapons/V_molotov.sw.vtx
+models/weapons/v_molotov.vvd
+models/weapons/v_molotov.xbox.vtx
+models/weapons/v_package.dx80.vtx
+models/weapons/v_package.dx90.vtx
+models/weapons/v_package.mdl
+models/weapons/v_package.sw.vtx
+models/weapons/v_package.vvd
+models/weapons/v_package.xbox.vtx
+models/weapons/v_suitcase_passenger.dx80.vtx
+models/weapons/v_suitcase_passenger.dx90.vtx
+models/weapons/v_suitcase_passenger.mdl
+models/weapons/v_suitcase_passenger.sw.vtx
+models/weapons/v_suitcase_passenger.vvd
+models/weapons/v_suitcase_passenger.xbox.vtx
+models/weapons/w_molotov.dx80.vtx
+models/weapons/w_molotov.dx90.vtx
+models/weapons/w_molotov.mdl
+models/weapons/w_molotov.phy
+models/weapons/w_molotov.sw.vtx
+models/weapons/w_molotov.vvd
+models/weapons/w_package_v3.dx80.vtx
+models/weapons/w_package_v3.dx90.vtx
+models/weapons/w_package_v3.mdl
+models/weapons/w_package_v3.phy
+models/weapons/w_package_v3.sw.vtx
+models/weapons/w_package_v3.vvd
+scripts/basehlcombatweapon.txt

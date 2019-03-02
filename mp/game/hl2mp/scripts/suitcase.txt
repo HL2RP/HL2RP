@@ -1,0 +1,21 @@
+// Citizen suitcase used as decoration
+
+WeaponData
+{
+	// Weapon data is loaded by both the Game and Client DLLs
+	"printname"		"#HL2RP_Suitcase"
+	"viewmodel"		"models/weapons/v_suitcase_passenger.mdl"
+	"playermodel"	"models/weapons/w_suitcase_passenger.mdl"
+
+	"secondary_ammo"	"suitcase"
+
+	"default_clip2"	"1"
+
+	"item_flags"	"2" // ITEM_FLAG_NOAUTORELOAD
+
+	SoundData
+	{
+		// To be emitted on Suitcase usage (inventory opening)
+		"special1"	"AmmoCrate.Open"
+	}
+}

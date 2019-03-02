@@ -1,0 +1,124 @@
+// Simple remap file. Every remap activity for each base activity is tested by game code prioritizing the order of appearance.
+// The first remap activity which has a valid sequence on the model is applied. So modify this file with care.
+"ai_basenpc"
+{
+	"ACT_ACTIVATE_BATON"
+	{
+		"remapactivity"	"ACT_ACTIVATE_BATON" // Enforce HL2 priority
+	}
+
+	"ACT_ACTIVATE_BATON"
+	{
+		"remapactivity"	"ACT_HL2MP_IDLE"
+	}
+
+	"ACT_GESTURE_RANGE_ATTACK1"
+	{
+		"remapactivity"	"ACT_GESTURE_RANGE_ATTACK1" // Enforce HL2 priority
+	}
+
+	"ACT_GESTURE_RANGE_ATTACK1"
+	{
+		"remapactivity"	"ACT_HL2MP_GESTURE_RANGE_ATTACK"
+	}
+
+	"ACT_GESTURE_RELOAD"
+	{
+		"remapactivity"	"ACT_GESTURE_RELOAD" // Enforce HL2 priority
+	}
+
+	"ACT_GESTURE_RELOAD"
+	{
+		"remapactivity"	"ACT_HL2MP_GESTURE_RELOAD"
+	}
+
+	"ACT_IDLE"
+	{
+		"remapactivity"	"ACT_IDLE" // Enforce HL2 priority
+	}
+
+	"ACT_IDLE"
+	{
+		"remapactivity"	"ACT_HL2MP_IDLE"
+	}
+
+	"ACT_IDLE"
+	{
+		"remapactivity"	"ACT_IDLE_UNARMED"
+	}
+
+	"ACT_MELEE_ATTACK_SWING_GESTURE"
+	{
+		"remapactivity"	"ACT_MELEE_ATTACK_SWING_GESTURE" // Enforce HL2 priority
+	}
+
+	"ACT_MELEE_ATTACK_SWING_GESTURE"
+	{
+		"remapactivity"	"ACT_HL2MP_GESTURE_RANGE_ATTACK"
+	}
+
+	"ACT_MELEE_ATTACK1"
+	{
+		"remapactivity"	"ACT_MELEE_ATTACK1" // Enforce HL2 priority
+	}
+
+	"ACT_MELEE_ATTACK1"
+	{
+		"remapactivity"	"ACT_HL2MP_IDLE"
+
+		"extra"
+		{
+			"gesture"	"ACT_HL2MP_GESTURE_RANGE_ATTACK"
+		}
+	}
+
+	"ACT_RANGE_ATTACK1"
+	{
+		"remapactivity"	"ACT_RANGE_ATTACK1" // Enforce HL2 priority
+	}
+
+	"ACT_RANGE_ATTACK1"
+	{
+		"remapactivity"	"ACT_HL2MP_IDLE"
+
+		"extra"
+		{
+			"gesture"	"ACT_HL2MP_GESTURE_RANGE_ATTACK"
+		}
+	}
+
+	"ACT_RELOAD"
+	{
+		"remapactivity"	"ACT_RELOAD"
+	}
+
+	"ACT_RELOAD"
+	{
+		"remapactivity"	"ACT_HL2MP_IDLE"
+
+		"extra"
+		{
+			"gesture"	"ACT_HL2MP_GESTURE_RELOAD"
+		}
+	}
+
+	"ACT_RUN"
+	{
+		"remapactivity"	"ACT_RUN" // Enforce HL2 priority
+	}
+
+	"ACT_RUN"
+	{
+		"remapactivity"	"ACT_HL2MP_RUN"
+	}
+
+	"ACT_WALK"
+	{
+		"remapactivity"	"ACT_WALK"
+	}
+
+	"ACT_WALK"
+	{
+		"remapactivity"	"ACT_HL2MP_RUN"
+	}
+}

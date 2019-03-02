@@ -217,6 +217,13 @@ private:
 	void	ParseNPCSeatTransition( KeyValues *pTransitionKeyValues, CPassengerSeatTransition *pTransition );
 
 protected:
+#ifdef HL2DM_RP
+	void	InitTriggerCamera() OVERRIDE;
+	void	AttachTriggerCamera(CBasePlayer *pPlayer) OVERRIDE;
+	void	DetachTriggerCamera(CBasePlayer *pPlayer) OVERRIDE;
+	void	UpdateTriggerCamera(CBasePlayer *pPlayer, bool isRunningEnterExit, Vector *pAbsOrigin,
+		QAngle *pAbsAngles) OVERRIDE;
+#endif // HL2DM_RP
 	
 	int		FindRoleIndexByName( string_t strRoleName );
 	int		FindSeatIndexByName( int nRoleIndex, string_t strSeatName );
@@ -323,6 +330,11 @@ private:
 	void	CacheEntryExitPoints( void );
 	bool	GetLocalAttachmentAtTime( int nQuerySequence, int nAttachmentIndex, float flCyclePoint, Vector *vecOriginOut, QAngle *vecAnglesOut );
 	bool	GetLocalAttachmentAtTime( const char *lpszAnimName, int nAttachmentIndex, float flCyclePoint, Vector *vecOriginOut, QAngle *vecAnglesOut );
+
+#ifdef HL2DM_RP
+	// Server-side only vehicle view smoothing
+	EHANDLE m_hTriggerCamera;
+#endif // HL2DM_RP
 };
 
 #endif // VEHICLE_BASESERVER_H

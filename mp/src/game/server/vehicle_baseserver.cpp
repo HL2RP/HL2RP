@@ -147,6 +147,13 @@ CBaseServerVehicle::CBaseServerVehicle( void )
 CBaseServerVehicle::~CBaseServerVehicle( void )
 {
 	SoundShutdown(0);
+
+#ifdef HL2DM_RP
+	if (m_hTriggerCamera != NULL)
+	{
+		m_hTriggerCamera->Remove();
+	}
+#endif // HL2DM_RP
 }
 
 //-----------------------------------------------------------------------------
@@ -2581,6 +2588,70 @@ bool CBaseServerVehicle::PassengerShouldReceiveDamage( CTakeDamageInfo &info )
 
 	return true;
 }
+
+#ifdef HL2DM_RP
+void CBaseServerVehicle::InitTriggerCamera()
+{
+	m_hTriggerCamera = CreateEntityByName("point_viewcontrol");
+
+	if (m_hTriggerCamera != NULL)
+	{
+		DispatchSpawn(m_hTriggerCamera);
+	}
+}
+
+void CBaseServerVehicle::AttachTriggerCamera(CBasePlayer *pPlayer)
+{
+	if (m_hTriggerCamera != NULL)
+	{
+		// Attach to the player reverting m_takedamage, changed at input handling
+		variant_t variant;
+		int takedamage = pPlayer->m_takedamage;
+		m_hTriggerCamera->AcceptInput("Enable", pPlayer, m_pVehicle, variant, 0);
+		pPlayer->m_takedamage = takedamage;
+	}
+}
+
+void CBaseServerVehicle::DetachTriggerCamera(CBasePlayer *pPlayer)
+{
+	if (m_hTriggerCamera != NULL)
+	{
+		// Always detach from the player, either alive or death
+		if (pPlayer->IsAlive())
+		{
+			variant_t variant;
+			m_hTriggerCamera->AcceptInput("Disable", pPlayer, m_pVehicle, variant, 0);
+		}
+		else
+		{
+			pPlayer->SetViewEntity(NULL);
+		}
+	}
+}
+
+void CBaseServerVehicle::UpdateTriggerCamera(CBasePlayer *pPlayer, bool isRunningEnterExit,
+	Vector *pAbsOrigin, QAngle *pAbsAngles)
+{
+	if (m_hTriggerCamera != NULL)
+	{
+		if (isRunningEnterExit)
+		{
+			QAngle viewAngles(pAbsAngles->x, pAbsAngles->y, 0.0f);
+			m_hTriggerCamera->SetAbsAngles(viewAngles);
+			Vector forwardEyeOrigin;
+			m_pVehicle->GetBaseAnimating()->GetAttachmentLocal("vehicle_driver_eyes", forwardEyeOrigin, viewAngles);
+			pPlayer->SnapEyeAngles(viewAngles);
+		}
+		else
+		{
+			QAngle viewAngles(GetDriver()->EyeAngles().x, GetDriver()->EyeAngles().y, 0.0f);
+			m_hTriggerCamera->SetAbsAngles(viewAngles);
+		}
+
+		m_hTriggerCamera->SetAbsOrigin(*pAbsOrigin);
+	}
+}
+#endif // HL2DM_RP
 
 //===========================================================================================================
 // Vehicle Sounds

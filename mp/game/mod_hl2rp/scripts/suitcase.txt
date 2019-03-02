@@ -1,0 +1,49 @@
+// Citizen suitcase used as decoration
+
+WeaponData
+{
+	// Weapon data is loaded by both the Game and Client DLLs
+	"printname"		"#HL2RP_Suitcase"
+	"viewmodel"		"models/weapons/v_suitcase_passenger.mdl"
+	"playermodel"	"models/weapons/w_suitcase_passenger.mdl"
+
+	"bucket"			"0"
+	"bucket_position"	"0"
+
+	"secondary_ammo"	"suitcase"
+
+	"default_clip2"	"1"
+
+	"item_flags"	"2" // ITEM_FLAG_NOAUTORELOAD
+
+	SoundData
+	{
+		// To be emitted on Suitcase usage (inventory opening)
+		"special1"	"AmmoCrate.Open"
+	}
+
+	// Weapon Sprite data is loaded by the Client DLL.
+	// NOTE: "Ammo2" block is provenly unnecessary with the flags used in the ammo def.
+	TextureData
+	{
+		// Weapon selection HUD icon
+		"weapon_s"
+		{
+			"file"		"sprites/suitcase"
+			"x"			"0"
+			"y"			"0"
+			"width"		"128"
+			"height"	"128"
+		}
+
+		// Suitcase first pickup HUD icon
+		"weapon"
+		{
+			"file"		"sprites/suitcase"
+			"x"			"0"
+			"y"			"0"
+			"width"		"128"
+			"height"	"128"
+		}
+	}
+}

@@ -102,7 +102,7 @@ void WeaponManager_AmmoMod( CBaseCombatWeapon *pWeapon )
 				iNewRandomClip = 1;
 			}
 
-			pWeapon->m_iClip1 = iNewRandomClip;
+			pWeapon->SetClip1(iNewRandomClip);
 		}
 	}
 }

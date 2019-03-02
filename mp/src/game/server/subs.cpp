@@ -189,6 +189,10 @@ bool CBaseToggle::KeyValue( const char *szKeyName, const char *szValue )
 	return true;
 }
 
+bool CBaseToggle::IsLocked()
+{
+	return false;
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Calculate m_vecVelocity and m_flNextThink to reach vecDest from

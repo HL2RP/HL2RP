@@ -1,0 +1,50 @@
+// Citizen package used as survival ration
+
+WeaponData
+{
+	// Weapon data is loaded by both the Game and Client DLLs
+	"printname"		"#HL2RP_Ration"
+	"viewmodel"		"models/weapons/v_package.mdl"
+	"playermodel"	"models/weapons/w_package.mdl"
+
+	"bucket"			"0"
+	"bucket_position"	"1"
+
+	"secondary_ammo"	"ration"
+
+	"default_clip2"	"1"
+
+	"item_flags"	"2" // ITEM_FLAG_NOAUTORELOAD
+
+	SoundData
+	{
+		// To be emitted on Ration usage (heal)
+		"special1"	"HealthKit.Touch"
+	}
+
+	// Weapon Sprite data is loaded by the Client DLL
+	TextureData
+	{
+		// This block is proven needed with the flags used in the ammo def
+		"weapon"
+		{
+			"file"	"sprites/ration"
+		}
+
+		// Weapon selection HUD icon
+		"weapon_s"
+		{
+			"file"		"sprites/ration"
+			"width"		"128"
+			"height"	"128"
+		}
+
+		// Ration secondary ammo HUD icon
+		"ammo2"
+		{
+			"file"		"sprites/ration"
+			"width"		"128"
+			"height"	"128"
+		}
+	}
+}

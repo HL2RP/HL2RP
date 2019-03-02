@@ -69,7 +69,6 @@ END_PREDICTION_DATA()
 
 #endif
 
-LINK_ENTITY_TO_CLASS( weapon_slam, CWeapon_SLAM );
 PRECACHE_WEAPON_REGISTER(weapon_slam);
 
 #ifndef CLIENT_DLL
@@ -120,7 +119,7 @@ void CWeapon_SLAM::Spawn( )
 	m_flWallSwitchTime	= 0;
 
 	// Give 1 piece of default ammo when first picked up
-	m_iClip2 = 1;
+	SetClip2(1);
 }
 
 void CWeapon_SLAM::Precache( void )

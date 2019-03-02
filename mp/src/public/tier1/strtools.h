@@ -386,6 +386,9 @@ int Q_UTF16ToUChar32( const uchar16 *pUTF16, uchar32 &uValueOut, bool &bErrorOut
 #define V_UTF8ToUnicode Q_UTF8ToWString
 #define V_UnicodeToUTF8 Q_WStringToUTF8
 
+// Purpose: Detect a wide Unicode string type from a standard BOM, and convert it to an UTF-8 string
+int Q_BomWStringToUtf8(const char *pWideString, int wideStringLen, char *pUtf8StringOut, int utf8StringLen,
+	EStringConvertErrorPolicy ePolicy = STRINGCONVERT_ASSERT_REPLACE);
 
 #ifdef WIN32
 // This function is ill-defined as it relies on the current ANSI code page. Currently Win32 only for tools.

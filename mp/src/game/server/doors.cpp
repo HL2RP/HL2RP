@@ -25,6 +25,11 @@
 #include "tf_gamerules.h"
 #endif // TF_DLL
 
+#ifdef HL2RP
+#include "ai_basenpc.h"
+#include <HL2RPAINavigator.h>
+#endif // HL2RP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1054,6 +1059,19 @@ void CBaseDoor::DoorHitTop( void )
 	{
 		m_OnFullyOpen.FireOutput(this, this);
 	}
+
+#ifdef HL2RP
+	if (m_hActivator != NULL && m_hActivator->IsNPC())
+	{
+		CHL2RPAINavigator *pNavigator = dynamic_cast<CHL2RPAINavigator *>
+			(m_hActivator->MyNPCPointer()->GetNavigator());
+
+		if (pNavigator != NULL)
+		{
+			pNavigator->OnDoorFullyOpen();
+		}
+	}
+#endif // HL2RP
 }
 
 
@@ -1288,6 +1306,10 @@ void CBaseDoor::EndBlocked( void )
 	}
 }
 
+bool CBaseDoor::IsLocked()
+{
+	return m_bLocked;
+}
 
 /*func_door_rotating
 

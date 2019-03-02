@@ -1,0 +1,76 @@
+#include "../mod_hl2rp/controlfile_common.txt"
+
+"hl2mp/resource/hl2mp_english.txt"
+{
+	"destpath"	"resource/hl2mp_english.txt"
+}
+
+"hl2mp/resource/hl2mp_spanish.txt"
+{
+	"destpath"	"resource/hl2mp_spanish.txt"
+}
+
+"hl2mp/scripts/basehlcombatweapon.txt"
+{
+	"destpath"	"scripts/basehlcombatweapon.txt"
+}
+
+"hl2mp/scripts/ration.txt"
+{
+	"destpath"	"scripts/ration.txt"
+}
+
+"hl2mp/scripts/suitcase.txt"
+{
+	"destpath"	"scripts/suitcase.txt"
+}
+
+"hl2mp/scripts/weapon_crowbar.txt"
+{
+	"destpath"	"scripts/weapon_crowbar.txt"
+}
+
+"hl2mp/scripts/weapon_stunstick.txt"
+{
+	"destpath"	"scripts/weapon_stunstick.txt"
+}
+
+"hl2mp/scripts/weapon_molotov.txt"
+{
+	"destpath"	"scripts/weapon_molotov.txt"
+}
+
+"hl2mp/uploadlist.txt"
+{
+	"destpath"	"uploadlist.txt"
+}
+
+"mod_hl2rp/models/weapons/w_package.dx80.vtx"
+{
+	"destpath"	"models/weapons/w_package_v3.dx80.vtx"
+}
+
+"mod_hl2rp/models/weapons/w_package.dx90.vtx"
+{
+	"destpath"	"models/weapons/w_package_v3.dx90.vtx"
+}
+
+"mod_hl2rp/models/weapons/w_package.mdl"
+{
+	"destpath"	"models/weapons/w_package_v3.mdl"
+}
+
+"mod_hl2rp/models/weapons/w_package.phy"
+{
+	"destpath"	"models/weapons/w_package_v3.phy"
+}
+
+"mod_hl2rp/models/weapons/w_package.sw.vtx"
+{
+	"destpath"	"models/weapons/w_package_v3.sw.vtx"
+}
+
+"mod_hl2rp/models/weapons/w_package.vvd"
+{
+	"destpath"	"models/weapons/w_package_v3.vvd"
+}

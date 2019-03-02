@@ -56,7 +56,7 @@ public:
 	virtual void Paint( void );
 	virtual void ApplySchemeSettings( vgui::IScheme *scheme );
 
-	void SetColorForNoticePlayer( int iTeamNumber );
+	void SetColorForNoticeEntity(int entIndex, int iTeamNumber);
 	void RetireExpiredDeathNotices( void );
 	
 	virtual void FireGameEvent( IGameEvent * event );
@@ -111,7 +111,11 @@ void CHudDeathNotice::ApplySchemeSettings( IScheme *scheme )
 //-----------------------------------------------------------------------------
 void CHudDeathNotice::Init( void )
 {
-	ListenForGameEvent( "player_death" );	
+	ListenForGameEvent( "player_death" );
+
+#ifdef HL2RP
+	ListenForGameEvent("player_npc_death");
+#endif // HL2RP
 }
 
 //-----------------------------------------------------------------------------
@@ -134,8 +138,15 @@ bool CHudDeathNotice::ShouldDraw( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CHudDeathNotice::SetColorForNoticePlayer( int iTeamNumber )
+void CHudDeathNotice::SetColorForNoticeEntity(int entIndex, int iTeamNumber)
 {
+#ifdef HL2RP
+	if (entIndex > gpGlobals->maxClients)
+	{
+		return surface()->DrawSetTextColor(COLOR_GREEN);
+	}
+#endif // HL2RP
+
 	surface()->DrawSetTextColor( GameResources()->GetTeamColor( iTeamNumber ) );
 }
 
@@ -213,7 +224,7 @@ void CHudDeathNotice::Paint()
 				x -= UTIL_ComputeStringWidth( m_hTextFont, killer );
 			}
 
-			SetColorForNoticePlayer( iKillerTeam );
+			SetColorForNoticeEntity(m_DeathNotices[i].Killer.iEntIndex, iKillerTeam);
 
 			// Draw killer's name
 			surface()->DrawSetTextPos( x, y );
@@ -229,7 +240,7 @@ void CHudDeathNotice::Paint()
 		icon->DrawSelf( x, y, iconWide, iconTall, iconColor );
 		x += iconWide;		
 
-		SetColorForNoticePlayer( iVictimTeam );
+		SetColorForNoticeEntity(m_DeathNotices[i].Victim.iEntIndex, iVictimTeam);
 
 		// Draw victims name
 		surface()->DrawSetTextPos( x, y );
@@ -268,10 +279,40 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 	if ( hud_deathnotice_time.GetFloat() == 0 )
 		return;
 
-	// the event should be "player_death"
-	int killer = engine->GetPlayerForUserID( event->GetInt("attacker") );
-	int victim = engine->GetPlayerForUserID( event->GetInt("userid") );
+	int killer, victim;
 	const char *killedwith = event->GetString( "weapon" );
+	const char *killer_name, *victim_name;
+
+#ifdef HL2RP
+	// The event should be either "player_npc_death" or "player_death"
+	if (Q_strcmp(event->GetName(), "player_npc_death") == 0)
+	{
+		killer = event->GetInt("entindex_attacker"), victim = event->GetInt("entindex_killed");
+
+		// Get the names of the entities
+		killer_name = g_PR->GetPlayerName(killer);
+
+		if (killer_name != (void *)PLAYER_ERROR_NAME)
+		{
+			victim_name = event->GetString("npcname");
+		}
+		else
+		{
+			killer_name = event->GetString("npcname");
+			victim_name = g_PR->GetPlayerName(victim);
+		}
+	}
+	else
+#endif // HL2RP
+	{
+		// the event should be "player_death"
+		killer = engine->GetPlayerForUserID( event->GetInt("attacker") );
+		victim = engine->GetPlayerForUserID( event->GetInt("userid") );
+
+		// Get the names of the players
+		killer_name = g_PR->GetPlayerName( killer );
+		victim_name = g_PR->GetPlayerName( victim );
+	}
 
 	char fullkilledwith[128];
 	if ( killedwith && *killedwith )
@@ -290,10 +331,6 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 		// Remove the oldest one in the queue, which will always be the first
 		m_DeathNotices.Remove(0);
 	}
-
-	// Get the names of the players
-	const char *killer_name = g_PR->GetPlayerName( killer );
-	const char *victim_name = g_PR->GetPlayerName( victim );
 
 	if ( !killer_name )
 		killer_name = "";

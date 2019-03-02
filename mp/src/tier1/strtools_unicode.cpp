@@ -546,6 +546,33 @@ int Q_UTF32CharsToUTF16( const uchar32 *pUTF32, int nElements, uchar16 *pUTF16, 
 	return Q_UnicodeConvertT< uchar32, uchar16, false, Q_UTF32ToUChar32, Q_UChar32ToUTF16Len, Q_UChar32ToUTF16 >( pUTF32, nElements, pUTF16, cubDestSizeInBytes, ePolicy );
 }
 
+// Purpose: Detect a wide Unicode string type from a standard BOM, and convert it to an UTF-8 string
+int Q_BomWStringToUtf8(const char *pWideString, int wideStringLen, char *pUtf8StringOut, int utf8StringLen,
+	EStringConvertErrorPolicy ePolicy)
+{
+	// Standard wide Unicode BOMs
+	const uint8 utf32BeBom[] = { 0x00, 0x00, 0xFE, 0xFF },
+		utf32LeBom[] = { 0xFF, 0xFE, 0x00, 0x00 },
+		utf16BeBom[] = { 0xFE, 0xFF },
+		utf16LeBom[] = { 0xFF, 0xFE };
+
+	// Check if there is any wide Unicode BOM and at least a following data byte
+	if (wideStringLen > sizeof(utf32BeBom)
+		&& (Q_memcmp(pWideString, utf32BeBom, sizeof(utf32BeBom)) == 0
+			|| Q_memcmp(pWideString, utf32LeBom, sizeof(utf32LeBom)) == 0))
+	{
+		return Q_UTF32ToUTF8((uchar32 *)(pWideString + sizeof(utf32BeBom)), pUtf8StringOut, utf8StringLen, ePolicy);
+	}
+	else if (wideStringLen > sizeof(utf16BeBom)
+		&& (Q_memcmp(pWideString, utf16BeBom, sizeof(utf16BeBom)) == 0
+			|| Q_memcmp(pWideString, utf16LeBom, sizeof(utf16LeBom)) == 0))
+	{
+		return Q_UTF16ToUTF8((uchar16 *)(pWideString + sizeof(utf16BeBom)), pUtf8StringOut, utf8StringLen, ePolicy);
+	}
+
+	return 0;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Repair a UTF-8 string by removing or replacing invalid seqeuences. Returns non-zero on success.
 //-----------------------------------------------------------------------------

@@ -296,6 +296,7 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 		if ( pPlayer && GetVoiceGameMgr() && GetVoiceGameMgr()->IsPlayerIgnoringPlayer( pPlayer->entindex(), i ) )
 			continue;
 
+		pPlayer->OnTalkConditionsPassed(client, teamonly);
 		CSingleUserRecipientFilter user( client );
 		user.MakeReliable();
 

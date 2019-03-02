@@ -1,0 +1,34 @@
+//-----------------------------------------------------------------------------
+//	MYSQL_WRAPPER2.VPC
+//
+//	Project Script
+//	NOTE: Don't upgrade mysql library! Current stable version: 6.1.9.
+//	Next versions add many dependencies on Windows.
+//-----------------------------------------------------------------------------
+
+$Macro SRCDIR		"..\..\..\..\.."
+$Macro OUTBINDIR	"$SRCDIR\..\game\bin"
+
+$Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories	"$BASE;$SRCDIR\thirdparty\mysql;$SRCDIR\game\server\HL2RP\DAL"
+	}
+}
+
+$Project "MySQL Engine"
+{
+	$Folder "Source Files"
+	{
+		$File	"MySQLEngine.cpp"
+	}
+
+	$Folder "Link Libraries"
+	{
+		$Lib	mysqlclient [$WINDOWS]
+		$Lib	libmysqlclient [$POSIX]
+	}
+}

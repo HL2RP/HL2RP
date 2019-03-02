@@ -718,7 +718,7 @@ bool KeyValues::LoadFromFile( IBaseFileSystem *filesystem, const char *resourceN
 	{
 		buffer[fileSize] = 0; // null terminate file as EOF
 		buffer[fileSize+1] = 0; // double NULL terminating in case this is a unicode file
-		bRetOK = LoadFromBuffer( resourceName, buffer, filesystem );
+		bRetOK = LoadFromBuffer( resourceName, buffer, fileSize, filesystem );
 	}
 	
 	// The cache relies on the KeyValuesSystem string table, which will only be valid if we're
@@ -2219,6 +2219,9 @@ bool EvaluateConditional( const char *str )
 //-----------------------------------------------------------------------------
 bool KeyValues::LoadFromBuffer( char const *resourceName, CUtlBuffer &buf, IBaseFileSystem* pFileSystem, const char *pPathID )
 {
+	// Protect concurrent writes to s_pTokenBuf
+	LOCAL_THREAD_LOCK();
+
 	KeyValues *pPreviousKey = NULL;
 	KeyValues *pCurrentKey = this;
 	CUtlVector< KeyValues * > includedKeys;
@@ -2358,17 +2361,24 @@ bool KeyValues::LoadFromBuffer( char const *resourceName, const char *pBuffer, I
 	if ( !pBuffer )
 		return true;
 
+	return LoadFromBuffer(resourceName, pBuffer, Q_strlen(pBuffer), pFileSystem, pPathID);
+}
+
+// Read from a buffer... Note that the buffer must be valid and null terminated
+bool KeyValues::LoadFromBuffer(char const *resourceName, const char *pBuffer, int bufferLen,
+	IBaseFileSystem* pFileSystem, const char *pPathID)
+{
 	COM_TimestampedLog("KeyValues::LoadFromBuffer(%s%s%s): Begin", pPathID ? pPathID : "", pPathID && resourceName ? "/" : "", resourceName ? resourceName : "");
 
-	int nLen = Q_strlen( pBuffer );
-	CUtlBuffer buf( pBuffer, nLen, CUtlBuffer::READ_ONLY | CUtlBuffer::TEXT_BUFFER );
+	CUtlBuffer buf( pBuffer, bufferLen, CUtlBuffer::READ_ONLY | CUtlBuffer::TEXT_BUFFER );
 
 	// Translate Unicode files into UTF-8 before proceeding
-	if ( nLen > 2 && (uint8)pBuffer[0] == 0xFF && (uint8)pBuffer[1] == 0xFE )
+	int nUTF8Len = Q_BomWStringToUtf8(pBuffer, bufferLen, NULL, 0);
+
+	if (nUTF8Len > 0)
 	{
-		int nUTF8Len = V_UnicodeToUTF8( (wchar_t*)(pBuffer+2), NULL, 0 );
 		char *pUTF8Buf = new char[nUTF8Len];
-		V_UnicodeToUTF8( (wchar_t*)(pBuffer+2), pUTF8Buf, nUTF8Len );
+		Q_BomWStringToUtf8(pBuffer, bufferLen, pUTF8Buf, nUTF8Len);
 		buf.AssumeMemory( pUTF8Buf, nUTF8Len, nUTF8Len, CUtlBuffer::READ_ONLY | CUtlBuffer::TEXT_BUFFER );
 	}
 

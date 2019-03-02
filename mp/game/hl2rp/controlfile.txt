@@ -1,0 +1,136 @@
+#include "../mod_hl2rp/controlfile_standalone.txt"
+
+"mod_hl2rp/resource/mod_hl2rp_brazilian.txt"
+{
+	"destpath"	"resource/hl2rp_brazilian.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_bulgarian.txt"
+{
+	"destpath"	"resource/hl2rp_bulgarian.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_czech.txt"
+{
+	"destpath"	"resource/hl2rp_czech.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_danish.txt"
+{
+	"destpath"	"resource/hl2rp_danish.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_dutch.txt"
+{
+	"destpath"	"resource/hl2rp_dutch.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_english.txt"
+{
+	"destpath"	"resource/hl2rp_english.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_finnish.txt"
+{
+	"destpath"	"resource/hl2rp_finnish.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_french.txt"
+{
+	"destpath"	"resource/hl2rp_french.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_german.txt"
+{
+	"destpath"	"resource/hl2rp_german.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_greek.txt"
+{
+	"destpath"	"resource/hl2rp_greek.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_hungarian.txt"
+{
+	"destpath"	"resource/hl2rp_hungarian.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_italian.txt"
+{
+	"destpath"	"resource/hl2rp_italian.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_japanese.txt"
+{
+	"destpath"	"resource/hl2rp_japanese.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_korean.txt"
+{
+	"destpath"	"resource/hl2rp_korean.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_koreana.txt"
+{
+	"destpath"	"resource/hl2rp_koreana.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_norwegian.txt"
+{
+	"destpath"	"resource/hl2rp_norwegian.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_polish.txt"
+{
+	"destpath"	"resource/hl2rp_polish.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_portuguese.txt"
+{
+	"destpath"	"resource/hl2rp_portuguese.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_romanian.txt"
+{
+	"destpath"	"resource/hl2rp_romanian.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_russian.txt"
+{
+	"destpath"	"resource/hl2rp_russian.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_schinese.txt"
+{
+	"destpath"	"resource/hl2rp_schinese.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_spanish.txt"
+{
+	"destpath"	"resource/hl2rp_spanish.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_swedish.txt"
+{
+	"destpath"	"resource/hl2rp_swedish.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_tchinese.txt"
+{
+	"destpath"	"resource/hl2rp_tchinese.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_thai.txt"
+{
+	"destpath"	"resource/hl2rp_thai.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_turkish.txt"
+{
+	"destpath"	"resource/hl2rp_turkish.txt"
+}
+
+"mod_hl2rp/resource/mod_hl2rp_ukrainian.txt"
+{
+	"destpath"	"resource/hl2rp_ukrainian.txt"
+}

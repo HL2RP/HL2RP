@@ -545,6 +545,13 @@ public:
 	virtual void			HideThink( void );
 	virtual bool			CanReload( void );
 
+	void	SetClip1(int clip1);
+	void	AddClip1(int clip1);
+	void	SubstractClip1(int clip1);
+	void	SetClip2(int clip2);
+	void	AddClip2(int clip2);
+	void	SubstractClip2(int clip2);
+
 private:
 	typedef CHandle< CBaseCombatCharacter > CBaseCombatCharacterHandle;
 	CNetworkVar( CBaseCombatCharacterHandle, m_hOwner );				// Player carrying this weapon
@@ -661,5 +668,25 @@ protected:
 
 #endif // End Client .dll only
 };
+
+FORCEINLINE void CBaseCombatWeapon::AddClip1(int clip1)
+{
+	SetClip1(Clip1() + clip1);
+}
+
+FORCEINLINE void CBaseCombatWeapon::SubstractClip1(int clip1)
+{
+	SetClip1(Clip1() - clip1);
+}
+
+FORCEINLINE void CBaseCombatWeapon::AddClip2(int clip2)
+{
+	SetClip2(Clip2() + clip2);
+}
+
+FORCEINLINE void CBaseCombatWeapon::SubstractClip2(int clip2)
+{
+	SetClip2(Clip2() - clip2);
+}
 
 #endif // COMBATWEAPON_SHARED_H

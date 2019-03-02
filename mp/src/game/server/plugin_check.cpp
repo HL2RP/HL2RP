@@ -10,6 +10,10 @@
 #include "cbase.h"
 #include "eiface.h"
 
+#ifdef HL2RP
+#include <HL2RP_Player.h>
+#endif // HL2RP
+
 //-----------------------------------------------------------------------------
 // Purpose: An implementation 
 //-----------------------------------------------------------------------------
@@ -24,7 +28,20 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CPluginHelpersCheck, IPluginHelpersCheck, INTE
 
 bool CPluginHelpersCheck::CreateMessage( const char *plugin, edict_t *pEntity, DIALOG_TYPE type, KeyValues *data )
 {
-	// return false here to disallow a plugin from running this command on this client
+#ifdef HL2RP
+	// For now, assume target is either a player or NULL
+	CHL2RP_Player *pPlayer = ToHL2RPPlayer_Fast(CBaseEntity::Instance(pEntity));
+
+	if (pPlayer != NULL)
+	{
+		// Enforce level to be set decremented from SDK, which should start from INT_MAX - 1.
+		// This way no values are skipped accross messages and usages are maximized.
+		pPlayer->m_iLastDialogLevel = Min(data->GetInt("level"), pPlayer->m_iLastDialogLevel);
+		data->SetInt("level", --pPlayer->m_iLastDialogLevel);
+	}
+#endif // HL2RP
+
+	// Return false here to disallow a plugin from running this command on this client
 	return true;
 }
 

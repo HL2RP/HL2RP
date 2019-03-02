@@ -1094,7 +1094,7 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 	{
 		if ((m_iHealth - info.GetDamage()) <= 0)
 		{
-			m_iHealth = 1;
+			SetHealth(1);
 			return 0;
 		}
 	}
@@ -1182,12 +1182,12 @@ int CBasePlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			flArmor *= (1/flBonus);
 			flNew = info.GetDamage() - flArmor;
 			m_DmgSave = m_ArmorValue;
-			m_ArmorValue = 0;
+			SetArmorValue(0);
 		}
 		else
 		{
 			m_DmgSave = flArmor;
-			m_ArmorValue -= flArmor;
+			SubstractArmorValue(flArmor);
 		}
 		
 		info.SetDamage( flNew );
@@ -1684,7 +1684,7 @@ void CBasePlayer::Event_Killed( const CTakeDamageInfo &info )
 	// don't let the status bar glitch for players with <0 health.
 	if (m_iHealth < -99)
 	{
-		m_iHealth = 0;
+		SetHealth(0);
 	}
 
 	// holster the current weapon
@@ -5269,11 +5269,14 @@ void CBasePlayer::SetArmorValue( int value )
 
 void CBasePlayer::IncrementArmorValue( int nCount, int nMaxValue )
 { 
-	m_ArmorValue += nCount;
+	SetArmorValue(m_ArmorValue + nCount);
+
 	if (nMaxValue > 0)
 	{
 		if (m_ArmorValue > nMaxValue)
-			m_ArmorValue = nMaxValue;
+		{
+			SetArmorValue(nMaxValue);
+		}
 	}
 }
 
@@ -5320,7 +5323,8 @@ void CBasePlayer::CommitSuicide( bool bExplode /*= false*/, bool bForce /*= fals
 	int fDamage = DMG_PREVENT_PHYSICS_FORCE | ( bExplode ? ( DMG_BLAST | DMG_ALWAYSGIB ) : DMG_NEVERGIB );
 
 	// have the player kill themself
-	m_iHealth = 0;
+	SetHealth(0);
+
 	CTakeDamageInfo info( this, this, 0, fDamage, m_iSuicideCustomKillFlags );
 	Event_Killed( info );
 	Event_Dying( info );
@@ -6664,7 +6668,7 @@ bool CBasePlayer::BumpWeapon( CBaseCombatWeapon *pWeapon )
 				// If it uses clips, load it full. (this is the first time you've picked up this type of weapon)
 				if ( pWeapon->UsesClipsForAmmo1() )
 				{
-					pWeapon->m_iClip1 = pWeapon->GetMaxClip1();
+					pWeapon->SetClip1(pWeapon->GetMaxClip1());
 				}
 
 				Weapon_Switch( pWeapon );

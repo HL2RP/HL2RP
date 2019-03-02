@@ -91,7 +91,6 @@ void ClientPutInServer( edict_t *pEdict, const char *playername )
 	pPlayer->SetPlayerName( playername );
 }
 
-
 void ClientActive( edict_t *pEdict, bool bLoadGame )
 {
 	// Can't load games in CS!
@@ -101,7 +100,7 @@ void ClientActive( edict_t *pEdict, bool bLoadGame )
 	FinishClientPutInServer( pPlayer );
 }
 
-
+#ifndef HL2RP
 /*
 ===============
 const char *GetGameDescription()
@@ -116,6 +115,7 @@ const char *GetGameDescription()
 	else
 		return "Half-Life 2 Deathmatch";
 }
+#endif // !HL2RP
 
 //-----------------------------------------------------------------------------
 // Purpose: Given a player and optional name returns the entity of that 
@@ -190,12 +190,14 @@ void GameStartFrame( void )
 #endif
 }
 
+#if (!defined HL2RP || defined HL2DM_RP)
 //=========================================================
 // instantiate the proper game rules object
 //=========================================================
 void InstallGameRules()
 {
 	// vanilla deathmatch
-	CreateGameRulesObject( "CHL2MPRules" );
+	CreateGameRulesObject("CHL2MPRules");
 }
+#endif // DEBUG
 

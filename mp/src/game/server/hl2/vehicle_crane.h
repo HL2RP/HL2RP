@@ -175,7 +175,9 @@ public:
 	virtual void		FinishMove( CBasePlayer *player, CUserCmd *ucmd, CMoveData *move ) { return; }
 	virtual bool		CanEnterVehicle( CBaseEntity *pEntity );
 	virtual bool		CanExitVehicle( CBaseEntity *pEntity );
+	bool				GetVehicleEntryAnim() { return m_bEnterAnimOn; }
 	virtual void		SetVehicleEntryAnim( bool bOn ) { m_bEnterAnimOn = bOn; }
+	bool				GetVehicleExitAnim() { return m_bExitAnimOn; }
 	virtual void		SetVehicleExitAnim( bool bOn, Vector vecEyeExitEndpoint ) { m_bExitAnimOn = bOn; if ( bOn ) m_vecEyeExitEndpoint = vecEyeExitEndpoint; }
 	virtual void		EnterVehicle( CBaseCombatCharacter *pPassenger );
 

@@ -1,0 +1,21 @@
+#base "mod_hl2rp_spanish.txt"
+
+"Lang"
+{
+	"Language"	"Spanish"
+
+	"Tokens"
+	{
+		// Special weapons menu
+		"HL2RP_Suitcase"	"Maletín"
+		"HL2RP_Ration"		"Ración"
+		"HL2RP_Molotov"		"Cóctel Molotov"
+
+		"HL2RP_HUD_Hint_Sticky_Walk"		"<CAMINAR>+<CAMINAR> = CAMINAR ASISTIDO"
+		"HL2RP_HUD_NPC_Killed_Player"		"Un %s1 asesinó a %s2 con %s3"
+		"HL2RP_HUD_Player_Killed_NPC"		"%s1 asesinó a un %s2 con %s3"
+		"HL2RP_Menu_Item_Special_Weapons"	"Armas especiales"
+		"HL2RP_Menu_Msg_Special_Weapons"	"Aquí puedes intercambiar entre\narmas especiales u objetos\nque reusan la misma ranura,\nsiendo inaccesibles por controles"
+		"HL2RP_Menu_Title_Special_Weapons"	"Menú de armas especiales"
+	}
+}

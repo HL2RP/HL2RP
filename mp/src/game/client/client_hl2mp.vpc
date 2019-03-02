@@ -5,8 +5,8 @@
 //-----------------------------------------------------------------------------
 
 $Macro SRCDIR		"..\.."
-$Macro GAMENAME 	"hl2mp" [!$SOURCESDK]
-$Macro GAMENAME 	"mod_hl2mp" [$SOURCESDK]
+$Macro GAMENAME 	"hl2mp" [$HL2MP && !$SOURCESDK]
+$Macro GAMENAME 	"mod_hl2mp" [$HL2MP && $SOURCESDK]
 
 $Include "$SRCDIR\game\client\client_base.vpc"
 
@@ -19,7 +19,7 @@ $Configuration
 	}
 }
 
-$Project "Client (HL2MP)"
+$Project // "Client (HL2MP)"
 {
 	$Folder	"Source Files"
 	{
@@ -127,6 +127,7 @@ $Project "Client (HL2MP)"
 			$File	"$SRCDIR\game\shared\hl2mp\hl2mp_player_shared.h"
 			$File	"$SRCDIR\game\shared\hl2mp\hl2mp_weapon_parse.cpp"
 			$File	"$SRCDIR\game\shared\hl2mp\hl2mp_weapon_parse.h"
+			$File	"$SRCDIR\game\shared\hl2mp\hl2mp_weapon_register.cpp"
 
 			$Folder	"Weapons"
 			{
