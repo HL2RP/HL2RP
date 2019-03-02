@@ -48,6 +48,10 @@
 #include "weapon_physcannon.h"
 #endif // HL2MP
 
+#ifdef HL2MP
+#include <hl2mp_player.h>
+#endif // HL2MP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -269,7 +273,14 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 	client = NULL;
 	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 	{
-		client = ToBaseMultiplayerPlayer( UTIL_PlayerByIndex( i ) );
+		client = UTIL_PlayerByIndex( i );
+
+#ifdef HL2MP
+		client = ToHL2MPPlayer( client );
+#else
+		client = ToBaseMultiplayerPlayer( client );
+#endif // HL2MP
+
 		if ( !client || !client->edict() )
 			continue;
 		
