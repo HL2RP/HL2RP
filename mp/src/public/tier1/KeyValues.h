@@ -288,6 +288,10 @@ private:
 	void RecursiveSaveToFile( IBaseFileSystem *filesystem, FileHandle_t f, CUtlBuffer *pBuf, int indentLevel, bool sortKeys, bool bAllowEmptyString );
 	void SaveKeyToFile( KeyValues *dat, IBaseFileSystem *filesystem, FileHandle_t f, CUtlBuffer *pBuf, int indentLevel, bool sortKeys, bool bAllowEmptyString );
 	void WriteConvertedString( IBaseFileSystem *filesystem, FileHandle_t f, CUtlBuffer *pBuf, const char *pszString );
+
+	// Read from a buffer... Note that the buffer must be valid and null terminated
+	bool LoadFromBuffer(char const *resourceName, const char *pBuffer, int bufferLen,
+		IBaseFileSystem* pFileSystem = NULL, const char *pPathID = NULL);
 	
 	void RecursiveLoadFromBuffer( char const *resourceName, CUtlBuffer &buf );
 

@@ -1,0 +1,201 @@
+#include "controlfile_common.txt"
+
+"mod_hl2rp/materials/sprites/ration.vmt"
+{
+	"destpath"	"materials/sprites/ration.vmt"
+}
+
+"mod_hl2rp/materials/sprites/ration.vtf"
+{
+	"destpath"	"materials/sprites/ration.vtf"
+}
+
+"mod_hl2rp/materials/sprites/suitcase.vmt"
+{
+	"destpath"	"materials/sprites/suitcase.vmt"
+}
+
+"mod_hl2rp/materials/sprites/suitcase.vtf"
+{
+	"destpath"	"materials/sprites/suitcase.vtf"
+}
+
+"mod_hl2rp/models/humans/female_shared.mdl"
+{
+	"destpath"	"models/humans/female_shared.mdl"
+}
+
+"mod_hl2rp/models/hl2/humans/female_shared.mdl"
+{
+	"destpath"	"models/hl2/humans/female_shared.mdl"
+}
+
+"mod_hl2rp/models/hl2/humans/female_ss.mdl"
+{
+	"destpath"	"models/hl2/humans/female_ss.mdl"
+}
+
+"mod_hl2rp/models/humans/male_shared.mdl"
+{
+	"destpath"	"models/humans/male_shared.mdl"
+}
+
+"mod_hl2rp/models/hl2/humans/male_shared.mdl"
+{
+	"destpath"	"models/hl2/humans/male_shared.mdl"
+}
+
+"mod_hl2rp/models/hl2/humans/male_ss.mdl"
+{
+	"destpath"	"models/hl2/humans/male_ss.mdl"
+}
+
+"mod_hl2rp/models/combine_soldier_anims.mdl"
+{
+	"destpath"	"models/combine_soldier_anims.mdl"
+}
+
+"mod_hl2rp/models/hl2/combine_soldier_anims.mdl"
+{
+	"destpath"	"models/hl2/combine_soldier_anims.mdl"
+}
+
+"mod_hl2rp/models/police_animations.mdl"
+{
+	"destpath"	"models/police_animations.mdl"
+}
+
+"mod_hl2rp/models/hl2/police_animations.mdl"
+{
+	"destpath"	"models/hl2/police_animations.mdl"
+}
+
+"mod_hl2rp/models/weapons/w_package.dx80.vtx"
+{
+	"destpath"	"models/weapons/w_package.dx80.vtx"
+}
+
+"mod_hl2rp/models/weapons/w_package.dx90.vtx"
+{
+	"destpath"	"models/weapons/w_package.dx90.vtx"
+}
+
+"mod_hl2rp/models/weapons/w_package.mdl"
+{
+	"destpath"	"models/weapons/w_package.mdl"
+}
+
+"mod_hl2rp/models/weapons/w_package.phy"
+{
+	"destpath"	"models/weapons/w_package.phy"
+}
+
+"mod_hl2rp/models/weapons/w_package.sw.vtx"
+{
+	"destpath"	"models/weapons/w_package.sw.vtx"
+}
+
+"mod_hl2rp/models/weapons/w_package.vvd"
+{
+	"destpath"	"models/weapons/w_package.vvd"
+}
+
+"mod_hl2rp/resource/modevents.res"
+{
+	"destpath"	"resource/modevents.res"
+}
+
+"mod_hl2rp/scripts/HudAnimations_hl2rp.txt"
+{
+	"destpath"	"scripts/HudAnimations_hl2rp.txt"
+}
+
+"mod_hl2rp/scripts/hudanimations_manifest.txt"
+{
+	"destpath"	"scripts/hudanimations_manifest.txt"
+}
+
+"mod_hl2rp/scripts/HudLayout.res"
+{
+	"destpath"	"scripts/HudLayout.res"
+}
+
+"mod_hl2rp/scripts/ration.txt"
+{
+	"destpath"	"scripts/ration.txt"
+}
+
+"mod_hl2rp/scripts/suitcase.txt"
+{
+	"destpath"	"scripts/suitcase.txt"
+}
+
+"mod_hl2rp/scripts/weapon_357.txt"
+{
+	"destpath"	"scripts/weapon_357.txt"
+}
+
+"mod_hl2rp/scripts/weapon_ar2.txt"
+{
+	"destpath"	"scripts/weapon_ar2.txt"
+}
+
+"mod_hl2rp/scripts/weapon_crossbow.txt"
+{
+	"destpath"	"scripts/weapon_crossbow.txt"
+}
+
+"mod_hl2rp/scripts/weapon_crowbar.txt"
+{
+	"destpath"	"scripts/weapon_crowbar.txt"
+}
+
+"mod_hl2rp/scripts/weapon_cubemap.txt"
+{
+	"destpath"	"scripts/weapon_cubemap.txt"
+}
+
+"mod_hl2rp/scripts/weapon_frag.txt"
+{
+	"destpath"	"scripts/weapon_frag.txt"
+}
+
+"mod_hl2rp/scripts/weapon_molotov.txt"
+{
+	"destpath"	"scripts/weapon_molotov.txt"
+}
+
+"mod_hl2rp/scripts/weapon_physcannon.txt"
+{
+	"destpath"	"scripts/weapon_physcannon.txt"
+}
+
+"mod_hl2rp/scripts/weapon_pistol.txt"
+{
+	"destpath"	"scripts/weapon_pistol.txt"
+}
+
+"mod_hl2rp/scripts/weapon_rpg.txt"
+{
+	"destpath"	"scripts/weapon_rpg.txt"
+}
+
+"mod_hl2rp/scripts/weapon_shotgun.txt"
+{
+	"destpath"	"scripts/weapon_shotgun.txt"
+}
+
+"mod_hl2rp/scripts/weapon_slam.txt"
+{
+	"destpath"	"scripts/weapon_slam.txt"
+}
+
+"mod_hl2rp/scripts/weapon_smg1.txt"
+{
+	"destpath"	"scripts/weapon_smg1.txt"
+}
+
+"mod_hl2rp/scripts/weapon_stunstick.txt"
+{
+	"destpath"	"scripts/weapon_stunstick.txt"
+}

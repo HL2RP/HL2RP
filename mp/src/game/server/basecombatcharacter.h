@@ -347,6 +347,9 @@ public:
 	CBaseCombatWeapon*	GetActiveWeapon() const;
 	int					WeaponCount() const;
 	CBaseCombatWeapon*	GetWeapon( int i ) const;
+	VIRTUAL void		SetWeapon(int i, CBaseCombatWeapon *pWeapon);
+	VIRTUAL void		OnSetWeaponClip1(CBaseCombatWeapon *pWeapon) { };
+	VIRTUAL void		OnSetWeaponClip2(CBaseCombatWeapon *pWeapon) { };
 	bool				RemoveWeapon( CBaseCombatWeapon *pWeapon );
 	virtual void		RemoveAllWeapons();
 	WeaponProficiency_t GetCurrentWeaponProficiency() { return m_CurrentWeaponProficiency; }
@@ -376,7 +379,10 @@ public:
 	// FIXME: The following 3 methods are backdoor hack methods
 	
 	// This is a sort of hack back-door only used by physgun!
-	void SetAmmoCount( int iCount, int iAmmoIndex );
+	VIRTUAL void SetAmmoCount(int iCount, int iAmmoIndex);
+
+	VIRTUAL void AddAmmoCount(int iCount, int iAmmoIndex);
+	VIRTUAL void SubstractAmmoCount(int iCount, int iAmmoIndex);
 
 	// This is a hack to blat out the current active weapon...
 	// Used by weapon_slam + game_ui
@@ -538,6 +544,15 @@ protected:
 	int m_registeredNavTeam;	// ugly, but needed to clean up player team counts in nav mesh
 };
 
+inline void CBaseCombatCharacter::AddAmmoCount(int iCount, int iAmmoIndex)
+{
+	SetAmmoCount(m_iAmmo[iAmmoIndex] + iCount, iAmmoIndex);
+}
+
+inline void CBaseCombatCharacter::SubstractAmmoCount(int iCount, int iAmmoIndex)
+{
+	SetAmmoCount(m_iAmmo[iAmmoIndex] - iCount, iAmmoIndex);
+}
 
 inline float CBaseCombatCharacter::GetAliveDuration( void ) const
 {
@@ -560,6 +575,16 @@ inline CBaseCombatWeapon *CBaseCombatCharacter::GetWeapon( int i ) const
 {
 	Assert( (i >= 0) && (i < MAX_WEAPONS) );
 	return m_hMyWeapons[i].Get();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Assign a weapon to an inventory slot.
+// Input  : i - Slot from my weapons. pWeapon - Weapon to assign at slot.
+//-----------------------------------------------------------------------------
+inline void CBaseCombatCharacter::SetWeapon(int i, CBaseCombatWeapon *pWeapon)
+{
+	Assert((i >= 0) && (i < MAX_WEAPONS));
+	m_hMyWeapons.Set(i, pWeapon);
 }
 
 #ifdef INVASION_DLL

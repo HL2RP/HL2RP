@@ -1,0 +1,5 @@
+"HudAnimations_Manifest"
+{
+	"file"	"scripts/HudAnimations_hl2rp.txt"
+	"file"	"scripts/HudAnimations.txt"
+}

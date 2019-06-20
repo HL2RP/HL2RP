@@ -104,7 +104,7 @@ END_DATADESC()
 IMPLEMENT_SERVERCLASS_ST(CPropCrane, DT_PropCrane)
 	SendPropEHandle(SENDINFO(m_hPlayer)),
 	SendPropBool(SENDINFO(m_bMagnetOn)),
-	SendPropBool(SENDINFO(m_bEnterAnimOn)),
+	SendPropInt(SENDINFO(m_bEnterAnimOn), 1, SPROP_UNSIGNED, SendProxy_EnterAnimOn),
 	SendPropBool(SENDINFO(m_bExitAnimOn)),
 	SendPropVector(SENDINFO(m_vecEyeExitEndpoint), -1, SPROP_COORD),
 END_SEND_TABLE();
@@ -151,6 +151,7 @@ void CPropCrane::Spawn( void )
 
 	CreateVPhysics();
 	SetNextThink( gpGlobals->curtime );
+	GetServerVehicle()->InitTriggerCamera();
 }
 
 //-----------------------------------------------------------------------------
@@ -443,6 +444,7 @@ void CPropCrane::EnterVehicle( CBaseCombatCharacter *pPassenger )
 		m_hPlayer->RumbleEffect( RUMBLE_FLAT_BOTH, 10, RUMBLE_FLAG_UPDATE_SCALE );
 
 		m_ServerVehicle.SoundStart();
+		GetServerVehicle()->AttachTriggerCamera(pPlayer);
 	}
 	else
 	{
@@ -466,6 +468,7 @@ void CPropCrane::ExitVehicle( int nRole )
 	m_bEnterAnimOn = false;
 
 	m_ServerVehicle.SoundShutdown( 1.0 );
+	GetServerVehicle()->DetachTriggerCamera(pPlayer);
 }
 
 //-----------------------------------------------------------------------------
@@ -956,6 +959,9 @@ void CCraneServerVehicle::GetVehicleViewPosition( int nRole, Vector *pAbsOrigin,
 
 	// UNDONE: *pOrigin would already be correct in single player if the HandleView() on the server ran after vphysics
 	MatrixGetColumn( newCameraToWorld, 3, *pAbsOrigin );
+
+	BaseClass::UpdateTriggerCamera(pPlayer, GetCrane()->GetVehicleEntryAnim() || GetCrane()->GetVehicleExitAnim(),
+		pAbsOrigin, &vehicleEyeAngles);
 }
 
 //-----------------------------------------------------------------------------

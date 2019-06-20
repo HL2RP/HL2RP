@@ -1,0 +1,5 @@
+#!/bin/bash
+
+pushd `dirname $0`
+devtools/bin/vpc /hl2dm_rp /hl2rp /define:dedicated_srv /define:publish +dedicated /mksln dedicated
+popd

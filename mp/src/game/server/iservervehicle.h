@@ -105,6 +105,13 @@ public:
 
 	// debugging, script file flushed
 	virtual void			ReloadScript() = 0;
+
+	// Server-side only vehicle view smoothing
+	VIRTUAL void InitTriggerCamera() { }
+	VIRTUAL void AttachTriggerCamera(CBasePlayer *pPlayer) { }
+	VIRTUAL void DetachTriggerCamera(CBasePlayer *pPlayer) { }
+	VIRTUAL void UpdateTriggerCamera(CBasePlayer *pPlayer, bool isRunningEnterExit,
+		Vector *pAbsOrigin, QAngle *pAbsAngles) { }
 };
 
 // This is an interface to derive from if your class contains an IServerVehicle 

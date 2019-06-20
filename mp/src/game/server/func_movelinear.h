@@ -59,5 +59,17 @@ public:
 	// Outputs
 	COutputEvent m_OnFullyOpen;
 	COutputEvent m_OnFullyClosed;
+
+private:
+	bool IsLocked() OVERRIDE;
+
+#ifdef HL2RP
+	void InputLock(inputdata_t &inputdata);
+	void InputUnlock(inputdata_t &inputdata);
+
+	// Since this entity has a certain chance to appear on several maps on buildings of interest,
+	// we add a locked status to allow granted players easily control this, instead of linked buttons
+	bool m_bIsLocked;
+#endif // HL2RP
 };
 #endif // FUNC_MOVELINEAR_H

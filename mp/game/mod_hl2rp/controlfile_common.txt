@@ -1,0 +1,214 @@
+"mod_hl2rp/materials/models/weapons/w_Molotov/molotov.vmt"
+{
+	"destpath"	"materials/models/weapons/w_Molotov/molotov.vmt"
+}
+
+"mod_hl2rp/materials/models/weapons/w_Molotov/molotov.vtf"
+{
+	"destpath"	"materials/models/weapons/w_Molotov/molotov.vtf"
+}
+
+"mod_hl2rp/materials/models/weapons/w_Molotov/rag.vmt"
+{
+	"destpath"	"materials/models/weapons/w_Molotov/rag.vmt"
+}
+
+"mod_hl2rp/materials/models/weapons/w_Molotov/rag.vtf"
+{
+	"destpath"	"materials/models/weapons/w_Molotov/rag.vtf"
+}
+
+"mod_hl2rp/models/props_combine/combine_dispenser.dx80.vtx"
+{
+	"destpath"	"models/props_combine/combine_dispenser.dx80.vtx"
+}
+
+"mod_hl2rp/models/props_combine/combine_dispenser.dx90.vtx"
+{
+	"destpath"	"models/props_combine/combine_dispenser.dx90.vtx"
+}
+
+"mod_hl2rp/models/props_combine/combine_dispenser.mdl"
+{
+	"destpath"	"models/props_combine/combine_dispenser.mdl"
+}
+
+"mod_hl2rp/models/props_combine/combine_dispenser.phy"
+{
+	"destpath"	"models/props_combine/combine_dispenser.phy"
+}
+
+"mod_hl2rp/models/props_combine/combine_dispenser.sw.vtx"
+{
+	"destpath"	"models/props_combine/combine_dispenser.sw.vtx"
+}
+
+"mod_hl2rp/models/props_combine/combine_dispenser.vvd"
+{
+	"destpath"	"models/props_combine/combine_dispenser.vvd"
+}
+
+"mod_hl2rp/models/weapons/V_molotov.dx80.vtx"
+{
+	"destpath"	"models/weapons/V_molotov.dx80.vtx"
+}
+
+"mod_hl2rp/models/weapons/V_molotov.dx90.vtx"
+{
+	"destpath"	"models/weapons/V_molotov.dx90.vtx"
+}
+
+"mod_hl2rp/models/weapons/v_molotov.mdl"
+{
+	"destpath"	"models/weapons/v_molotov.mdl"
+}
+
+"mod_hl2rp/models/weapons/V_molotov.sw.vtx"
+{
+	"destpath"	"models/weapons/V_molotov.sw.vtx"
+}
+
+"mod_hl2rp/models/weapons/v_molotov.vvd"
+{
+	"destpath"	"models/weapons/v_molotov.vvd"
+}
+
+"mod_hl2rp/models/weapons/v_molotov.xbox.vtx"
+{
+	"destpath"	"models/weapons/v_molotov.xbox.vtx"
+}
+
+"mod_hl2rp/models/weapons/v_package.dx80.vtx"
+{
+	"destpath"	"models/weapons/v_package.dx80.vtx"
+}
+
+"mod_hl2rp/models/weapons/v_package.dx90.vtx"
+{
+	"destpath"	"models/weapons/v_package.dx90.vtx"
+}
+
+"mod_hl2rp/models/weapons/v_package.mdl"
+{
+	"destpath"	"models/weapons/v_package.mdl"
+}
+
+"mod_hl2rp/models/weapons/v_package.sw.vtx"
+{
+	"destpath"	"models/weapons/v_package.sw.vtx"
+}
+
+"mod_hl2rp/models/weapons/v_package.vvd"
+{
+	"destpath"	"models/weapons/v_package.vvd"
+}
+
+"mod_hl2rp/models/weapons/v_package.xbox.vtx"
+{
+	"destpath"	"models/weapons/v_package.xbox.vtx"
+}
+
+"mod_hl2rp/models/weapons/v_suitcase_passenger.dx80.vtx"
+{
+	"destpath"	"models/weapons/v_suitcase_passenger.dx80.vtx"
+}
+
+"mod_hl2rp/models/weapons/v_suitcase_passenger.dx90.vtx"
+{
+	"destpath"	"models/weapons/v_suitcase_passenger.dx90.vtx"
+}
+
+"mod_hl2rp/models/weapons/v_suitcase_passenger.mdl"
+{
+	"destpath"	"models/weapons/v_suitcase_passenger.mdl"
+}
+
+"mod_hl2rp/models/weapons/v_suitcase_passenger.sw.vtx"
+{
+	"destpath"	"models/weapons/v_suitcase_passenger.sw.vtx"
+}
+
+"mod_hl2rp/models/weapons/v_suitcase_passenger.vvd"
+{
+	"destpath"	"models/weapons/v_suitcase_passenger.vvd"
+}
+
+"mod_hl2rp/models/weapons/v_suitcase_passenger.xbox.vtx"
+{
+	"destpath"	"models/weapons/v_suitcase_passenger.xbox.vtx"
+}
+
+"mod_hl2rp/models/weapons/W_grenade.dx80.vtx"
+{
+	"destpath"	"models/weapons/W_grenade.dx80.vtx"
+}
+
+"mod_hl2rp/models/weapons/W_grenade.dx90.vtx"
+{
+	"destpath"	"models/weapons/W_grenade.dx90.vtx"
+}
+
+"mod_hl2rp/models/weapons/W_grenade.mdl"
+{
+	"destpath"	"models/weapons/W_grenade.mdl"
+}
+
+"mod_hl2rp/models/weapons/W_grenade.phy"
+{
+	"destpath"	"models/weapons/W_grenade.phy"
+}
+
+"mod_hl2rp/models/weapons/W_grenade.sw.vtx"
+{
+	"destpath"	"models/weapons/W_grenade.sw.vtx"
+}
+
+"mod_hl2rp/models/weapons/W_grenade.vvd"
+{
+	"destpath"	"models/weapons/W_grenade.vvd"
+}
+
+"mod_hl2rp/models/weapons/w_molotov.dx80.vtx"
+{
+	"destpath"	"models/weapons/w_molotov.dx80.vtx"
+}
+
+"mod_hl2rp/models/weapons/w_molotov.dx90.vtx"
+{
+	"destpath"	"models/weapons/w_molotov.dx90.vtx"
+}
+
+"mod_hl2rp/models/weapons/w_molotov.mdl"
+{
+	"destpath"	"models/weapons/w_molotov.mdl"
+}
+
+"mod_hl2rp/models/weapons/w_molotov.phy"
+{
+	"destpath"	"models/weapons/w_molotov.phy"
+}
+
+"mod_hl2rp/models/weapons/w_molotov.sw.vtx"
+{
+	"destpath"	"models/weapons/w_molotov.sw.vtx"
+}
+
+"mod_hl2rp/models/weapons/w_molotov.vvd"
+{
+	"destpath"	"models/weapons/w_molotov.vvd"
+}
+
+"mod_hl2rp/scenes/scenes.image"
+{
+	"destpath"	"scenes/scenes.image"
+}
+
+"mod_hl2rp/scripts/player_actremap.txt"
+{
+	"destpath"	"scripts/player_actremap.txt"
+}
+
+"mod_hl2rp/scripts/ai_basenpc_actremap.txt"
+{
+	"destpath"	"scripts/ai_basenpc_actremap.txt"
+}

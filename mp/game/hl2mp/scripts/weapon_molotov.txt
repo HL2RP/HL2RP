@@ -1,0 +1,15 @@
+// Molotov
+
+WeaponData
+{
+	// Weapon data is loaded by both the Game and Client DLLs
+	"printname"		"#HL2RP_Molotov"
+	"viewmodel"		"models/weapons/v_molotov.mdl"
+	"playermodel"	"models/weapons/w_molotov.mdl"
+
+	"secondary_ammo"	"molotov"
+
+	"default_clip2"	"1"
+
+	"item_flags"	"2" // ITEM_FLAG_NOAUTORELOAD
+}

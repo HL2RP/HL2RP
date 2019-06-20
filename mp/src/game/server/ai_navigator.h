@@ -412,7 +412,7 @@ public:
 	CAI_Path *			GetPath()							{ return m_pPath; }
 	const CAI_Path *	GetPath() const						{ return m_pPath; }
 
-	void				AdvancePath();
+	VIRTUAL void		AdvancePath();
 
 	virtual bool		SimplifyPath( bool bFirstForPath = false, float maxDist = -1 );
 	void				SimplifyFlyPath( unsigned collisionMask, const CBaseEntity *pTarget, 
@@ -499,15 +499,16 @@ protected:
 	// made this virtual so strider can implement hover behavior with a navigator
 	virtual void 		MoveCalcBaseGoal(  AILocalMoveGoal_t *pMoveGoal);
 	
-private:
 	virtual bool		OnCalcBaseMove( AILocalMoveGoal_t *pMoveGoal, float distClear, AIMoveResult_t *pResult );
+	virtual bool		OnMoveBlocked(AIMoveResult_t *pResult);
+
+private:
 	virtual bool		OnObstructionPreSteer( AILocalMoveGoal_t *pMoveGoal, float distClear, AIMoveResult_t *pResult );
 	virtual bool		OnFailedSteer( AILocalMoveGoal_t *pMoveGoal, float distClear, AIMoveResult_t *pResult );
 	virtual bool 		OnFailedLocalNavigation( AILocalMoveGoal_t *pMoveGoal, float distClear, AIMoveResult_t *pResult );
 	virtual bool		OnInsufficientStopDist( AILocalMoveGoal_t *pMoveGoal, float distClear, AIMoveResult_t *pResult );
 	virtual bool		OnMoveStalled( const AILocalMoveGoal_t &move );
 	virtual bool		OnMoveExecuteFailed( const AILocalMoveGoal_t &move, const AIMoveTrace_t &trace, AIMotorMoveResult_t fMotorResult, AIMoveResult_t *pResult );
-	virtual bool		OnMoveBlocked( AIMoveResult_t *pResult );
 	
 	void ResetCalculations();
 	

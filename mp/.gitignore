@@ -1,0 +1,18 @@
+# Wrappers for thirdparty libraries
+mysql_engine.dll
+mysql_engine.lib
+mysql_engine.pdb
+sqlite_engine.dll
+sqlite_engine.lib
+sqlite_engine.pdb
+
+mysql_engine.so
+mysql_engine.so.dbg
+mysql_engine.so
+mysql_engine.so.dbg
+mysql_engine_srv.so
+mysql_engine_srv.so.dbg
+sqlite_engine.so
+sqlite_engine.so.dbg
+sqlite_engine_srv.so
+sqlite_engine_srv.so.dbg

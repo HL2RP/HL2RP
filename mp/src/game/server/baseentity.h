@@ -1085,7 +1085,9 @@ public:
 	void	SetMaxHealth( int amt )	{ m_iMaxHealth = amt; }
 
 	int		GetHealth() const		{ return m_iHealth; }
-	void	SetHealth( int amt )	{ m_iHealth = amt; }
+	VIRTUAL void	SetHealth(int amt)	{ m_iHealth = amt; }
+	void	AddHealth(int amt)	{ SetHealth(m_iHealth + amt); }
+	void	SubstractHealth(int amt)	{ SetHealth(m_iHealth - amt); }
 
 	float HealthFraction() const;
 

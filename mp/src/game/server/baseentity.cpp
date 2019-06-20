@@ -239,6 +239,23 @@ void SendProxy_OriginZ( const SendProp *pProp, const void *pStruct, const void *
 	pOut->m_Float = v->z;
 }
 
+static void SendProxy_CollisionGroup(const SendProp *pProp, const void *pStruct, const void *pData,
+	DVariant *pOut, int element, int objectId)
+{
+#ifdef HL2DM_RP
+	const CBaseEntity *pEntity = static_cast<const CBaseEntity *>(pStruct);
+
+	if (pEntity->IsPlayer() && !pEntity->ShouldCollide(COLLISION_GROUP_PLAYER_MOVEMENT, MASK_PLAYERSOLID))
+	{
+		// Send a fake collision group to a client which probably predicts a collision is ON with another (HL2DM),
+		// when server decides otherwise. This collision group filters out player collisions in that case.
+		int auxCollisionGroup = COLLISION_GROUP_DEBRIS_TRIGGER;
+		return SendProxy_Int32ToInt32(pProp, pStruct, &auxCollisionGroup, pOut, element, objectId);
+	}
+#endif // HL2DM_RP
+
+	SendProxy_Int32ToInt32(pProp, pStruct, pData, pOut, element, objectId);
+}
 
 void SendProxy_Angles( const SendProp *pProp, const void *pStruct, const void *pData, DVariant *pOut, int iElement, int objectID )
 {
@@ -276,7 +293,7 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE( CBaseEntity, DT_BaseEntity )
 	SendPropInt		(SENDINFO(m_fEffects),		EF_MAX_BITS, SPROP_UNSIGNED),
 	SendPropInt		(SENDINFO(m_clrRender),	32, SPROP_UNSIGNED),
 	SendPropInt		(SENDINFO(m_iTeamNum),		TEAMNUM_NUM_BITS, 0),
-	SendPropInt		(SENDINFO(m_CollisionGroup), 5, SPROP_UNSIGNED),
+	SendPropInt		(SENDINFO(m_CollisionGroup), 5, SPROP_UNSIGNED, SendProxy_CollisionGroup),
 	SendPropFloat	(SENDINFO(m_flElasticity), 0, SPROP_COORD),
 	SendPropFloat	(SENDINFO(m_flShadowCastDistance), 12, SPROP_UNSIGNED ),
 	SendPropEHandle (SENDINFO(m_hOwnerEntity)),
@@ -1362,11 +1379,12 @@ int CBaseEntity::TakeHealth( float flHealth, int bitsDamageType )
 		return 0;
 
 	const int oldHealth = m_iHealth;
-
-	m_iHealth += flHealth;
+	AddHealth(flHealth);
 
 	if (m_iHealth > iMax)
-		m_iHealth = iMax;
+	{
+		SetHealth(iMax);
+	}
 
 	return m_iHealth - oldHealth;
 }
@@ -1427,7 +1445,8 @@ int CBaseEntity::OnTakeDamage( const CTakeDamageInfo &info )
 	if ( m_takedamage != DAMAGE_EVENTS_ONLY )
 	{
 	// do the damage
-		m_iHealth -= info.GetDamage();
+		SubstractHealth(info.GetDamage());
+
 		if (m_iHealth <= 0)
 		{
 			Event_Killed( info );

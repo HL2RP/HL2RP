@@ -690,8 +690,9 @@ public:
 	void	ResetDeathCount();
 	void	IncrementDeathCount( int nCount );
 
-	void	SetArmorValue( int value );
+	VIRTUAL void	SetArmorValue( int value );
 	void	IncrementArmorValue( int nCount, int nMaxValue = -1 );
+	void	SubstractArmorValue(int value);
 
 	void	SetConnected( PlayerConnectedState iConnected ) { m_iConnected = iConnected; }
 	virtual void EquipSuit( bool bPlayEffects = true );
@@ -756,6 +757,7 @@ public:
 	// talk control
 	void	NotePlayerTalked() { m_fLastPlayerTalkTime = gpGlobals->curtime; }
 	float	LastTimePlayerTalked() { return m_fLastPlayerTalkTime; }
+	VIRTUAL void OnTalkConditionsPassed(CBasePlayer *pListener, bool isTeamOnly) { }
 
 	void	DisableButtons( int nButtons );
 	void	EnableButtons( int nButtons );
@@ -1355,6 +1357,10 @@ inline bool CBasePlayer::IsFiringWeapon( void ) const
 	return m_weaponFiredTimer.HasStarted() && m_weaponFiredTimer.IsLessThen( 1.0f );
 }
 
+FORCEINLINE void CBasePlayer::SubstractArmorValue(int value)
+{
+	SetArmorValue(m_ArmorValue - value);
+}
 
 
 //-----------------------------------------------------------------------------

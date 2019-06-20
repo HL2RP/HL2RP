@@ -478,6 +478,34 @@ void CHL2_Player::RemoveSuit( void )
 	m_HL2Local.m_bDisplayReticle = false;
 }
 
+void CHL2_Player::EndHandleSpeedChanges(int buttonsChanged)
+{
+	bool bIsWalking = IsWalking();
+	// have suit, pressing button, not sprinting or ducking
+	bool bWantWalking;
+	
+	if( IsSuitEquipped() )
+	{
+		bWantWalking = (m_nButtons & IN_WALK) && !IsSprinting() && !(m_nButtons & IN_DUCK);
+	}
+	else
+	{
+		bWantWalking = true;
+	}
+	
+	if( bIsWalking != bWantWalking )
+	{
+		if ( bWantWalking )
+		{
+			StartWalking();
+		}
+		else
+		{
+			StopWalking();
+		}
+	}
+}
+
 void CHL2_Player::HandleSpeedChanges( void )
 {
 	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
@@ -512,30 +540,7 @@ void CHL2_Player::HandleSpeedChanges( void )
 		}
 	}
 
-	bool bIsWalking = IsWalking();
-	// have suit, pressing button, not sprinting or ducking
-	bool bWantWalking;
-	
-	if( IsSuitEquipped() )
-	{
-		bWantWalking = (m_nButtons & IN_WALK) && !IsSprinting() && !(m_nButtons & IN_DUCK);
-	}
-	else
-	{
-		bWantWalking = true;
-	}
-	
-	if( bIsWalking != bWantWalking )
-	{
-		if ( bWantWalking )
-		{
-			StartWalking();
-		}
-		else
-		{
-			StopWalking();
-		}
-	}
+	EndHandleSpeedChanges(buttonsChanged);
 }
 
 //-----------------------------------------------------------------------------
@@ -1712,20 +1717,24 @@ void CHL2_Player::CheatImpulseCommands( int iImpulse )
 
 	case 51:
 	{
-		// Cheat to create a dynamic resupply item
-		Vector vecForward;
-		AngleVectors( EyeAngles(), &vecForward );
-		CBaseEntity *pItem = (CBaseEntity *)CreateEntityByName( "item_dynamic_resupply" );
-		if ( pItem )
+		if ( sv_cheats->GetBool() )
 		{
-			Vector vecOrigin = GetAbsOrigin() + vecForward * 256 + Vector(0,0,64);
-			QAngle vecAngles( 0, GetAbsAngles().y - 90, 0 );
-			pItem->SetAbsOrigin( vecOrigin );
-			pItem->SetAbsAngles( vecAngles );
-			pItem->KeyValue( "targetname", "resupply" );
-			pItem->Spawn();
-			pItem->Activate();
+			// Cheat to create a dynamic resupply item
+			Vector vecForward;
+			AngleVectors( EyeAngles(), &vecForward );
+			CBaseEntity *pItem = (CBaseEntity *)CreateEntityByName( "item_dynamic_resupply" );
+			if ( pItem )
+			{
+				Vector vecOrigin = GetAbsOrigin() + vecForward * 256 + Vector(0,0,64);
+				QAngle vecAngles( 0, GetAbsAngles().y - 90, 0 );
+				pItem->SetAbsOrigin( vecOrigin );
+				pItem->SetAbsAngles( vecAngles );
+				pItem->KeyValue( "targetname", "resupply" );
+				pItem->Spawn();
+				pItem->Activate();
+			}
 		}
+
 		break;
 	}
 
@@ -3181,7 +3190,7 @@ void CHL2_Player::ForceDropOfCarriedPhysObjects( CBaseEntity *pOnlyIfHoldingThis
 	ClearUseEntity();
 
 	// Then force the physcannon to drop anything it's holding, if it's our active weapon
-	PhysCannonForceDrop( GetActiveWeapon(), NULL );
+	PhysCannonForceDrop( GetActiveWeapon(), pOnlyIfHoldingThis );
 }
 
 void CHL2_Player::InputForceDropPhysObjects( inputdata_t &data )

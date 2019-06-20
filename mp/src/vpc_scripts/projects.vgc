@@ -16,7 +16,7 @@ $Project "captioncompiler"
 
 $Project "client"
 {
-	"game\client\client_hl2mp.vpc"		[($WIN32||$POSIX) && $HL2MP]
+	"game\client\client_hl2rp.vpc" [($WIN32||$POSIX) && $HL2RP]
 }
 
 $Project "fgdlib"
@@ -41,12 +41,18 @@ $Project "height2normal"
 
 $Project "server"
 {
-	"game\server\server_hl2mp.vpc"		[($WIN32||$POSIX) && $HL2MP]
+	"game\server\server_hl2dm_rp.vpc" [$HL2DM_RP && ($WIN32 || $POSIX)]
+	"game\server\server_hl2rp.vpc" [$HL2RP && ($WIN32 || $POSIX)]
 }
 
 $Project "mathlib"
 {
 	"mathlib\mathlib.vpc" [$WINDOWS||$X360||$POSIX]
+}
+
+$Project "mysql_engine"
+{
+	"game\server\HL2RP\DAL\MySQLEngine\mysql_engine.vpc" [$WIN32 || $POSIX]
 }
 
 $Project "motionmapper"
@@ -72,6 +78,11 @@ $Project "qc_eyes"
 $Project "serverplugin_empty"
 {
 	"utils\serverplugin_sample\serverplugin_empty.vpc" [$WIN32||$POSIX]
+}
+
+$Project "sqlite_engine"
+{
+	"game\server\HL2RP\DAL\SQLiteEngine\sqlite_engine.vpc" [$WIN32 || $POSIX]
 }
 
 $Project "tgadiff"

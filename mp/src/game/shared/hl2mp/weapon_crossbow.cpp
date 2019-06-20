@@ -5,6 +5,7 @@
 //=============================================================================//
 
 #include "cbase.h"
+#include "weapon_crossbow.h"
 #include "npcevent.h"
 #include "in_buttons.h"
 
@@ -15,12 +16,10 @@
 	#include "hl2mp_player.h"
 	#include "te_effect_dispatch.h"
 	#include "IEffects.h"
-	#include "Sprite.h"
 	#include "SpriteTrail.h"
 	#include "beam_shared.h"
 #endif
 
-#include "weapon_hl2mpbasehlmpcombatweapon.h"
 #include "effect_dispatch_data.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -384,74 +383,6 @@ void CCrossbowBolt::BubbleThink( void )
 // CWeaponCrossbow
 //-----------------------------------------------------------------------------
 
-#ifdef CLIENT_DLL
-#define CWeaponCrossbow C_WeaponCrossbow
-#endif
-
-class CWeaponCrossbow : public CBaseHL2MPCombatWeapon
-{
-	DECLARE_CLASS( CWeaponCrossbow, CBaseHL2MPCombatWeapon );
-public:
-
-	CWeaponCrossbow( void );
-	
-	virtual void	Precache( void );
-	virtual void	PrimaryAttack( void );
-	virtual void	SecondaryAttack( void );
-	virtual bool	Deploy( void );
-	virtual bool	Holster( CBaseCombatWeapon *pSwitchingTo = NULL );
-	virtual bool	Reload( void );
-	virtual void	ItemPostFrame( void );
-	virtual void	ItemBusyFrame( void );
-	virtual bool	SendWeaponAnim( int iActivity );
-
-#ifndef CLIENT_DLL
-	virtual void Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator );
-#endif
-
-	DECLARE_NETWORKCLASS(); 
-	DECLARE_PREDICTABLE();
-
-private:
-	
-	void	SetSkin( int skinNum );
-	void	CheckZoomToggle( void );
-	void	FireBolt( void );
-	void	ToggleZoom( void );
-	
-	// Various states for the crossbow's charger
-	enum ChargerState_t
-	{
-		CHARGER_STATE_START_LOAD,
-		CHARGER_STATE_START_CHARGE,
-		CHARGER_STATE_READY,
-		CHARGER_STATE_DISCHARGE,
-		CHARGER_STATE_OFF,
-	};
-
-	void	CreateChargerEffects( void );
-	void	SetChargerState( ChargerState_t state );
-	void	DoLoadEffect( void );
-
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
-
-private:
-	
-	// Charger effects
-	ChargerState_t		m_nChargeState;
-
-#ifndef CLIENT_DLL
-	CHandle<CSprite>	m_hChargerSprite;
-#endif
-
-	CNetworkVar( bool,	m_bInZoom );
-	CNetworkVar( bool,	m_bMustReload );
-
-	CWeaponCrossbow( const CWeaponCrossbow & );
-};
-
 IMPLEMENT_NETWORKCLASS_ALIASED( WeaponCrossbow, DT_WeaponCrossbow )
 
 BEGIN_NETWORK_TABLE( CWeaponCrossbow, DT_WeaponCrossbow )
@@ -470,8 +401,6 @@ BEGIN_PREDICTION_DATA( CWeaponCrossbow )
 	DEFINE_PRED_FIELD( m_bMustReload, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 END_PREDICTION_DATA()
 #endif
-
-LINK_ENTITY_TO_CLASS( weapon_crossbow, CWeaponCrossbow );
 
 PRECACHE_WEAPON_REGISTER( weapon_crossbow );
 
@@ -652,7 +581,7 @@ void CWeaponCrossbow::FireBolt( void )
 
 #endif
 
-	m_iClip1--;
+	SubstractClip1(1);
 
 	pOwner->ViewPunch( QAngle( -2, 0, 0 ) );
 

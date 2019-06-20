@@ -47,6 +47,11 @@ BEGIN_DATADESC( CFuncMoveLinear )
 	DEFINE_INPUTFUNC( FIELD_FLOAT, "SetPosition", InputSetPosition ),
 	DEFINE_INPUTFUNC( FIELD_FLOAT, "SetSpeed", InputSetSpeed ),
 
+#ifdef HL2RP
+	DEFINE_INPUTFUNC(FIELD_VOID, "Lock", InputLock),
+	DEFINE_INPUTFUNC(FIELD_VOID, "Unlock", InputUnlock),
+#endif // HL2RP
+
 	// Outputs
 	DEFINE_OUTPUT( m_OnFullyOpen, "OnFullyOpen" ),
 	DEFINE_OUTPUT( m_OnFullyClosed, "OnFullyClosed" ),
@@ -181,6 +186,13 @@ void CFuncMoveLinear::Precache( void )
 //------------------------------------------------------------------------------
 void CFuncMoveLinear::MoveTo(Vector vPosition, float flSpeed)
 {
+#ifdef HL2RP
+	if (m_bIsLocked)
+	{
+		return;
+	}
+#endif // HL2RP
+
 	if ( flSpeed != 0 )
 	{
 		if ( m_soundStart != NULL_STRING )
@@ -394,3 +406,24 @@ int CFuncMoveLinear::DrawDebugTextOverlays(void)
 	}
 	return text_offset;
 }
+
+bool CFuncMoveLinear::IsLocked()
+{
+#ifdef HL2RP
+	return m_bIsLocked;
+#else
+	return false;
+#endif // HL2RP
+}
+
+#ifdef HL2RP
+void CFuncMoveLinear::InputLock(inputdata_t &inputdata)
+{
+	m_bIsLocked = true;
+}
+
+void CFuncMoveLinear::InputUnlock(inputdata_t &inputdata)
+{
+	m_bIsLocked = false;
+}
+#endif // HL2RP

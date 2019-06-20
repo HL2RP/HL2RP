@@ -309,5 +309,7 @@ inline bool CPropVehicleDriveable::HasGun()
 	return m_bHasGun;
 }
 
+void SendProxy_EnterAnimOn(const SendProp *pProp, const void *pStruct, const void *pData,
+	DVariant *pOut, int element, int objectId);
 
 #endif // VEHICLE_BASE_H

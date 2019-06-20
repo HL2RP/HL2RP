@@ -153,6 +153,8 @@ public:
 	virtual bool ShouldBlockNav() const OVERRIDE { return false; }
 
 private:
+	bool IsLocked() OVERRIDE;
+
 	void ChainUse( void );	///< Chains +use on through to m_ChainTarget
 	void ChainTouch( CBaseEntity *pOther );	///< Chains touch on through to m_ChainTarget
 	void SetChaining( bool chaining )	{ m_isChaining = chaining; }	///< Latch to prevent recursion

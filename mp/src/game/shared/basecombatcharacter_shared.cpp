@@ -136,7 +136,7 @@ void CBaseCombatCharacter::RemoveAmmo( int iCount, int iAmmoIndex )
 		return;
 
 	// Ammo pickup sound
-	m_iAmmo.Set( iAmmoIndex, MAX( m_iAmmo[iAmmoIndex] - iCount, 0 ) );
+	SetAmmoCount(MAX(m_iAmmo[iAmmoIndex] - iCount, 0), iAmmoIndex);
 }
 
 void CBaseCombatCharacter::RemoveAmmo( int iCount, const char *szName )
@@ -151,7 +151,7 @@ void CBaseCombatCharacter::RemoveAllAmmo( )
 {
 	for ( int i = 0; i < MAX_AMMO_SLOTS; i++ )
 	{
-		m_iAmmo.Set( i, 0 );
+		SetAmmoCount(0, i);
 	}
 }
 

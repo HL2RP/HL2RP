@@ -1,0 +1,46 @@
+//-----------------------------------------------------------------------------
+//	SQLITE3_WRAPPER.VPC
+//
+//	Project Script
+//-----------------------------------------------------------------------------
+
+$Macro SRCDIR		"..\..\..\..\.."
+$Macro OUTBINDIR	"$SRCDIR\..\game\bin"
+
+$Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories	"$BASE;$SRCDIR\thirdparty\sqlite3;$SRCDIR\game\server\HL2RP\DAL"
+	}
+}
+
+$Configuration "Release"
+{
+	$Compiler [$POSIX]
+	{
+		// Disable fast maths from Release to match SQLite3 compilation requirements
+		$OptimizerLevel	"$BASE -fno-fast-math"
+	}
+}
+
+$Project "SQLite Engine"
+{
+	$Folder "Source Files"
+	{
+		$File	"$SRCDIR\thirdparty\sqlite3\sqlite3.c"
+		{
+			$Configuration
+			{
+				$Compiler
+				{
+					$CompileAs	"Compile as C Code (/TC)"
+				}
+			}
+		}
+
+		$File	"SQLiteEngine.cpp"
+	}
+}

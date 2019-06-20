@@ -1,0 +1,22 @@
+#base "mod_hl2rp_english.txt"
+
+"Lang"
+{
+	"Language"	"English"
+
+	"Tokens"
+	{
+		// Special weapons menu
+		"HL2RP_Suitcase"	"Suitcase"
+		"HL2RP_Ration"		"Ration"
+		"HL2RP_Molotov"		"Molotov Cocktail"
+
+		"HL2RP_Chat_OOC"					"%default%(OOC) %team%%s1%default% :  %s2"
+		"HL2RP_HUD_Hint_Sticky_Walk"		"<WALK>+<WALK> = STICKY WALKING"
+		"HL2RP_HUD_NPC_Killed_Player"		"A %s1 killed %s2 with %s3"
+		"HL2RP_HUD_Player_Killed_NPC"		"%s1 killed a %s2 with %s3"
+		"HL2RP_Menu_Item_Special_Weapons"	"Special weapons"
+		"HL2RP_Menu_Msg_Special_Weapons"	"Here you can switch between\nspecial hand weapons or items\nthat reuse the same slot,\nbeing unselectable from controls"
+		"HL2RP_Menu_Title_Special_Weapons"	"Special weapons Menu"
+	}
+}

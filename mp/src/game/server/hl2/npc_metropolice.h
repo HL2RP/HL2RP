@@ -296,7 +296,7 @@ private:
 	virtual bool IsWaitingToRappel( void ) { return m_RappelBehavior.IsWaitingToRappel(); }
 	void BeginRappel() { m_RappelBehavior.BeginRappel(); }
 
-private:
+protected:
 	enum
 	{
 		BURST_NOT_ACTIVE = 0,
@@ -323,7 +323,7 @@ private:
 		COND_METROPOLICE_PLAYER_TOO_CLOSE,
 		COND_METROPOLICE_CHANGE_BATON_STATE,
 		COND_METROPOLICE_PHYSOBJECT_ASSAULT,
-
+		NEXT_CONDITION
 	};
 
 	enum
@@ -361,6 +361,7 @@ private:
 		SCHED_METROPOLICE_ALERT_FACE_BESTSOUND,
 		SCHED_METROPOLICE_RETURN_TO_PRECHASE,
 		SCHED_METROPOLICE_SMASH_PROP,
+		NEXT_SCHEDULE
 	};
 
 	enum 

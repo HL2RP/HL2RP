@@ -141,7 +141,9 @@ public:
 	virtual void FinishMove( CBasePlayer *player, CUserCmd *ucmd, CMoveData *move ) { return; }
 	virtual bool CanEnterVehicle( CBaseEntity *pEntity );
 	virtual bool CanExitVehicle( CBaseEntity *pEntity );
+	bool GetVehicleEntryAnim() { return m_bEnterAnimOn; };
 	virtual void SetVehicleEntryAnim( bool bOn );
+	bool GetVehicleExitAnim() { return m_bExitAnimOn; };
 	virtual void SetVehicleExitAnim( bool bOn, Vector vecEyeExitEndpoint ) { m_bExitAnimOn = bOn; if ( bOn ) m_vecEyeExitEndpoint = vecEyeExitEndpoint; }
 	virtual void EnterVehicle( CBaseCombatCharacter *pPassenger );
 
@@ -215,7 +217,7 @@ END_DATADESC()
 
 IMPLEMENT_SERVERCLASS_ST(CPropVehiclePrisonerPod, DT_PropVehiclePrisonerPod)
 	SendPropEHandle(SENDINFO(m_hPlayer)),
-	SendPropBool(SENDINFO(m_bEnterAnimOn)),
+	SendPropInt(SENDINFO(m_bEnterAnimOn), 1, SPROP_UNSIGNED, SendProxy_EnterAnimOn),
 	SendPropBool(SENDINFO(m_bExitAnimOn)),
 	SendPropVector(SENDINFO(m_vecEyeExitEndpoint), -1, SPROP_COORD),
 END_SEND_TABLE();
@@ -249,6 +251,7 @@ void CPropVehiclePrisonerPod::Spawn( void )
 	m_takedamage = DAMAGE_EVENTS_ONLY;
 
 	SetNextThink( gpGlobals->curtime );
+	GetServerVehicle()->InitTriggerCamera();
 }
 
 
@@ -486,6 +489,7 @@ void CPropVehiclePrisonerPod::EnterVehicle( CBaseCombatCharacter *pPassenger )
 		m_playerOn.FireOutput( pPlayer, this, 0 );
 
 		m_ServerVehicle.SoundStart();
+		GetServerVehicle()->AttachTriggerCamera(pPlayer);
 	}
 	else
 	{
@@ -520,6 +524,7 @@ void CPropVehiclePrisonerPod::ExitVehicle( int nRole )
 	m_bEnterAnimOn = false;
 
 	m_ServerVehicle.SoundShutdown( 1.0 );
+	GetServerVehicle()->DetachTriggerCamera(pPlayer);
 }
 
 
@@ -732,4 +737,7 @@ void CPrisonerPodServerVehicle::GetVehicleViewPosition( int nRole, Vector *pAbsO
 
 	// UNDONE: *pOrigin would already be correct in single player if the HandleView() on the server ran after vphysics
 	MatrixGetColumn( newCameraToWorld, 3, *pAbsOrigin );
+
+	BaseClass::UpdateTriggerCamera(pPlayer, GetPod()->GetVehicleEntryAnim() || GetPod()->GetVehicleExitAnim(),
+		pAbsOrigin, &vehicleEyeAngles);
 }

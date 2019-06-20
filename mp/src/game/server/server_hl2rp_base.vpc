@@ -1,0 +1,131 @@
+//-----------------------------------------------------------------------------
+//	SERVER_HL2RP_BASE.VPC
+//
+//	Project Script
+//-----------------------------------------------------------------------------
+
+$Include "server_hl2mp.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories	"$BASE;.\HL2RP,$SRCDIR\game\shared\HL2RP,$SRCDIR\thirdparty\sqlite3"
+		$AdditionalIncludeDirectories	"$BASE;$SRCDIR\sqlite3_wrapper,$SRCDIR\mysql_wrapper2"
+		$PreprocessorDefinitions		"$BASE;HL2RP"
+	}
+}
+
+$Project
+{
+	$Folder "Source Files"
+	{
+		$Folder "HL2 DLL"
+		{
+			$File	"$SRCDIR\game\server\hl2\grenade_molotov.cpp"
+			$File	"$SRCDIR\game\server\hl2\grenade_molotov.h"
+			$File	"hl2\vehicle_jeep.cpp"
+			$File	"hl2\vehicle_jeep.h"
+		}
+
+		$Folder "HL2MP"
+		{
+			$Folder "Weapons"
+			{
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_357.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_ar2.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_crossbow.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_crowbar.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_frag.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_physcannon.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_pistol.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_rpg.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_shotgun.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_slam.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_smg1.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_stunstick.h"
+			}
+
+			-$File	"hl2mp\hl2mp_gameinterface.cpp"
+			-$File	"$SRCDIR\game\shared\hl2mp\hl2mp_weapon_register.cpp"
+		}
+
+		$Folder "HL2RP"
+		{
+			$Folder "DAL"
+			{
+				$File	"HL2RP\DAL\DALEngine.cpp"
+				$File	"HL2RP\DAL\DALEngine.h"
+				$File	"HL2RP\DAL\DispenserDAO.cpp"
+				$File	"HL2RP\DAL\DispenserDAO.h"
+				$File	"HL2RP\DAL\HL2RPDAL.cpp"
+				$File	"HL2RP\DAL\HL2RPDAL.h"
+				$File	"HL2RP\DAL\IDAO.h"
+				$File	"HL2RP\DAL\IDAO.cpp"
+				$File	"HL2RP\DAL\JobDAO.cpp"
+				$File	"HL2RP\DAL\JobDAO.h"
+				$File	"HL2RP\DAL\PhraseDAO.cpp"
+				$File	"HL2RP\DAL\PhraseDAO.h"
+				$File	"HL2RP\DAL\PlayerDAO.cpp"
+				$File	"HL2RP\DAL\PlayerDAO.h"
+			}
+
+			$Folder "Dialogs"
+			{
+				$File	"HL2RP\Dialogs\AdminMenu.cpp"
+				$File	"HL2RP\Dialogs\AdminMenu.h"
+				$File	"HL2RP\Dialogs\DispenserMenu.cpp"
+				$File	"HL2RP\Dialogs\DispenserMenu.h"
+				$File	"HL2RP\Dialogs\PlayerDialog.cpp"
+				$File	"HL2RP\Dialogs\PlayerDialog.h"
+				$File	"HL2RP\Dialogs\PublicDialogs.cpp"
+				$File	"HL2RP\Dialogs\PublicDialogs.h"
+			}
+
+			$Folder "Weapons"
+			{
+				$File	"HL2RP\Weapons\Ration.cpp"
+				$File	"HL2RP\Weapons\Ration.h"
+				$File	"HL2RP\Weapons\Suitcase.cpp"
+				$File	"HL2RP\Weapons\Suitcase.h"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\Weapon357Ex.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponAR2Ex.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponCrossbowEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponCrowbarEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponFragEx.cpp"
+				$File	"HL2RP\Weapons\WeaponMolotov.cpp"
+				$File	"HL2RP\Weapons\WeaponMolotov.h"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponPhyscannonEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponPistolEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponRpgEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponShotgunEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponSlamEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponSMG1Ex.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponStunStickEx.cpp"
+			}
+
+			$File	"HL2RP\AutoLocalizer.cpp"
+			$File	"HL2RP\AutoLocalizer.h"
+			$File	"HL2RP\CityZoneTrigger.cpp"
+			$File	"HL2RP\HL2RPAINavigator.cpp"
+			$File	"HL2RP\HL2RPAINavigator.h"
+			$File	"HL2RP\HL2RPNPCPolice.cpp"
+			$File	"HL2RP\HL2RPProperty.cpp"
+			$File	"HL2RP\HL2RPProperty.h"
+			$File	"HL2RP\HL2RPRules.cpp"
+			$File	"HL2RP\HL2RPRules.h"
+			$File	"$SRCDIR\game\shared\HL2RP\HL2RPRules_shared.cpp"
+			$File	"HL2RP\HL2RP_Client.cpp"
+			$File	"HL2RP\HL2RP_Defs.h"
+			$File	"HL2RP\HL2RP_GameInterface.cpp"
+			$File	"HL2RP\HL2RP_Player.cpp"
+			$File	"HL2RP\HL2RP_Player.h"
+			$File	"$SRCDIR\game\shared\HL2RP\HL2RP_Player_shared.cpp"
+			$File	"$SRCDIR\game\shared\HL2RP\HL2RP_Player_shared.h"
+			$File	"HL2RP\HL2RP_Util.cpp"
+			$File	"HL2RP\HL2RP_Util.h"
+			$File	"HL2RP\PropRationDispenser.cpp"
+			$File	"HL2RP\PropRationDispenser.h"
+		}
+	}
+}

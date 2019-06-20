@@ -1,0 +1,2 @@
+mod_hl2rp_*.txt -binary working-tree-encoding=UTF-16
+pack_hl2rp_assets.sh eol=lf

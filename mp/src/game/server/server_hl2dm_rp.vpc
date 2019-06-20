@@ -1,0 +1,22 @@
+//-----------------------------------------------------------------------------
+//	SERVER_HL2DM_RP.VPC
+//
+//	Project Script
+//-----------------------------------------------------------------------------
+
+$Macro GAMENAME	"hl2mp"
+
+$Include "server_hl2rp_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$PreprocessorDefinitions	"$BASE;HL2DM_RP"
+	}
+}
+
+$Project "Server (HL2DM_RP)"
+{
+
+}

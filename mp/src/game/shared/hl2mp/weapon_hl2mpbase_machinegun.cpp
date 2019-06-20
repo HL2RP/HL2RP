@@ -88,7 +88,8 @@ void CHL2MPMachineGun::PrimaryAttack( void )
 	{
 		if ( iBulletsToFire > m_iClip1 )
 			iBulletsToFire = m_iClip1;
-		m_iClip1 -= iBulletsToFire;
+
+		SubstractClip1(iBulletsToFire);
 	}
 
 	CHL2MP_Player *pHL2MPPlayer = ToHL2MPPlayer( pPlayer );

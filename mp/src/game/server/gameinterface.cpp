@@ -3226,6 +3226,10 @@ void CServerGameClients::GetBugReportInfo( char *buf, int buflen )
 //-----------------------------------------------------------------------------
 void CServerGameClients::NetworkIDValidated( const char *pszUserName, const char *pszNetworkID )
 {
+	if (g_pGameRules != NULL)
+	{
+		g_pGameRules->NetworkIdValidated(pszNetworkID);
+	}
 }
 
 // The client has submitted a keyvalues command

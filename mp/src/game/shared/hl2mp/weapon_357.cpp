@@ -6,6 +6,7 @@
 //=============================================================================//
 
 #include "cbase.h"
+#include "weapon_357.h"
 #include "npcevent.h"
 #include "in_buttons.h"
 
@@ -15,35 +16,9 @@
 	#include "hl2mp_player.h"
 #endif
 
-#include "weapon_hl2mpbasehlmpcombatweapon.h"
-
-#ifdef CLIENT_DLL
-#define CWeapon357 C_Weapon357
-#endif
-
 //-----------------------------------------------------------------------------
 // CWeapon357
 //-----------------------------------------------------------------------------
-
-class CWeapon357 : public CBaseHL2MPCombatWeapon
-{
-	DECLARE_CLASS( CWeapon357, CBaseHL2MPCombatWeapon );
-public:
-
-	CWeapon357( void );
-
-	void	PrimaryAttack( void );
-	DECLARE_NETWORKCLASS(); 
-	DECLARE_PREDICTABLE();
-
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
-
-private:
-	
-	CWeapon357( const CWeapon357 & );
-};
 
 IMPLEMENT_NETWORKCLASS_ALIASED( Weapon357, DT_Weapon357 )
 
@@ -53,7 +28,6 @@ END_NETWORK_TABLE()
 BEGIN_PREDICTION_DATA( CWeapon357 )
 END_PREDICTION_DATA()
 
-LINK_ENTITY_TO_CLASS( weapon_357, CWeapon357 );
 PRECACHE_WEAPON_REGISTER( weapon_357 );
 
 
@@ -122,7 +96,7 @@ void CWeapon357::PrimaryAttack( void )
 	m_flNextPrimaryAttack = gpGlobals->curtime + 0.75;
 	m_flNextSecondaryAttack = gpGlobals->curtime + 0.75;
 
-	m_iClip1--;
+	SubstractClip1(1);
 
 	Vector vecSrc		= pPlayer->Weapon_ShootPosition();
 	Vector vecAiming	= pPlayer->GetAutoaimVector( AUTOAIM_5DEGREES );	

@@ -1598,6 +1598,19 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 
 	CBaseCombatWeapon *pDroppedWeapon = m_hActiveWeapon.Get();
 
+#ifdef HL2RP
+	if (pDroppedWeapon != NULL)
+	{
+		// Penalize by transfering my ammo of weapon's type to the dropped weapon
+		int primaryAmmoCount = GetAmmoCount(pDroppedWeapon->GetPrimaryAmmoType()),
+			secondaryAmmoCount = GetAmmoCount(pDroppedWeapon->GetSecondaryAmmoType());
+		RemoveAmmo(primaryAmmoCount, pDroppedWeapon->GetPrimaryAmmoType());
+		RemoveAmmo(secondaryAmmoCount, pDroppedWeapon->GetSecondaryAmmoType());
+		pDroppedWeapon->SetPrimaryAmmoCount(primaryAmmoCount);
+		pDroppedWeapon->SetSecondaryAmmoCount(secondaryAmmoCount);
+	}
+#endif // HL2RP
+
 	// Drop any weapon that I own
 	if ( VPhysicsGetObject() )
 	{
@@ -1707,7 +1720,8 @@ bool CBaseCombatCharacter::Weapon_Detach( CBaseCombatWeapon *pWeapon )
 			{
 				pWeapon->Holster();
 			}
-			m_hMyWeapons.Set( i, NULL );
+
+			SetWeapon(i, NULL);
 			pWeapon->SetOwner( NULL );
 
 			if ( pWeapon == m_hActiveWeapon )
@@ -1910,19 +1924,19 @@ void CBaseCombatCharacter::Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector
 	{
 		if ( pWeapon->UsesClipsForAmmo1() )
 		{
-			pWeapon->m_iClip1 = pWeapon->GetDefaultClip1();
+			pWeapon->SetClip1(pWeapon->GetDefaultClip1());
 
 			if( FClassnameIs( pWeapon, "weapon_smg1" ) )
 			{
 				// Drop enough ammo to kill 2 of me.
 				// Figure out how much damage one piece of this type of ammo does to this type of enemy.
-				float flAmmoDamage = g_pGameRules->GetAmmoDamage( UTIL_PlayerByIndex(1), this, pWeapon->GetPrimaryAmmoType() );
+				float flAmmoDamage = GetAmmoDef()->PlrDamage(pWeapon->GetPrimaryAmmoType());
 				pWeapon->m_iClip1 = (GetMaxHealth() / flAmmoDamage) * 2;
 			}
 		}
 		if ( pWeapon->UsesClipsForAmmo2() )
 		{
-			pWeapon->m_iClip2 = pWeapon->GetDefaultClip2();
+			pWeapon->SetClip2(pWeapon->GetDefaultClip2());
 		}
 
 		if ( IsXbox() )
@@ -2075,7 +2089,7 @@ void CBaseCombatCharacter::Weapon_Equip( CBaseCombatWeapon *pWeapon )
 	{
 		if (!m_hMyWeapons[i]) 
 		{
-			m_hMyWeapons.Set( i, pWeapon );
+			SetWeapon(i, pWeapon);
 			break;
 		}
 	}
@@ -2083,6 +2097,15 @@ void CBaseCombatCharacter::Weapon_Equip( CBaseCombatWeapon *pWeapon )
 	// Weapon is now on my team
 	pWeapon->ChangeTeam( GetTeamNumber() );
 
+#ifdef HL2RP
+	// Transfer reserve ammos, so to achieve a more precise pickup
+	int primaryAmmoCount = pWeapon->GetPrimaryAmmoCount(),
+		secondaryAmmoCount = pWeapon->GetSecondaryAmmoCount();
+	GiveAmmo(primaryAmmoCount, pWeapon->GetPrimaryAmmoType());
+	GiveAmmo(secondaryAmmoCount, pWeapon->GetSecondaryAmmoType());
+	pWeapon->SetPrimaryAmmoCount(0);
+	pWeapon->SetSecondaryAmmoCount(0);
+#else // NOTE: On HL2RP, the following is deactivated because we don't want to give defaults
 	// ----------------------
 	//  Give Primary Ammo
 	// ----------------------
@@ -2105,7 +2128,7 @@ void CBaseCombatCharacter::Weapon_Equip( CBaseCombatWeapon *pWeapon )
 	// size, fill clips and give extra ammo
 	else if (pWeapon->GetDefaultClip1() >  pWeapon->GetMaxClip1() )
 	{
-		pWeapon->m_iClip1 = pWeapon->GetMaxClip1();
+		pWeapon->SetClip1(pWeapon->GetMaxClip1());
 		GiveAmmo( (pWeapon->GetDefaultClip1() - pWeapon->GetMaxClip1()), pWeapon->m_iPrimaryAmmoType); 
 	}
 
@@ -2121,9 +2144,10 @@ void CBaseCombatCharacter::Weapon_Equip( CBaseCombatWeapon *pWeapon )
 	// size, fill clips and give extra ammo
 	else if ( pWeapon->GetDefaultClip2() > pWeapon->GetMaxClip2() )
 	{
-		pWeapon->m_iClip2 = pWeapon->GetMaxClip2();
+		pWeapon->SetClip2(pWeapon->GetMaxClip2());
 		GiveAmmo( (pWeapon->GetDefaultClip2() - pWeapon->GetMaxClip2()), pWeapon->m_iSecondaryAmmoType); 
 	}
+#endif // HL2RP
 
 	pWeapon->Equip( this );
 
@@ -2177,6 +2201,31 @@ bool CBaseCombatCharacter::Weapon_EquipAmmoOnly( CBaseCombatWeapon *pWeapon )
 	{
 		if ( m_hMyWeapons[i].Get() && FClassnameIs(m_hMyWeapons[i], pWeapon->GetClassname()) )
 		{
+#ifdef HL2RP
+			// Begin: Give clips and reserve ammo from weapon up to the maximum allowed
+			int primaryGiven = pWeapon->GetPrimaryAmmoCount(),
+				takenPrimary = GiveAmmo(primaryGiven, pWeapon->GetPrimaryAmmoType());
+			pWeapon->SetPrimaryAmmoCount(pWeapon->GetPrimaryAmmoCount() - takenPrimary);
+			int secondaryGiven = pWeapon->GetSecondaryAmmoCount(),
+				takenSecondary = GiveAmmo(secondaryGiven, pWeapon->GetSecondaryAmmoType());
+			pWeapon->SetSecondaryAmmoCount(pWeapon->GetSecondaryAmmoCount() - takenSecondary);
+
+			if (pWeapon->UsesClipsForAmmo1())
+			{
+				primaryGiven = pWeapon->Clip1();
+				int takenClip1 = GiveAmmo(primaryGiven, pWeapon->GetPrimaryAmmoType());
+				takenPrimary += takenClip1;
+				pWeapon->SubstractClip1(takenClip1);
+			}
+
+			if (pWeapon->UsesClipsForAmmo2())
+			{
+				secondaryGiven = pWeapon->Clip2();
+				int takenClip2 = GiveAmmo(secondaryGiven, pWeapon->GetSecondaryAmmoType());
+				takenSecondary += takenClip2;
+				pWeapon->SubstractClip2(takenClip2);
+			}
+#else
 			// Just give the ammo from the clip
 			int	primaryGiven	= (pWeapon->UsesClipsForAmmo1()) ? pWeapon->m_iClip1 : pWeapon->GetPrimaryAmmoCount();
 			int secondaryGiven	= (pWeapon->UsesClipsForAmmo2()) ? pWeapon->m_iClip2 : pWeapon->GetSecondaryAmmoCount();
@@ -2186,7 +2235,7 @@ bool CBaseCombatCharacter::Weapon_EquipAmmoOnly( CBaseCombatWeapon *pWeapon )
 			
 			if( pWeapon->UsesClipsForAmmo1() )
 			{
-				pWeapon->m_iClip1 -= takenPrimary;
+				pWeapon->SubstractClip1(takenPrimary);
 			}
 			else
 			{
@@ -2195,13 +2244,14 @@ bool CBaseCombatCharacter::Weapon_EquipAmmoOnly( CBaseCombatWeapon *pWeapon )
 
 			if( pWeapon->UsesClipsForAmmo2() )
 			{
-				pWeapon->m_iClip2 -= takenSecondary;
+				pWeapon->SubstractClip2(takenSecondary);
 			}
 			else
 			{
 				pWeapon->SetSecondaryAmmoCount( pWeapon->GetSecondaryAmmoCount() - takenSecondary );
 			}
-			
+#endif // HL2RP
+
 			//Only succeed if we've taken ammo from the weapon
 			if ( takenPrimary > 0 || takenSecondary > 0 )
 				return true;
@@ -2341,7 +2391,7 @@ void CBaseCombatCharacter::RemoveAllWeapons()
 		if ( m_hMyWeapons[i] )
 		{
 			m_hMyWeapons[i]->Delete( );
-			m_hMyWeapons.Set( i, NULL );
+			SetWeapon(i, NULL);
 		}
 	}
 }
@@ -2493,7 +2543,7 @@ int CBaseCombatCharacter::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 		if ( flIntegerDamage <= 0 )
 			return 0;
 
-		m_iHealth -= flIntegerDamage;
+		SubstractHealth(flIntegerDamage);
 	}
 
 	return 1;
@@ -2510,7 +2560,7 @@ int CBaseCombatCharacter::OnTakeDamage_Dead( const CTakeDamageInfo &info )
 	// do the damage
 	if ( m_takedamage != DAMAGE_EVENTS_ONLY )
 	{
-		m_iHealth -= info.GetDamage();
+		SubstractHealth(info.GetDamage());
 	}
 
 	return 1;
@@ -2990,8 +3040,7 @@ int CBaseCombatCharacter::GiveAmmo( int iCount, int iAmmoIndex, bool bSuppressSo
 		EmitSound( "BaseCombatCharacter.AmmoPickup" );
 	}
 
-	m_iAmmo.Set( iAmmoIndex, m_iAmmo[iAmmoIndex] + iAdd );
-
+	AddAmmoCount(iAdd, iAmmoIndex);
 	return iAdd;
 }
 

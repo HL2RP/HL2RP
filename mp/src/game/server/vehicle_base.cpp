@@ -309,6 +309,18 @@ void CPropVehicle::RemovePhysicsChild( CBaseEntity *pChild )
 // Purpose: Player driveable vehicle class
 //-----------------------------------------------------------------------------
 
+void SendProxy_EnterAnimOn(const SendProp *pProp, const void *pStruct, const void *pData,
+	DVariant *pOut, int element, int objectId)
+{
+#ifdef HL2DM_RP
+	// Always send a false m_bEnterAnimOn value to avoid vehicle camera affecting non-driver players
+	bool auxIsEnterAnimOn = false;
+	SendProxy_Int8ToInt32(pProp, pStruct, &auxIsEnterAnimOn, pOut, element, objectId);
+#else
+	SendProxy_Int8ToInt32(pProp, pStruct, pData, pOut, element, objectId);
+#endif // HL2DM_RP
+}
+
 IMPLEMENT_SERVERCLASS_ST(CPropVehicleDriveable, DT_PropVehicleDriveable)
 
 	SendPropEHandle(SENDINFO(m_hPlayer)),
@@ -320,7 +332,7 @@ IMPLEMENT_SERVERCLASS_ST(CPropVehicleDriveable, DT_PropVehicleDriveable)
 	SendPropInt(SENDINFO(m_nHasBoost), 1, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_nScannerDisabledWeapons), 1, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_nScannerDisabledVehicle), 1, SPROP_UNSIGNED),
-	SendPropInt(SENDINFO(m_bEnterAnimOn), 1, SPROP_UNSIGNED ),
+	SendPropInt(SENDINFO(m_bEnterAnimOn), 1, SPROP_UNSIGNED, SendProxy_EnterAnimOn),
 	SendPropInt(SENDINFO(m_bExitAnimOn), 1, SPROP_UNSIGNED ),
 	SendPropInt(SENDINFO(m_bUnableToFire), 1, SPROP_UNSIGNED ),
 	SendPropVector(SENDINFO(m_vecEyeExitEndpoint), -1, SPROP_COORD),
@@ -461,6 +473,7 @@ void CPropVehicleDriveable::Spawn( void )
 	m_flMinimumSpeedToEnterExit = 0;
 	m_takedamage = DAMAGE_EVENTS_ONLY;
 	m_bEngineLocked = false;
+	GetServerVehicle()->InitTriggerCamera();
 }
 
 
@@ -607,6 +620,7 @@ void CPropVehicleDriveable::EnterVehicle( CBaseCombatCharacter *pPassenger )
 		m_pServerVehicle->InitViewSmoothing( pPlayer->GetAbsOrigin() + vecViewOffset, pPlayer->EyeAngles() );
 
 		m_VehiclePhysics.GetVehicle()->OnVehicleEnter();
+		GetServerVehicle()->AttachTriggerCamera(pPlayer);
 	}
 	else
 	{
@@ -642,6 +656,8 @@ void CPropVehicleDriveable::ExitVehicle( int nRole )
 
 	// Clear our state
 	m_pServerVehicle->InitViewSmoothing( vec3_origin, vec3_angle );
+
+	GetServerVehicle()->DetachTriggerCamera(pPlayer);
 }
 
 //-----------------------------------------------------------------------------
@@ -1153,6 +1169,7 @@ void CFourWheelServerVehicle::GetVehicleViewPosition( int nRole, Vector *pAbsOri
 									pVehicle->GetEyeExitEndpoint(), 
 									&m_ViewSmoothing,
 									pFOV );
+		BaseClass::UpdateTriggerCamera(pPlayerDriver, m_ViewSmoothing.bRunningEnterExit, pAbsOrigin, pAbsAngles);
 	}
 	else
 	{

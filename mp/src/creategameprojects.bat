@@ -1,1 +1,1 @@
-devtools\bin\vpc.exe /hl2mp +game /mksln games.sln
+devtools\bin\vpc.exe /hl2dm_rp /hl2rp +game /mksln games.sln

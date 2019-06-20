@@ -1,0 +1,38 @@
+WeaponData
+{
+	"printname"	"SPECIAL WEAPON"
+
+	"bucket"			"0"
+	"bucket_position"	"3"
+
+	// Weapon Sprite data is loaded by the Client DLL
+	TextureData
+	{
+		// Weapon selection HUD icon
+		"weapon_s"
+		{
+			"file"		"sprites/640hud2"
+			"x"				"180"
+			"width"		"32"
+			"height"	"40"
+		}
+
+		// First pickup HUD icon
+		"weapon"
+		{
+			"file"		"sprites/640hud2"
+			"x"				"180"
+			"width"		"32"
+			"height"	"40"
+		}
+
+		// Secondary ammo HUD icon
+		"ammo2"
+		{
+			"file"		"sprites/640hud2"
+			"x"				"180"
+			"width"		"32"
+			"height"	"40"
+		}
+	}
+}

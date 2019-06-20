@@ -1,0 +1,76 @@
+//-----------------------------------------------------------------------------
+//	CLIENT_HL2MP.VPC
+//
+//	Project Script
+//-----------------------------------------------------------------------------
+
+$Macro GAMENAME	"hl2rp" [$PUBLISH]
+$Macro GAMENAME	"mod_hl2rp" [!$PUBLISH]
+
+$Include "client_hl2mp.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories	"$BASE;.\HL2RP,$SRCDIR\game\shared\HL2RP"
+		$PreprocessorDefinitions		"$BASE;HL2RP"
+	}
+}
+
+$Project "Client (HL2RP)"
+{
+	$Folder "Source Files"
+	{
+		$Folder "HL2MP"
+		{
+			$Folder "Weapons"
+			{
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_357.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_ar2.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_crossbow.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_crowbar.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_frag.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_physcannon.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_pistol.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_rpg.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_shotgun.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_slam.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_smg1.h"
+				$File	"$SRCDIR\game\shared\hl2mp\weapon_stunstick.h"
+			}
+
+			-$File	"$SRCDIR\game\shared\hl2mp\hl2mp_weapon_register.cpp"
+		}
+
+		$Folder "HL2RP"
+		{
+			$Folder "Weapons"
+			{
+				$File	"HL2RP\C_Ration.cpp"
+				$File	"HL2RP\C_Suitcase.cpp"
+				$File	"HL2RP\C_WeaponMolotov.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\Weapon357Ex.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponAR2Ex.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponCrossbowEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponCrowbarEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponFragEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponPhyscannonEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponPistolEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponRpgEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponShotgunEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponSlamEx.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponSMG1Ex.cpp"
+				$File	"$SRCDIR\game\shared\HL2RP\Weapons\WeaponStunStickEx.cpp"
+			}
+
+			$File	"HL2RP\C_HL2RPRules.cpp"
+			$File	"HL2RP\C_HL2RPRules.h"
+			$File	"HL2RP\C_HL2RP_Player.cpp"
+			$File	"HL2RP\C_HL2RP_Player.h"
+			$File	"$SRCDIR\game\shared\HL2RP\HL2RP_Player_shared.cpp"
+			$File	"$SRCDIR\game\shared\HL2RP\HL2RP_Player_shared.h"
+			$File	"$SRCDIR\game\shared\HL2RP\HL2RPRules_shared.cpp"
+		}
+	}
+}

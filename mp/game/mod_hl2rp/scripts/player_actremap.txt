@@ -1,0 +1,149 @@
+// Simple remap file. Every remap activity for each base activity is tested by game code prioritizing the order of appearance.
+// The first remap activity which has a valid sequence on the model is applied. So modify this file with care.
+"player"
+{
+	"ACT_CROUCH"
+	{
+		"remapactivity"	"ACT_CROUCHIDLE_AIM_STIMULATED"
+	}
+
+	"ACT_CROUCH"
+	{
+		"remapactivity"	"ACT_CROUCHIDLE_AGITATED"
+	}
+
+	"ACT_CROUCH"
+	{
+		"remapactivity"	"ACT_CROUCHIDLE_STIMULATED"
+	}
+
+	"ACT_CROUCH"
+	{
+		"remapactivity"	"ACT_HL2MP_IDLE_CROUCH"
+	}
+
+	"ACT_CROUCH"
+	{
+		"remapactivity"	"ACT_CROUCH_PANICKED"
+	}
+
+	"ACT_GESTURE_RANGE_ATTACK1"
+	{
+		"remapactivity"	"ACT_GESTURE_RANGE_ATTACK1" // Enforce HL2 priority
+	}
+
+	"ACT_GESTURE_RANGE_ATTACK1"
+	{
+		"remapactivity"	"ACT_HL2MP_GESTURE_RANGE_ATTACK"
+	}
+
+	"ACT_GESTURE_RANGE_ATTACK1_LOW"
+	{
+		"remapactivity"	"ACT_GESTURE_RANGE_ATTACK1_LOW" // Enforce HL2 priority
+	}
+
+	"ACT_GESTURE_RANGE_ATTACK1_LOW"
+	{
+		"remapactivity"	"ACT_HL2MP_GESTURE_RANGE_ATTACK"
+	}
+
+	"ACT_GESTURE_RELOAD"
+	{
+		"remapactivity"	"ACT_GESTURE_RELOAD" // Enforce HL2 priority
+	}
+
+	"ACT_GESTURE_RELOAD"
+	{
+		"remapactivity"	"ACT_HL2MP_GESTURE_RELOAD"
+	}
+
+	"ACT_IDLE"
+	{
+		"remapactivity"	"ACT_IDLE_AIM_AGITATED"
+	}
+
+	"ACT_IDLE"
+	{
+		"remapactivity"	"ACT_IDLE_AIM_STIMULATED"
+	}
+
+	"ACT_IDLE"
+	{
+		"remapactivity"	"ACT_IDLE_AGITATED"
+	}
+
+	"ACT_IDLE"
+	{
+		"remapactivity"	"ACT_IDLE_STIMULATED"
+	}
+
+	"ACT_IDLE"
+	{
+		"remapactivity"	"ACT_IDLE_ANGRY"
+	}
+
+	"ACT_IDLE"
+	{
+		"remapactivity"	"ACT_HL2MP_IDLE"
+	}
+
+	"ACT_IDLE"
+	{
+		"remapactivity"	"ACT_IDLE_UNARMED"
+	}
+
+	"ACT_JUMP"
+	{
+		"remapactivity"	"ACT_JUMP" // Enforce HL2 priority
+	}
+
+	"ACT_JUMP"
+	{
+		"remapactivity"	"ACT_HL2MP_JUMP"
+	}
+
+	"ACT_RUN"
+	{
+		"remapactivity"	"ACT_RUN_AIM"
+	}
+
+	"ACT_RUN"
+	{
+		"remapactivity"	"ACT_RUN_AIM_AGITATED"
+	}
+
+	"ACT_RUN"
+	{
+		"remapactivity"	"ACT_RUN_AIM_STIMULATED"
+	}
+
+	"ACT_RUN"
+	{
+		"remapactivity"	"ACT_HL2MP_RUN"
+	}
+
+	"ACT_WALK"
+	{
+		"remapactivity"	"ACT_WALK_AIM"
+	}
+
+	"ACT_WALK"
+	{
+		"remapactivity"	"ACT_HL2MP_RUN"
+	}
+
+	"ACT_WALK_CROUCH"
+	{
+		"remapactivity"	"ACT_WALK_CROUCH_AIM"
+	}
+
+	"ACT_WALK_CROUCH"
+	{
+		"remapactivity"	"ACT_RUN_CROUCH_AIM"
+	}
+
+	"ACT_WALK_CROUCH"
+	{
+		"remapactivity"	"ACT_HL2MP_WALK_CROUCH"
+	}
+}

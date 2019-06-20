@@ -1,0 +1,83 @@
+@include "base.fgd"
+
+@BaseClass base(trigger_multiple) = CityZone
+[
+
+]
+
+@SolidClass base(CityZone) = trigger_city_zone
+[
+
+]
+
+@SolidClass base(Angles, CityZone) = trigger_city_zone_model
+[
+	collisionmodel(string) : "Collision model" : "" : "Model containing complex geometry to use as bounds of this zone"
+
+	solid(choices) : "Collisions" : 3 : "When defining a shape which is exactly a box, use Oriented Bounding Box for a performance gain."
+		+ " Otherwise, you MUST pick VPhysics to guarantee that collisions detection will work as expected in all cases."
+		+ " The angles may need to be changed if you experiment unexpected collisions in game, due to the default collision model orientation." =
+	[
+		3 : "Use Oriented Bounding Box"
+		6 : "Use VPhysics"
+	]
+]
+
+@PointClass base(Angles, EnableDisable, RenderFields) studio("models/props_combine/Combine_dispenser.mdl") = prop_ration_dispenser
+[
+
+]
+
+@PointClass base(Weapon) studio("models/weapons/w_package.mdl") = ration : "Ration"
+[
+	secondaryammocount(integer) : "Embedded units" : 1 : "Total Ration units to be given from this entity (secondary ammo count)"
+
+	spawnflags(flags) =
+	[
+		1073741824 : "Disable respawn" : 1
+	]
+]
+
+@PointClass base(Weapon) studio("models/weapons/w_suitcase_passenger.mdl") = suitcase : "Suitcase"
+[
+
+]
+
+@PointClass base(Weapon) studio("models/weapons/w_molotov.mdl") = weapon_molotov : "Molotov Cocktail"
+[
+
+]
+
+@PointClass base(Angles, Targetname) iconsprite("editor/multisource.vmt") = hl2rp_property_door :
+	"A door which links to a property and a map door to control"
+[
+	doorlinkmethod(choices) : "Door link method" : 0 :
+	"An available method to link this entity to a door entity to control. " +
+	"Targetname: this is the prefered method. Don't use if door's targetname is duplicated. " +
+	"Hammer ID: search by Hammer ID, which should be manually scanned from map file. " +
+	"Origin: search by origin. Place the visible pivot at door's model center." =
+	[
+		0 : "Targetname"
+		1 : "Hammer ID"
+		2 : "Origin"
+	]
+
+	output OnMapSpawn(void) : "Fired when the map is loaded for any reason."
+	doortargetname(target_source) : "Door targetname" : : "Targetname of referenced door. Only used when the link method is 'Targetname'."
+	doorhammerid(integer) : "Door Hammer ID" : 0 : "Hammer ID of referenced door. Only used when the link method is 'Hammer ID'."
+	doororigin(origin) : "Door origin (X Y Z)" : : "Absolute origin of referenced door. Only used when the link method is 'Origin'."
+	propertytargetname(target_source) : "Property targetname" : : "Targetname of the property this door belongs to."
+	displayname(string) : "HUD display name"
+]
+
+@PointClass base(Targetname) iconsprite("vgui/hud/icon_locked") = hl2rp_property :
+	"A property, such as an appartament, the Combine base, etc."
+[
+	displayname(string) : "HUD display name"
+	price(integer) : "Buying price"
+]
+
+@NPCClass base(npc_metropolice) studio("models/Police.mdl") = hl2rp_npc_police : "City Police Officer"
+[
+
+]

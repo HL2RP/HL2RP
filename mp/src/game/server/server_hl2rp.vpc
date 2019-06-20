@@ -1,0 +1,15 @@
+//-----------------------------------------------------------------------------
+//	SERVER_HL2RP.VPC
+//
+//	Project Script
+//-----------------------------------------------------------------------------
+
+$Macro GAMENAME	"hl2rp" [$PUBLISH]
+$Macro GAMENAME	"mod_hl2rp" [!$PUBLISH]
+
+$Include "server_hl2rp_base.vpc"
+
+$Project "Server (HL2RP)"
+{
+
+}
