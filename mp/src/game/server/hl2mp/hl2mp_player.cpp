@@ -512,12 +512,17 @@ void CHL2MP_Player::ResetAnimation( void )
 		SetSequence ( -1 );
 		SetActivity( ACT_INVALID );
 
-		if (!GetAbsVelocity().x && !GetAbsVelocity().y)
+		const Vector &vecAbsVel = GetAbsVelocity();
+
+		if ((vecAbsVel.x != 0.0f || vecAbsVel.y != 0.0f)
+			&& (( GetFlags() & FL_ONGROUND ) || GetWaterLevel() > WL_Feet))
+		{
+			SetAnimation( PLAYER_WALK );
+		}	
+		else
+		{
 			SetAnimation( PLAYER_IDLE );
-		else if ((GetAbsVelocity().x || GetAbsVelocity().y) && ( GetFlags() & FL_ONGROUND ))
-			SetAnimation( PLAYER_WALK );
-		else if (GetWaterLevel() > 1)
-			SetAnimation( PLAYER_WALK );
+		}
 	}
 }
 
@@ -748,7 +753,7 @@ void CHL2MP_Player::SetAnimation( PLAYER_ANIM playerAnim )
 		*/
 		else
 		{
-			if ( GetFlags() & FL_DUCKING )
+			if ( GetFlags() & FL_ANIMDUCKING )
 			{
 				if ( speed > 0 )
 				{

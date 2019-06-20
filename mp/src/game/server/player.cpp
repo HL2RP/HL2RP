@@ -4576,15 +4576,21 @@ void CBasePlayer::PostThink()
 
 			// select the proper animation for the player character	
 			VPROF( "CBasePlayer::PostThink-Animation" );
+
+			const Vector &vecAbsVel = GetAbsVelocity();
+
 			// If he's in a vehicle, sit down
 			if ( IsInAVehicle() )
 				SetAnimation( PLAYER_IN_VEHICLE );
-			else if (!GetAbsVelocity().x && !GetAbsVelocity().y)
+			else if ((vecAbsVel.x != 0.0f || vecAbsVel.y != 0.0f)
+				&& (( GetFlags() & FL_ONGROUND ) || GetWaterLevel() > WL_Feet))
+			{
+				SetAnimation( PLAYER_WALK );
+			}	
+			else
+			{
 				SetAnimation( PLAYER_IDLE );
-			else if ((GetAbsVelocity().x || GetAbsVelocity().y) && ( GetFlags() & FL_ONGROUND ))
-				SetAnimation( PLAYER_WALK );
-			else if (GetWaterLevel() > 1)
-				SetAnimation( PLAYER_WALK );
+			}
 		}
 
 		// Don't allow bogus sequence on player

@@ -11,6 +11,25 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+class CPlayerObjectDropper : IPlayerFunctor
+{
+	CBaseEntity *pTarget;
+
+public:
+	CPlayerObjectDropper(CBaseEntity *pTarget) : pTarget(pTarget)
+	{
+		Assert(pTarget != NULL);
+	}
+
+	bool operator() (CBasePlayer *pPlayer) OVERRIDE
+	{
+		pPlayer->ForceDropOfCarriedPhysObjects(pTarget);
+
+		// Continue looping if phys object is still held, stop otherwise
+		return ((pTarget->VPhysicsGetObject()->GetGameFlags() & FVPHYSICS_PLAYER_HELD) != 0);
+	}
+};
+
 // player pickup utility routine
 void Pickup_ForcePlayerToDropThisObject( CBaseEntity *pTarget )
 {
@@ -22,11 +41,8 @@ void Pickup_ForcePlayerToDropThisObject( CBaseEntity *pTarget )
 	if ( pPhysics == NULL )
 		return;
 
-	if ( pPhysics->GetGameFlags() & FVPHYSICS_PLAYER_HELD )
-	{
-		CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
-		pPlayer->ForceDropOfCarriedPhysObjects( pTarget );
-	}
+	CPlayerObjectDropper func( pTarget );
+	ForEachPlayer( func );
 }
 
 
