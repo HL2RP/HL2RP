@@ -48,4 +48,13 @@ $Project
 	{
 		$File	"$ROOTSCRIPT"
 	}
+
+	$Folder "Link Libraries" [$DEDICATED_SRV]
+	{
+		// Switch to the newer library names being linked by the rest of Dedicated Server binaries
+		-$ImpLib	tier0
+		$ImpLib		tier0_srv
+		-$ImpLib	vstdlib
+		$ImpLib		vstdlib_srv
+	}
 }

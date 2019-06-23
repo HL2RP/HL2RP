@@ -4,6 +4,7 @@
 
 class C_Ration : public CBaseHLCombatWeapon
 {
+	DECLARE_CLASS(C_Ration, CBaseHLCombatWeapon);
 	DECLARE_CLIENTCLASS();
 	DECLARE_PREDICTABLE();
 

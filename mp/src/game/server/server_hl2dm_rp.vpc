@@ -6,6 +6,8 @@
 
 $Macro GAMENAME	"hl2mp"
 
+$Conditional DEDICATED_SRV	1
+
 $Include "server_hl2rp_base.vpc"
 
 $Configuration

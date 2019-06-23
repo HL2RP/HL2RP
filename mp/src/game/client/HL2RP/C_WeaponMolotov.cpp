@@ -4,6 +4,7 @@
 
 class C_WeaponMolotov : public CBaseHLCombatWeapon
 {
+	DECLARE_CLASS(C_WeaponMolotov, CBaseHLCombatWeapon);
 	DECLARE_CLIENTCLASS();
 	DECLARE_PREDICTABLE();
 

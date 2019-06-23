@@ -68,13 +68,10 @@ void CTriggerCityZoneModel::Spawn()
 	SolidType_t solidType = GetSolid();
 	BaseClass::Spawn();
 
-	if (solidType == SOLID_VPHYSICS)
+	// If solid type was VPhysics, we respect it, removing myself if this init fails
+	if (solidType == SOLID_VPHYSICS && VPhysicsInitStatic() == NULL)
 	{
-		// The entity requires a VPhysics, mark for deletion if this fails
-		if (VPhysicsInitStatic() == NULL)
-		{
-			return Remove();
-		}
+		return Remove();
 	}
 
 	SetSolid(solidType);
