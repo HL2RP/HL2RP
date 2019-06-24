@@ -92,11 +92,15 @@ vvis_dll.pdb
 client.so
 client.so.dbg
 mathlib.a
+raytrace.a
 server.so
 server.so.dbg
 server_srv.so
 server_srv.so.dbg
-raytrace.a
+serverplugin_empty.so
+serverplugin_empty.so.dbg
+serverplugin_empty_srv.so
+serverplugin_empty_srv.so.dbg
 tier1.a
 vgui_controls.a
 
