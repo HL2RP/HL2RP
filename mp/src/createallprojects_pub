@@ -1,5 +1,5 @@
 #!/bin/bash
 
 pushd `dirname $0`
-devtools/bin/vpc /hl2dm_rp /hl2rp /define:publish +everything /mksln everything
+devtools/bin/vpc /hl2dm_rp /hl2rp /define:desktop /define:publish +everything /mksln everything
 popd

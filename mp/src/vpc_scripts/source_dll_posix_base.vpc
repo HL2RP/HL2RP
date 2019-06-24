@@ -49,7 +49,7 @@ $Project
 		$File	"$ROOTSCRIPT"
 	}
 
-	$Folder "Link Libraries" [$DEDICATED_SRV]
+	$Folder "Link Libraries" [$DEDICATED_SRV && !$DESKTOP]
 	{
 		// Switch to the newer library names being linked by the rest of Dedicated Server binaries
 		-$ImpLib	tier0
