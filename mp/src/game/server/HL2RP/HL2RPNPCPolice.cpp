@@ -157,7 +157,7 @@ int CHL2RPNPCPolice::OnTakeDamage(const CTakeDamageInfo& info)
 	{
 		pPlayer->SetCrime(UTIL_EnsureAddition(pPlayer->m_iCrime,
 			info.GetDamage() * HL2RP_PLAYER_CRIME_PER_DAMAGE_DEALEN));
-		pPlayer->TrySyncMainData();
+		pPlayer->TrySyncMainData(CHL2RP_Player::EDALMainPropSelection::Crime);
 	}
 
 	return BaseClass::OnTakeDamage(info);

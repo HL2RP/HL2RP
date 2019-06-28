@@ -2,13 +2,11 @@
 #define HL2RP_DAL_H
 #pragma once
 
-#define HL2RP_DAL_SQL_ENGINE_QUERY_SIZE	2048
+#include <refcount.h>
+#include <utllinkedlist.h>
 
-class CDALEngine;
-class CHL2RPDAL;
+class IDALEngine;
 class IDAO;
-
-CHL2RPDAL& GetHL2RPDAL();
 
 // NOTE: Never invoke CallWorker with a zeroed timeout, it turns the execution unsafe!
 class CDAOThread : public CWorkerThread
@@ -43,7 +41,7 @@ class CDAOThread : public CWorkerThread
 	void ProcessDAOList();
 
 	EWorkerWaitingState m_WorkerWaitingState;
-	CUtlPtrLinkedList<IDAO*> m_DAOList;
+	CUtlFixedLinkedList<IDAO*> m_DAOList;
 
 	// This mutex is used to protect the DAO list against shared access by both threads
 	CThreadMutex m_DAOListMutex;
@@ -54,10 +52,17 @@ class CDAOThread : public CWorkerThread
 	IDAO* m_pHandlingDAO;
 
 public:
+	enum EDAOCollisionResolution
+	{
+		None,
+		ReplaceQueued,
+		RemoveBothAndStop
+	};
+
 	CDAOThread();
 
 	void AddAsyncDAO(IDAO* pDAO);
-	void TryHandleDAOResults();
+	bool TryHandleDAOResults();
 	void ProcessDAOListAndStop();
 };
 
@@ -66,39 +71,45 @@ class CHL2RPDAL
 	CDAOThread m_DAOThread;
 
 public:
-	CHL2RPDAL();
-
 	~CHL2RPDAL();
 
 	void Init();
 	void LevelInitPostEntity();
 	void LevelShutdown();
 	void Think();
-	void AddAsyncDAO(IDAO* pDAO);
 
-	CDALEngine* m_pEngine;
+	// Adds a DAO to the threaded DAO processor, colliding with DAO list for optimization
+	void AddAsyncDAO(IDAO* pDAO)
+	{
+		m_DAOThread.AddAsyncDAO(pDAO);
+	}
+
+	CRefPtr<IDALEngine> m_EngineRef;
 };
 
-// Adds a DAO to the threaded DAO processor, colliding with DAO list for optimization
-FORCEINLINE void CHL2RPDAL::AddAsyncDAO(IDAO* pDAO)
+CHL2RPDAL& GetHL2RPDAL();
+
+FORCEINLINE IDALEngine* GetHL2RPDALEngine()
 {
-	m_DAOThread.AddAsyncDAO(pDAO);
+	return GetHL2RPDAL().m_EngineRef;
 }
 
-FORCEINLINE CDALEngine* GetHL2RPDALEngine()
-{
-	return GetHL2RPDAL().m_pEngine;
-}
-
-// Attempts to create and queue up an asynchronous DAO, if conditions pass.
 // Input: T - A DAO subclass. U - Arguments for T's constructor.
+template<class T, typename... U>
+void CreateAsyncDAO(U... args)
+{
+	Assert(GetHL2RPDALEngine() != NULL);
+	IDAO* pDAO = new T(args...);
+	GetHL2RPDAL().AddAsyncDAO(pDAO);
+}
+
+// Attempts to create and queue up an asynchronous DAO, if conditions pass
 template<class T, typename... U>
 void TryCreateAsyncDAO(U... args)
 {
 	if (GetHL2RPDALEngine() != NULL)
 	{
-		IDAO* pDAO = new T(args...);
-		GetHL2RPDAL().AddAsyncDAO(pDAO);
+		CreateAsyncDAO<T>(args...);
 	}
 }
 

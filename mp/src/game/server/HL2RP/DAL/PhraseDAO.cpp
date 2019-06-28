@@ -1,54 +1,43 @@
 #include <cbase.h>
 #include "PhraseDAO.h"
-#include "DALEngine.h"
 #include <HL2RPRules.h>
+#include "IDALEngine.h"
 #include <language.h>
 #include <Dialogs/PlayerDialog.h>
 
-#define PHRASEDAO_LANGUAGE_SHORT_NAME_SIZE	64 // Should be more than enough
-#define PHRASEDAO_COLLECTION_NAME	"Phrase"
-#define PHRASEDAO_KV_FILENAME	(PHRASEDAO_COLLECTION_NAME ".txt")
+#define PHRASE_DAO_LANGUAGE_SHORT_NAME_SIZE	64 // Should be more than enough
+#define PHRASE_DAO_COLLECTION_NAME	"Phrase"
+#define PHRASE_DAO_KV_FILENAME	(PHRASE_DAO_COLLECTION_NAME ".txt")
 
-#define PHRASEDAO_SQL_SETUP_QUERY	\
-"CREATE TABLE IF NOT EXISTS %s (id VARCHAR (%i) NOT NULL, language VARCHAR (%i) NOT NULL, translation VARCHAR (%i) NOT NULL,"	\
-" PRIMARY KEY (id, language));"
+#define PHRASE_DAO_SQL_SETUP_QUERY	"CREATE TABLE IF NOT EXISTS %s "	\
+"(id VARCHAR (%i) NOT NULL, language VARCHAR (%i) NOT NULL, translation VARCHAR (%i) NOT NULL, "	\
+"PRIMARY KEY (id, language));"
 
-#define PHRASEDAO_SQL_LOAD_QUERY	"SELECT * FROM " PHRASEDAO_COLLECTION_NAME ";"
-
-#define PHRASEDAO_SQLITE_UPDATE_QUERY	\
-"UPDATE " PHRASEDAO_COLLECTION_NAME " SET translation = ? WHERE id = ? AND language = ?;"
-
-#define PHRASEDAO_SQLITE_INSERT_QUERY	\
-"INSERT OR IGNORE INTO " PHRASEDAO_COLLECTION_NAME " (id, language, translation) VALUES (?, ?, ?);"
-
-#define PHRASEDAO_MYSQL_SAVE_QUERY	\
-"INSERT INTO " PHRASEDAO_COLLECTION_NAME " (id, language, translation) VALUES (?, ?, ?)"	\
-" ON DUPLICATE KEY UPDATE translation = ?;"
-
-bool CPhrasesInitDAO::ShouldBeReplacedBy(IDAO * pDAO)
+CDAOThread::EDAOCollisionResolution CPhrasesInitDAO::Collide(IDAO * pDAO)
 {
-	return (pDAO->ToClass(this) != NULL);
+	return TryResolveReplacement(pDAO->ToClass(this) != NULL);
 }
 
-void CPhrasesInitDAO::ExecuteSQL(CSQLEngine* pSQL)
+void CPhrasesInitDAO::Execute(CSQLEngine* pSQL)
 {
-	pSQL->ExecuteFormatQuery(PHRASEDAO_SQL_SETUP_QUERY, NULL, PHRASEDAO_COLLECTION_NAME,
-		AUTOLOCALIZER_TOKEN_SIZE, PHRASEDAO_LANGUAGE_SHORT_NAME_SIZE, AUTOLOCALIZER_TRANSLATION_SIZE);
+	pSQL->FormatAndExecuteQuery(PHRASE_DAO_SQL_SETUP_QUERY, PHRASE_DAO_COLLECTION_NAME,
+		AUTOLOCALIZER_TOKEN_SIZE, PHRASE_DAO_LANGUAGE_SHORT_NAME_SIZE, AUTOLOCALIZER_TRANSLATION_SIZE);
 }
 
-void CPhrasesLoadDAO::ExecuteKeyValues(CKeyValuesEngine* pKeyValues)
+void CPhrasesLoadDAO::Execute(CKeyValuesEngine* pKVEngine)
 {
-	pKeyValues->LoadFromFile(PHRASEDAO_KV_FILENAME, PHRASEDAO_COLLECTION_NAME);
+	pKVEngine->LoadFromFile(PHRASE_DAO_KV_FILENAME, PHRASE_DAO_COLLECTION_NAME);
 }
 
-void CPhrasesLoadDAO::ExecuteSQL(CSQLEngine* pSQL)
+void CPhrasesLoadDAO::Execute(CSQLEngine* pSQL)
 {
-	pSQL->ExecuteQuery(PHRASEDAO_SQL_LOAD_QUERY, PHRASEDAO_COLLECTION_NAME);
+	pSQL->FormatAndExecuteSelectQuery("SELECT * FROM %s;",
+		PHRASE_DAO_COLLECTION_NAME, PHRASE_DAO_COLLECTION_NAME);
 }
 
 void CPhrasesLoadDAO::HandleResults(KeyValues* pResults)
 {
-	KeyValues* pResult = pResults->FindKey(PHRASEDAO_COLLECTION_NAME);
+	KeyValues* pResult = pResults->FindKey(PHRASE_DAO_COLLECTION_NAME);
 
 	if (pResult != NULL)
 	{
@@ -79,52 +68,39 @@ CPhraseSaveDAO::CPhraseSaveDAO(const char* pLangShortName, const char* pHeaderNa
 	Q_strncpy(m_TranslationText, pTranslationText, sizeof(m_TranslationText));
 }
 
-bool CPhraseSaveDAO::ShouldBeReplacedBy(IDAO* pDAO)
+CDAOThread::EDAOCollisionResolution CPhraseSaveDAO::Collide(IDAO* pDAO)
 {
-	CPhraseSaveDAO* pPhraseSaveDAO = pDAO->ToClass(this);
-	return (pPhraseSaveDAO != NULL && pPhraseSaveDAO->m_pLangShortName == m_pLangShortName
-		&& !Q_strcmp(pPhraseSaveDAO->m_HeaderName, m_HeaderName));
+	CPhraseSaveDAO* pSaveDAO = pDAO->ToClass(this);
+	return TryResolveReplacement(pSaveDAO != NULL && pSaveDAO->m_pLangShortName == m_pLangShortName
+		&& Q_strcmp(pSaveDAO->m_HeaderName, m_HeaderName) == 0);
 }
 
-void CPhraseSaveDAO::ExecuteKeyValues(CKeyValuesEngine* pKeyValues)
+void CPhraseSaveDAO::Execute(CKeyValuesEngine* pKVEngine)
 {
-	KeyValues* pResult = pKeyValues->LoadFromFile(PHRASEDAO_KV_FILENAME, PHRASEDAO_COLLECTION_NAME,
-		true);
+	KeyValues* pResult = pKVEngine->LoadFromFile(PHRASE_DAO_KV_FILENAME, PHRASE_DAO_COLLECTION_NAME, true);
 	KeyValues* pPhraseData = pResult->FindKey(m_HeaderName, true);
 	pPhraseData->SetString("id", m_HeaderName);
 	pPhraseData->SetString("language", m_pLangShortName);
 	pPhraseData->SetString("translation", m_TranslationText);
-	pKeyValues->SaveToFile(pResult, PHRASEDAO_KV_FILENAME);
+	pKVEngine->SaveToFile(pResult, PHRASE_DAO_KV_FILENAME);
 }
 
-void CPhraseSaveDAO::ExecuteSQLite(CSQLEngine* pSQL)
+void CPhraseSaveDAO::Execute(CSQLiteEngine* pSQLite)
 {
-	pSQL->BeginTxn();
-	ExecutePreparedSQLStatement(pSQL, PHRASEDAO_SQLITE_UPDATE_QUERY, 2, 3, 1);
-	ExecutePreparedSQLStatement(pSQL, PHRASEDAO_SQLITE_INSERT_QUERY, 1, 2, 3);
-	pSQL->EndTxn();
+	void* pStmt = pSQLite->FormatAndPrepareStatement("INSERT INTO %s (id, language, translation) "
+		"VALUES ('%s', '%s', ?) ON CONFLICT (id, language) "
+		"DO UPDATE SET translation = excluded.translation;",
+		PHRASE_DAO_COLLECTION_NAME, m_HeaderName, m_pLangShortName);
+	pSQLite->BindString(pStmt, 1, m_TranslationText);
+	pSQLite->ExecutePreparedStatement(pStmt);
 }
 
-void CPhraseSaveDAO::ExecuteMySQL(CSQLEngine* pSQL)
+void CPhraseSaveDAO::Execute(CMySQLEngine* pMySQL)
 {
-	void* pStmt = PrepareSQLStatement(pSQL, PHRASEDAO_MYSQL_SAVE_QUERY, 1, 2, 3);
-	pSQL->BindString(pStmt, 4, m_TranslationText);
-	pSQL->ExecutePreparedStatement(pStmt);
-}
-
-void* CPhraseSaveDAO::PrepareSQLStatement(CSQLEngine* pSQL, const char* pQueryText, int headerNamePos,
-	int langShortNamePos, int translationTextPos)
-{
-	void* pStmt = pSQL->PrepareStatement(pQueryText);
-	pSQL->BindString(pStmt, headerNamePos, m_HeaderName);
-	pSQL->BindString(pStmt, langShortNamePos, m_pLangShortName);
-	pSQL->BindString(pStmt, translationTextPos, m_TranslationText);
-	return pStmt;
-}
-
-void CPhraseSaveDAO::ExecutePreparedSQLStatement(CSQLEngine* pSQL, const char* pQueryText, int headerNamePos,
-	int langShortNamePos, int translationTextPos)
-{
-	void* pStmt = PrepareSQLStatement(pSQL, pQueryText, headerNamePos, langShortNamePos, translationTextPos);
-	pSQL->ExecutePreparedStatement(pStmt);
+	void* pStmt = pMySQL->FormatAndPrepareStatement("INSERT INTO %s (id, language, translation) "
+		"VALUES ('%s', '%s', ?) ON DUPLICATE KEY UPDATE translation = ?;",
+		PHRASE_DAO_COLLECTION_NAME, m_HeaderName, m_pLangShortName);
+	pMySQL->BindString(pStmt, 1, m_TranslationText);
+	pMySQL->BindString(pStmt, 2, m_TranslationText);
+	pMySQL->ExecutePreparedStatement(pStmt);
 }

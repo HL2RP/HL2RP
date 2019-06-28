@@ -2,96 +2,103 @@
 #include "PlayerDAO.h"
 #include <ammodef.h>
 #include <cinttypes>
-#include "DALEngine.h"
 #include <HL2RPRules.h>
 #include <HL2RP_Player.h>
 #include <HL2RP_Util.h>
+#include "IDALEngine.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
-#define DEFAULT_RATIONS_AMMO	5
-#define PLAYER_MAINDAO_COLLECTION_NAME	"Player"
-#define PLAYER_WEAPONDAO_COLLECTION_NAME	"PlayerWeapon"
-#define PLAYER_AMMODAO_COLLECTION_NAME	"PlayerAmmo"
+#define PLAYER_MAIN_DAO_DEFAULT_RATIONS_AMMO	5
+#define PLAYER_MAIN_DAO_COLLECTION_NAME	"Player"
+#define PLAYER_WEAPON_DAO_COLLECTION_NAME	"PlayerWeapon"
+#define PLAYER_AMMO_DAO_COLLECTION_NAME	"PlayerAmmo"
 
-#define PLAYER_MAINDAO_SQL_SETUP_QUERY	\
-"CREATE TABLE IF NOT EXISTS %s (steamid VARCHAR (%i) NOT NULL, name VARCHAR (%i),"	\
-" seconds INTEGER, crime INTEGER, accessflags INTEGER, health INTEGER, suit INTEGER, PRIMARY KEY (steamid),"	\
-" CONSTRAINT seconds CHECK (seconds >= 0), CONSTRAINT crime CHECK (crime >= 0),"	\
-" CONSTRAINT accessflags CHECK (accessflags >= %i), CONSTRAINT health CHECK (health > 0), CONSTRAINT suit CHECK (suit >= 0));"
+#define PLAYER_MAIN_DAO_SQL_SETUP_QUERY	"CREATE TABLE IF NOT EXISTS %s "	\
+"(steamId VARCHAR (%i) NOT NULL, name VARCHAR (%i), seconds INTEGER, crime INTEGER, accessFlags INTEGER, "	\
+"health INTEGER, suit INTEGER, PRIMARY KEY (steamId), "	\
+"CONSTRAINT seconds CHECK (seconds >= 0), CONSTRAINT crime CHECK (crime >= 0), "	\
+"CONSTRAINT accessFlags CHECK (accessFlags >= %i), CONSTRAINT health CHECK (health > 0), "	\
+"CONSTRAINT suit CHECK (suit >= 0));"
 
-#define PLAYER_MAINDAO_SQL_LOAD_QUERY	"SELECT * FROM " PLAYER_MAINDAO_COLLECTION_NAME " WHERE steamid = ?;"
+#define PLAYER_AMMO_DAO_SQL_SETUP_QUERY	"CREATE TABLE IF NOT EXISTS %s "	\
+"(steamId VARCHAR (%i) NOT NULL, `index` INTEGER NOT NULL, count INTEGER NOT NULL, "	\
+"PRIMARY KEY (steamId, `index`), FOREIGN KEY (steamId) REFERENCES %s (steamId) "	\
+"ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `index` CHECK (`index` > 0), CONSTRAINT count CHECK (count >= 0));"
 
-#define PLAYER_MAINDAO_SQLITE_UPDATE_QUERY	\
-"UPDATE " PLAYER_MAINDAO_COLLECTION_NAME " SET name = ?, seconds = ?, crime = ?, accessflags = ?, health = ?, suit = ?"	\
-" WHERE steamid = ?;"
+#define PLAYER_WEAPON_DAO_SQL_SETUP_QUERY	"CREATE TABLE IF NOT EXISTS %s "	\
+"(steamId VARCHAR (%i) NOT NULL, weapon VARCHAR (%i) NOT NULL, "	\
+"clip1 INTEGER, clip2 INTEGER, PRIMARY KEY (steamId, weapon), FOREIGN KEY (steamId) REFERENCES %s (steamId) "	\
+"ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT clip1 CHECK (clip1 >= %i), CONSTRAINT clip2 CHECK (clip2 >= %i));"
 
-#define PLAYER_MAINDAO_SQLITE_INSERT_QUERY	\
-"INSERT OR IGNORE INTO " PLAYER_MAINDAO_COLLECTION_NAME " (steamid, name, seconds, crime, accessflags, health, suit)"	\
-" VALUES (?, ?, ?, ?, ?, ?, ?);"
-
-#define PLAYER_MAINDAO_MYSQL_SAVE_QUERY	\
-"INSERT INTO " PLAYER_MAINDAO_COLLECTION_NAME " (steamid, name, seconds, crime, accessflags, health, suit)"	\
-" VALUES (?, ?, ?, ?, ?, ?, ?)"	\
-" ON DUPLICATE KEY	UPDATE name = ?, seconds = ?, crime = ?, accessflags = ?, health = ?, suit = ?;"
-
-#define PLAYER_AMMODAO_SQL_SETUP_QUERY	\
-"CREATE TABLE IF NOT EXISTS %s (steamid VARCHAR (%i) NOT NULL, `index` INTEGER NOT NULL,"	\
-" count INTEGER NOT NULL, PRIMARY KEY (steamid, `index`), FOREIGN KEY (steamid) REFERENCES %s (steamid)"	\
-" ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `index` CHECK (`index` > 0), CONSTRAINT count CHECK (count >= 0));"
-
-#define PLAYER_AMMODAO_SQL_LOAD_QUERY	"SELECT * FROM " PLAYER_AMMODAO_COLLECTION_NAME " WHERE steamid = ?;"
-
-#define PLAYER_AMMODAO_SQLITE_INSERT_QUERY	\
-"UPDATE " PLAYER_AMMODAO_COLLECTION_NAME " SET count = ? WHERE steamid = ? AND `index` = ?;"
-
-#define PLAYER_AMMODAO_SQLITE_UPDATE_QUERY	\
-"INSERT OR IGNORE INTO " PLAYER_AMMODAO_COLLECTION_NAME " (steamid, `index`, count) VALUES (?, ?, ?);"
-
-#define PLAYER_AMMODAO_MYSQL_SAVE_QUERY	\
-"INSERT INTO " PLAYER_AMMODAO_COLLECTION_NAME " (steamid, `index`, count) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE count = ?;"
-
-#define PLAYER_AMMODAO_MYSQL_DELETE_QUERY	"DELETE FROM " PLAYER_AMMODAO_COLLECTION_NAME " WHERE steamid = ? AND `index` = ?;"
-
-#define PLAYER_WEAPONDAO_SQL_SETUP_QUERY	\
-"CREATE TABLE IF NOT EXISTS %s (steamid VARCHAR (%i) NOT NULL, weapon VARCHAR (%i) NOT NULL,"	\
-" clip1 INTEGER, clip2 INTEGER, PRIMARY KEY (steamid, weapon), FOREIGN KEY (steamid) REFERENCES %s (steamid)"	\
-" ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT clip1 CHECK (clip1 >= %i), CONSTRAINT clip2 CHECK (clip2 >= %i));"
-
-#define PLAYER_WEAPONDAO_SQL_LOAD_QUERY	"SELECT * FROM " PLAYER_WEAPONDAO_COLLECTION_NAME " WHERE steamid = ?;"
-
-#define PLAYER_WEAPONDAO_SQLITE_UPDATE_QUERY	\
-"UPDATE " PLAYER_WEAPONDAO_COLLECTION_NAME " SET clip1 = ?, clip2 = ? WHERE steamid = ? AND weapon = ?;"
-
-#define PLAYER_WEAPONDAO_SQLITE_INSERT_QUERY	\
-"INSERT OR IGNORE INTO " PLAYER_WEAPONDAO_COLLECTION_NAME " (steamid, weapon, clip1, clip2) VALUES (?, ?, ?, ?);"
-
-#define PLAYER_WEAPONDAO_MYSQL_SAVE_QUERY	\
-"INSERT INTO " PLAYER_WEAPONDAO_COLLECTION_NAME " (steamid, weapon, clip1, clip2) VALUES (?, ?, ?, ?)"	\
-" ON DUPLICATE KEY UPDATE clip1 = ?, clip2 = ?;"
-
-#define PLAYER_WEAPONDAO_SQL_DELETE_QUERY	"DELETE FROM " PLAYER_WEAPONDAO_COLLECTION_NAME " WHERE steamid = ? AND weapon = ?;"
-
-bool CPlayersInitDAO::ShouldBeReplacedBy(IDAO * pDAO)
+// A inheritable resolver for subtle differences in cached results among DAL Engines.
+// This base class is also used for KeyValues Engine.
+class CDefaultPlayerDataSeeker
 {
-	return (pDAO->ToClass(this) != NULL);
+public:
+	virtual KeyValues* SeekMainData(KeyValues* pMainData)
+	{
+		return pMainData;
+	}
+
+	virtual const char* SeekWeaponClassname(KeyValues* pWeaponData)
+	{
+		return pWeaponData->GetName();
+	}
+
+	virtual int SeekAmmoIndex(KeyValues* pAmmoData)
+	{
+		return Q_atoi(pAmmoData->GetName());
+	}
+
+	virtual int SeekAmmoCount(KeyValues* pAmmoData)
+	{
+		return pAmmoData->GetInt();
+	}
+};
+
+class CSQLEnginePlayerDataSeeker : public CDefaultPlayerDataSeeker
+{
+	KeyValues* SeekMainData(KeyValues* pMainData) OVERRIDE
+	{
+		return pMainData->GetFirstSubKey();
+	}
+
+	const char* SeekWeaponClassname(KeyValues* pWeaponData) OVERRIDE
+	{
+		return pWeaponData->GetString("weapon");
+	}
+
+	int SeekAmmoIndex(KeyValues* pAmmoData) OVERRIDE
+	{
+		return pAmmoData->GetInt("index");
+	}
+
+	int SeekAmmoCount(KeyValues* pAmmoData) OVERRIDE
+	{
+		return pAmmoData->GetInt("count");
+	}
+};
+
+CDAOThread::EDAOCollisionResolution CPlayersInitDAO::Collide(IDAO* pDAO)
+{
+	return TryResolveReplacement(pDAO->ToClass(this) != NULL);
 }
 
-void CPlayersInitDAO::ExecuteSQL(CSQLEngine* pSQL)
+void CPlayersInitDAO::Execute(CSQLEngine* pSQL)
 {
-	pSQL->ExecuteFormatQuery(PLAYER_MAINDAO_SQL_SETUP_QUERY, NULL, PLAYER_MAINDAO_COLLECTION_NAME,
+	pSQL->FormatAndExecuteQuery(PLAYER_MAIN_DAO_SQL_SETUP_QUERY, PLAYER_MAIN_DAO_COLLECTION_NAME,
 		MAX_NETWORKID_LENGTH, MAX_PLAYER_NAME_LENGTH, CHL2RP_Player::AccessFlag_None);
 }
 
-CPlayerDAO::CPlayerDAO(CHL2RP_Player* pPlayer) : m_hPlayer(pPlayer),
-m_LongSteamIdNum(pPlayer->GetSteamIDAsUInt64())
+CPlayerDAO::CPlayerDAO(CHL2RP_Player* pPlayer) : m_LongSteamIdNum(pPlayer->GetSteamIDAsUInt64())
 {
 	Q_strcpy(m_NetworkIdString, pPlayer->GetNetworkIDString());
 }
 
-// Validates passed DAO and check if it SteamIDs equal
-bool CPlayerDAO::ShouldBeReplacedBy(CPlayerDAO* pDAO)
+// Validates passed DAO and checks if SteamIDs are equal
+bool CPlayerDAO::Equals(CPlayerDAO* pDAO)
 {
 	return (pDAO != NULL && pDAO->m_LongSteamIdNum == m_LongSteamIdNum);
 }
@@ -101,239 +108,221 @@ void CPlayerDAO::BuildKeyValuesPath(const char* pDirName, char* pDest, int destS
 	Q_snprintf(pDest, destSize, "%s/%" PRIu64 ".txt", pDirName, m_LongSteamIdNum);
 }
 
-void CPlayerDAO::BindSQLDTO(CSQLEngine* pSQL, void* pStmt, int networkIdStringPos)
+void CPlayerDAO::BindSQLDTO(CSQLEngine* pSQL, void* pStmt)
 {
-	pSQL->BindString(pStmt, networkIdStringPos, m_NetworkIdString);
+	pSQL->BindString(pStmt, 1, m_NetworkIdString);
 }
 
-CPlayerLoadDAO::CPlayerLoadDAO(CHL2RP_Player* pPlayer) : CPlayerDAO(pPlayer)
+CPlayerLoadDAO::CPlayerLoadDAO(CHL2RP_Player* pPlayer) : CPlayerDAO(pPlayer), m_hPlayer(pPlayer)
 {
 
 }
 
-bool CPlayerLoadDAO::ShouldBeReplacedBy(IDAO* pDAO)
+CDAOThread::EDAOCollisionResolution CPlayerLoadDAO::Collide(IDAO* pDAO)
 {
-	CPlayerLoadDAO* pPlayerLoadDAO = pDAO->ToClass(this);
-	return (pPlayerLoadDAO != NULL && CPlayerDAO::ShouldBeReplacedBy(pPlayerLoadDAO));
+	return TryResolveReplacement(Equals(pDAO->ToClass(this)));
 }
 
-void CPlayerLoadDAO::ExecuteKeyValues(CKeyValuesEngine* pKeyValues)
+void CPlayerLoadDAO::Execute(CKeyValuesEngine* pKVEngine)
 {
 	char path[MAX_PATH];
-	BuildKeyValuesPath(PLAYER_MAINDAO_COLLECTION_NAME, path, sizeof(path));
-	pKeyValues->LoadFromFile(path, PLAYER_MAINDAO_COLLECTION_NAME);
-	BuildKeyValuesPath(PLAYER_AMMODAO_COLLECTION_NAME, path, sizeof(path));
-	pKeyValues->LoadFromFile(path, PLAYER_AMMODAO_COLLECTION_NAME);
-	BuildKeyValuesPath(PLAYER_WEAPONDAO_COLLECTION_NAME, path, sizeof(path));
-	pKeyValues->LoadFromFile(path, PLAYER_WEAPONDAO_COLLECTION_NAME);
+	BuildKeyValuesPath(PLAYER_MAIN_DAO_COLLECTION_NAME, path, sizeof(path));
+	pKVEngine->LoadFromFile(path, PLAYER_MAIN_DAO_COLLECTION_NAME);
+	BuildKeyValuesPath(PLAYER_AMMO_DAO_COLLECTION_NAME, path, sizeof(path));
+	pKVEngine->LoadFromFile(path, PLAYER_AMMO_DAO_COLLECTION_NAME);
+	BuildKeyValuesPath(PLAYER_WEAPON_DAO_COLLECTION_NAME, path, sizeof(path));
+	pKVEngine->LoadFromFile(path, PLAYER_WEAPON_DAO_COLLECTION_NAME);
 }
 
-void CPlayerLoadDAO::ExecuteSQL(CSQLEngine* pSQL)
+void CPlayerLoadDAO::Execute(CSQLEngine* pSQL)
 {
-	void* pStmt = pSQL->PrepareStatement(PLAYER_MAINDAO_SQL_LOAD_QUERY);
-	BindSQLDTO(pSQL, pStmt, 1);
-	pSQL->ExecutePreparedStatement(pStmt, PLAYER_MAINDAO_COLLECTION_NAME);
-	pStmt = pSQL->PrepareStatement(PLAYER_AMMODAO_SQL_LOAD_QUERY);
-	BindSQLDTO(pSQL, pStmt, 1);
-	pSQL->ExecutePreparedStatement(pStmt, PLAYER_AMMODAO_COLLECTION_NAME);
-	pStmt = pSQL->PrepareStatement(PLAYER_WEAPONDAO_SQL_LOAD_QUERY);
-	BindSQLDTO(pSQL, pStmt, 1);
-	pSQL->ExecutePreparedStatement(pStmt, PLAYER_WEAPONDAO_COLLECTION_NAME);
+	void* pStmt = pSQL->FormatAndPrepareStatement("SELECT * FROM %s WHERE steamId = ?;",
+		PLAYER_MAIN_DAO_COLLECTION_NAME);
+	BindSQLDTO(pSQL, pStmt);
+	pSQL->ExecutePreparedStatement(pStmt, PLAYER_MAIN_DAO_COLLECTION_NAME);
+	pStmt = pSQL->FormatAndPrepareStatement("SELECT * FROM %s WHERE steamId = ?;",
+		PLAYER_AMMO_DAO_COLLECTION_NAME);
+	BindSQLDTO(pSQL, pStmt);
+	pSQL->ExecutePreparedStatement(pStmt, PLAYER_AMMO_DAO_COLLECTION_NAME);
+	pStmt = pSQL->FormatAndPrepareStatement("SELECT * FROM %s WHERE steamId = ?;",
+		PLAYER_WEAPON_DAO_COLLECTION_NAME);
+	BindSQLDTO(pSQL, pStmt);
+	pSQL->ExecutePreparedStatement(pStmt, PLAYER_WEAPON_DAO_COLLECTION_NAME);
 }
 
-void CPlayerLoadDAO::HandleKeyValuesResults(KeyValues* pResults)
+void CPlayerLoadDAO::HandleResults(CKeyValuesEngine* pKVEngine, KeyValues* pResults)
 {
-	if (PreHandleResults())
-	{
-		Assert(m_hPlayer != NULL);
-		KeyValues* pResult = pResults->FindKey(PLAYER_MAINDAO_COLLECTION_NAME);
-
-		if (pResult == NULL)
-		{
-			HandleMainData_NewPlayer();
-		}
-		else
-		{
-			HandleMainData_OldPlayer(pResult);
-			pResult = pResults->FindKey(PLAYER_AMMODAO_COLLECTION_NAME);
-
-			if (pResult != NULL)
-			{
-				FOR_EACH_SUBKEY(pResult, pAmmoData)
-				{
-					HandleAmmoData(Q_atoi(pAmmoData->GetName()), pAmmoData->GetInt());
-				}
-			}
-
-			pResult = pResults->FindKey(PLAYER_WEAPONDAO_COLLECTION_NAME);
-
-			if (pResult != NULL)
-			{
-				FOR_EACH_SUBKEY(pResult, pWeaponData)
-				{
-					HandleWeaponData(pWeaponData, pWeaponData->GetName());
-				}
-			}
-		}
-
-		PostHandleResults();
-	}
+	CDefaultPlayerDataSeeker seeker;
+	HandleResults(pResults, seeker);
 }
 
-void CPlayerLoadDAO::HandleSQLResults(KeyValues* pResults)
+void CPlayerLoadDAO::HandleResults(CSQLEngine* pKVEngine, KeyValues* pResults)
 {
-	if (PreHandleResults())
-	{
-		Assert(m_hPlayer != NULL);
-		KeyValues* pResult = pResults->FindKey(PLAYER_MAINDAO_COLLECTION_NAME);
-
-		if (pResult == NULL)
-		{
-			HandleMainData_NewPlayer();
-		}
-		else
-		{
-			HandleMainData_OldPlayer(pResult->GetFirstSubKey());
-			pResult = pResults->FindKey(PLAYER_AMMODAO_COLLECTION_NAME);
-
-			if (pResult != NULL)
-			{
-				FOR_EACH_SUBKEY(pResult, pAmmoData)
-				{
-					HandleAmmoData(pAmmoData->GetInt("index"), pAmmoData->GetInt("count"));
-				}
-			}
-
-			pResult = pResults->FindKey(PLAYER_WEAPONDAO_COLLECTION_NAME);
-
-			if (pResult != NULL)
-			{
-				FOR_EACH_SUBKEY(pResult, pWeaponData)
-				{
-					HandleWeaponData(pWeaponData, pWeaponData->GetString("weapon"));
-				}
-			}
-		}
-
-		PostHandleResults();
-	}
+	CSQLEnginePlayerDataSeeker seeker;
+	HandleResults(pResults, seeker);
 }
 
-bool CPlayerLoadDAO::PreHandleResults()
+void CPlayerLoadDAO::HandleResults(KeyValues* pResults, CDefaultPlayerDataSeeker& seeker)
 {
 	// We include a definitive identity check via SteamID, even when CHandle is extremely reliable
 	if (m_hPlayer != NULL && !m_hPlayer->IsFakeClient()
 		&& m_hPlayer->GetSteamIDAsUInt64() == m_LongSteamIdNum)
 	{
-		if (!m_hPlayer->IsAlive())
+		bool shouldInsertAmmo[MAX_AMMO_SLOTS]{};
+		bool shouldInsertWeapon[MAX_WEAPONS]{};
+		KeyValues* pResult = pResults->FindKey(PLAYER_MAIN_DAO_COLLECTION_NAME);
+
+		if (m_hPlayer->IsAlive())
+		{
+			Q_memset(shouldInsertAmmo, true, ARRAYSIZE(shouldInsertAmmo));
+			Q_memset(shouldInsertWeapon, true, ARRAYSIZE(shouldInsertWeapon));
+		}
+		else
 		{
 			m_hPlayer->m_pDeadLoadedEquipmentInfo = new KeyValues("Equipment");
 		}
 
-		return true;
+		if (pResult == NULL)
+		{
+			CreateAsyncDAO<CPlayerInsertDAO>(m_hPlayer);
+			m_hPlayer->m_DALSyncCaps.SetFlag(CHL2RP_Player::EDALSyncCap::SaveData);
+			m_hPlayer->GiveNamedItem("ration");
+			m_hPlayer->GiveAmmo(PLAYER_MAIN_DAO_DEFAULT_RATIONS_AMMO, GetAmmoDef()->Index("ration"), false);
+		}
+		else
+		{
+			// Add up the resources instead of setting them either if player exists or is new,
+			// since he may already got some of them in a legit way since his connection
+			pResult = seeker.SeekMainData(pResult);
+			int seconds = pResult->GetInt("seconds"), crime = pResult->GetInt("crime"),
+				accessFlags = pResult->GetInt("accessFlags"),
+				health = pResult->GetInt("health"), suit = pResult->GetInt("suit");
+			m_hPlayer->m_iSeconds = UTIL_EnsureAddition(m_hPlayer->m_iSeconds, seconds);
+			m_hPlayer->m_iCrime = UTIL_EnsureAddition(m_hPlayer->m_iCrime, crime);
+			m_hPlayer->m_AccessFlags.SetFlag(accessFlags);
+
+			if (m_hPlayer->IsAlive())
+			{
+				m_hPlayer->TryGiveLoadedHpAndArmor(health, suit);
+			}
+			else
+			{
+				m_hPlayer->m_pDeadLoadedEquipmentInfo->SetInt("health", health);
+				m_hPlayer->m_pDeadLoadedEquipmentInfo->SetInt("suit", suit);
+			}
+
+			CreateAsyncDAO<CPlayerUpdateDAO>(m_hPlayer, INT_MAX);
+			pResult = pResults->FindKey(PLAYER_AMMO_DAO_COLLECTION_NAME);
+
+			if (pResult != NULL)
+			{
+				FOR_EACH_SUBKEY(pResult, pAmmoData)
+				{
+					HandleAmmoData(seeker.SeekAmmoIndex(pAmmoData), seeker.SeekAmmoCount(pAmmoData),
+						shouldInsertAmmo);
+				}
+			}
+
+			pResult = pResults->FindKey(PLAYER_WEAPON_DAO_COLLECTION_NAME);
+
+			if (pResult != NULL)
+			{
+				FOR_EACH_SUBKEY(pResult, pWeaponData)
+				{
+					HandleWeaponData(pWeaponData, seeker.SeekWeaponClassname(pWeaponData),
+						shouldInsertWeapon);
+				}
+			}
+
+			m_hPlayer->m_DALSyncCaps.SetFlag(CHL2RP_Player::EDALSyncCap::SaveData);
+		}
+
+		if (m_hPlayer->IsAlive())
+		{
+			// Begin synchronizing final ammunition to DB, since player may had some before loading
+			for (int i = 0; i < ARRAYSIZE(shouldInsertAmmo); i++)
+			{
+				if (m_hPlayer->GetAmmoCount(i) > 0)
+				{
+					if (shouldInsertAmmo[i])
+					{
+						CreateAsyncDAO<CPlayerAmmoInsertDAO>(m_hPlayer, i);
+						continue;
+					}
+
+					CreateAsyncDAO<CPlayerAmmoUpdateDAO>(m_hPlayer, i);
+				}
+			}
+
+			// Begin synchronizing final weapons to DB, since player may had some before loading
+			for (int i = 0; i < ARRAYSIZE(shouldInsertWeapon); i++)
+			{
+				if (m_hPlayer->GetWeapon(i) != NULL)
+				{
+					if (shouldInsertWeapon[i])
+					{
+						CreateAsyncDAO<CPlayerWeaponInsertDAO>(m_hPlayer, m_hPlayer->GetWeapon(i));
+						continue;
+					}
+
+					CreateAsyncDAO<CPlayerWeaponUpdateDAO>(m_hPlayer, m_hPlayer->GetWeapon(i));
+				}
+			}
+		}
+
+		ClientPrint(m_hPlayer, HUD_PRINTTALK, GetHL2RPAutoLocalizer().
+			Localize(m_hPlayer, "#HL2RP_Chat_Player_Loaded"));
 	}
-
-	return false;
 }
 
-void CPlayerLoadDAO::HandleMainData_NewPlayer()
-{
-	Assert(m_hPlayer != NULL);
-	m_hPlayer->GiveNamedItem("ration");
-	m_hPlayer->GiveAmmo(DEFAULT_RATIONS_AMMO, GetAmmoDef()->Index("ration"), false);
-}
-
-void CPlayerLoadDAO::HandleMainData_OldPlayer(KeyValues* pPlayerData)
+void CPlayerLoadDAO::HandleAmmoData(int ammoIndex, int ammoCount, bool shouldInsertAmmo[MAX_AMMO_SLOTS])
 {
 	Assert(m_hPlayer != NULL);
 
-	// Add up the resources instead of setting them either if player exists or is new,
-	// since he may already got some of them in a legit way since his connection
-	int seconds = pPlayerData->GetInt("seconds"), crime = pPlayerData->GetInt("crime"),
-		accessFlags = pPlayerData->GetInt("accessflags"),
-		health = pPlayerData->GetInt("health"), suit = pPlayerData->GetInt("suit");
-	m_hPlayer->m_iSeconds = UTIL_EnsureAddition(m_hPlayer->m_iSeconds, seconds);
-	m_hPlayer->m_iCrime = UTIL_EnsureAddition(m_hPlayer->m_iCrime, crime);
-	m_hPlayer->m_AccessFlags.SetFlag(accessFlags);
-
-	if (m_hPlayer->IsAlive())
-	{
-		return m_hPlayer->TryGiveLoadedHpAndArmor(health, suit);
-	}
-
-	m_hPlayer->m_pDeadLoadedEquipmentInfo->SetInt("health", health);
-	m_hPlayer->m_pDeadLoadedEquipmentInfo->SetInt("suit", suit);
-}
-
-void CPlayerLoadDAO::HandleAmmoData(int ammoIndex, int ammoCount)
-{
-	Assert(m_hPlayer != NULL);
-
-	if (ammoIndex < MAX_AMMO_TYPES)
+	if (ammoIndex >= 0 && ammoIndex < MAX_AMMO_SLOTS)
 	{
 		if (m_hPlayer->IsAlive())
 		{
 			m_hPlayer->GiveAmmo(ammoCount, ammoIndex, false);
+			shouldInsertAmmo[ammoIndex] = false;
+			return;
 		}
-		else if (ammoIndex >= 0)
-		{
-			KeyValues* pAmmoData = m_hPlayer->m_pDeadLoadedEquipmentInfo->
-				FindKey(HL2RP_PLAYER_DEADLOAD_AMMODATA_KEYNAME, true);
-			m_hPlayer->m_pDeadLoadedEquipmentInfo->SetInt(NULL, ammoIndex);
-			pAmmoData->SetInt(m_hPlayer->m_pDeadLoadedEquipmentInfo->GetString(), ammoCount);
-		}
+
+		KeyValues* pAmmoData = m_hPlayer->m_pDeadLoadedEquipmentInfo->
+			FindKey(HL2RP_PLAYER_DEADLOAD_AMMODATA_KEYNAME, true);
+		m_hPlayer->m_pDeadLoadedEquipmentInfo->SetInt(NULL, ammoIndex);
+		pAmmoData->SetInt(m_hPlayer->m_pDeadLoadedEquipmentInfo->GetString(), ammoCount);
 	}
 }
 
-void CPlayerLoadDAO::HandleWeaponData(KeyValues* pWeaponData, const char* pWeaponClassname)
+void CPlayerLoadDAO::HandleWeaponData(KeyValues* pWeaponData, const char* pWeaponClassname,
+	bool shouldInsertWeapon[MAX_WEAPONS])
 {
 	int clip1 = pWeaponData->GetInt("clip1"), clip2 = pWeaponData->GetInt("clip2");
 
 	if (m_hPlayer->IsAlive())
 	{
-		return m_hPlayer->TryGiveLoadedWeapon(pWeaponClassname, clip1, clip2);
-	}
+		m_hPlayer->TryGiveLoadedWeapon(pWeaponClassname, clip1, clip2);
 
-	pWeaponData = m_hPlayer->m_pDeadLoadedEquipmentInfo->
-		FindKey(HL2RP_PLAYER_DEADLOAD_WEAPONDATA_KEYNAME, true);
-	pWeaponData = pWeaponData->FindKey(pWeaponClassname, true);
-	pWeaponData->SetInt("clip1", clip1);
-	pWeaponData->SetInt("clip2", clip2);
-}
-
-void CPlayerLoadDAO::PostHandleResults()
-{
-	Assert(m_hPlayer != NULL);
-
-	// Allow saves only from now on (once loaded), for security
-	m_hPlayer->m_DALSyncFlags.SetFlag(CHL2RP_Player::EDALSyncCap::SaveData);
-
-	// Synchronize final main data to DB, since player may had some before loading
-	TryCreateAsyncDAO<CPlayerSaveDAO>(m_hPlayer);
-
-	if (m_hPlayer->IsAlive())
-	{
-		// Begin synchronizing final ammunition to DB, since player may had some before loading
-		for (int i = 0; i < MAX_AMMO_SLOTS; i++)
-		{
-			if (m_hPlayer->GetAmmoCount(i) > 0)
-			{
-				TryCreateAsyncDAO<CPlayerAmmoSaveDAO>(m_hPlayer, i);
-			}
-		}
-
-		// Begin synchronizing final weapons to DB, since player may had some before loading
 		for (int i = 0; i < MAX_WEAPONS; i++)
 		{
-			if (m_hPlayer->GetWeapon(i) != NULL)
+			CBaseCombatWeapon* pAuxWeapon = m_hPlayer->GetWeapon(i);
+
+			if (pAuxWeapon != NULL && FClassnameIs(pAuxWeapon, pWeaponClassname))
 			{
-				TryCreateAsyncDAO<CPlayerWeaponSaveDAO>(m_hPlayer, m_hPlayer->GetWeapon(i));
+				shouldInsertWeapon[i] = false;
+				break;
 			}
 		}
 	}
-
-	ClientPrint(m_hPlayer, HUD_PRINTTALK, GetHL2RPAutoLocalizer().
-		Localize(m_hPlayer, "#HL2RP_Chat_Player_Loaded"));
+	else
+	{
+		pWeaponData = m_hPlayer->m_pDeadLoadedEquipmentInfo->
+			FindKey(HL2RP_PLAYER_DEADLOAD_WEAPONDATA_KEYNAME, true);
+		pWeaponData = pWeaponData->FindKey(pWeaponClassname, true);
+		pWeaponData->SetInt("clip1", clip1);
+		pWeaponData->SetInt("clip2", clip2);
+	}
 }
 
 CPlayerSaveDAO::CPlayerSaveDAO(CHL2RP_Player* pPlayer) : CPlayerDAO(pPlayer)
@@ -341,7 +330,7 @@ CPlayerSaveDAO::CPlayerSaveDAO(CHL2RP_Player* pPlayer) : CPlayerDAO(pPlayer)
 	Q_strcpy(m_Name, pPlayer->GetPlayerName());
 	m_iSeconds = pPlayer->m_iSeconds;
 	m_iCrime = pPlayer->m_iCrime;
-	m_iAccessFlags = *(int*)& pPlayer->m_AccessFlags;
+	m_AccessFlags = pPlayer->m_AccessFlags;
 
 	// Dead flag isn't set yet by callers. Check for death health instead.
 	if (pPlayer->GetHealth() < 1)
@@ -357,151 +346,230 @@ CPlayerSaveDAO::CPlayerSaveDAO(CHL2RP_Player* pPlayer) : CPlayerDAO(pPlayer)
 	}
 }
 
-bool CPlayerSaveDAO::ShouldBeReplacedBy(IDAO* pDAO)
+CPlayerInsertDAO::CPlayerInsertDAO(CHL2RP_Player* pPlayer) : CPlayerSaveDAO(pPlayer)
 {
-	return CPlayerDAO::ShouldBeReplacedBy(pDAO->ToClass(this));
+
 }
 
-void CPlayerSaveDAO::ExecuteKeyValues(CKeyValuesEngine* pKeyValues)
+CDAOThread::EDAOCollisionResolution CPlayerInsertDAO::Collide(IDAO* pDAO)
+{
+	return TryResolveReplacement(Equals(pDAO->ToClass(this)));
+}
+
+void CPlayerInsertDAO::Execute(CKeyValuesEngine* pKVEngine)
 {
 	char path[MAX_PATH];
-	BuildKeyValuesPath(PLAYER_MAINDAO_COLLECTION_NAME, path, sizeof(path));
-	KeyValues* pPlayerData = pKeyValues->LoadFromFile(path, PLAYER_MAINDAO_COLLECTION_NAME, true);
-	pPlayerData->SetString("steamid", m_NetworkIdString);
+	BuildKeyValuesPath(PLAYER_MAIN_DAO_COLLECTION_NAME, path, sizeof(path));
+	KeyValues* pPlayerData = pKVEngine->LoadFromFile(path, PLAYER_MAIN_DAO_COLLECTION_NAME, true);
+	pPlayerData->SetString("steamId", m_NetworkIdString);
 	pPlayerData->SetString("name", m_Name);
 	pPlayerData->SetInt("seconds", m_iSeconds);
 	pPlayerData->SetInt("crime", m_iCrime);
-	pPlayerData->SetInt("accessflags", m_iAccessFlags);
+	pPlayerData->SetInt("accessFlags", m_AccessFlags);
 	pPlayerData->SetInt("health", m_iHealth);
 	pPlayerData->SetInt("suit", m_iArmor);
-	pKeyValues->SaveToFile(pPlayerData, path);
+	pKVEngine->SaveToFile(pPlayerData, path);
 }
 
-void CPlayerSaveDAO::ExecuteSQLite(CSQLEngine* pSQL)
+void CPlayerInsertDAO::Execute(CSQLEngine* pSQL)
 {
-	pSQL->BeginTxn();
-	ExecutePreparedSQLStatement(pSQL, PLAYER_MAINDAO_SQLITE_UPDATE_QUERY, 7, 1, 2, 3, 4, 5, 6);
-	ExecutePreparedSQLStatement(pSQL, PLAYER_MAINDAO_SQLITE_INSERT_QUERY, 1, 2, 3, 4, 5, 6, 7);
-	pSQL->EndTxn();
-}
-
-void CPlayerSaveDAO::ExecuteMySQL(CSQLEngine* pSQL)
-{
-	pSQL->BeginTxn();
-	void* pStmt = PrepareSQLStatement(pSQL, PLAYER_MAINDAO_MYSQL_SAVE_QUERY, 1, 2, 3, 4, 5, 6, 7);
-	BindSQLDTO(pSQL, pStmt, 8, 9, 10, 11, 12, 13);
-	pSQL->ExecutePreparedStatement(pStmt);
-	pSQL->EndTxn();
-}
-
-void CPlayerSaveDAO::BindSQLDTO(CSQLEngine* pSQL, void* pStmt, int namePos, int secondsPos,
-	int crimePos, int accessFlagsPos, int healthPos, int suitPos)
-{
-	pSQL->BindString(pStmt, namePos, m_Name);
-	pSQL->BindInt(pStmt, secondsPos, m_iSeconds);
-	pSQL->BindInt(pStmt, crimePos, m_iCrime);
-	pSQL->BindInt(pStmt, accessFlagsPos, m_iAccessFlags);
-	pSQL->BindInt(pStmt, healthPos, m_iHealth);
-	pSQL->BindInt(pStmt, suitPos, m_iArmor);
-}
-
-void* CPlayerSaveDAO::PrepareSQLStatement(CSQLEngine* pSQL, const char* pQueryText,
-	int networkIdStringPos, int namePos, int secondsPos, int crimePos, int accessFlagsPos,
-	int healthPos, int suitPos)
-{
-	void* pStmt = pSQL->PrepareStatement(pQueryText);
-	CPlayerDAO::BindSQLDTO(pSQL, pStmt, networkIdStringPos);
-	BindSQLDTO(pSQL, pStmt, namePos, secondsPos, crimePos, accessFlagsPos, healthPos, suitPos);
-	return pStmt;
-}
-
-void CPlayerSaveDAO::ExecutePreparedSQLStatement(CSQLEngine* pSQL, const char* pQueryText,
-	int networkIdStringPos, int namePos, int secondsPos, int crimePos, int accessFlagsPos,
-	int healthPos, int suitPos)
-{
-	void* pStmt = PrepareSQLStatement(pSQL, pQueryText, networkIdStringPos, namePos, secondsPos,
-		crimePos, accessFlagsPos, healthPos, suitPos);
+	void* pStmt = pSQL->FormatAndPrepareStatement("INSERT INTO Player "
+		"(steamId, name, seconds, crime, accessFlags, health, suit) "
+		"VALUES (?, ?, %i, %i, %i, %i, %i);", m_iSeconds, m_iCrime, m_AccessFlags, m_iHealth, m_iArmor);
+	pSQL->BindString(pStmt, 1, m_NetworkIdString);
+	pSQL->BindString(pStmt, 2, m_Name);
 	pSQL->ExecutePreparedStatement(pStmt);
 }
 
-bool CPlayersAmmoInitDAO::ShouldBeReplacedBy(IDAO* pDAO)
+CPlayerUpdateDAO::CPlayerUpdateDAO(CHL2RP_Player* pPlayer, int propSelectionMask)
+	: CPlayerSaveDAO(pPlayer),
+	m_PropSelectionFlags(propSelectionMask | CHL2RP_Player::EDALMainPropSelection::Name)
 {
-	return (pDAO->ToClass(this) != NULL);
+
 }
 
-void CPlayersAmmoInitDAO::ExecuteSQL(CSQLEngine* pSQL)
+CDAOThread::EDAOCollisionResolution CPlayerUpdateDAO::Collide(IDAO* pDAO)
 {
-	pSQL->ExecuteFormatQuery(PLAYER_AMMODAO_SQL_SETUP_QUERY, NULL, PLAYER_AMMODAO_COLLECTION_NAME,
-		MAX_NETWORKID_LENGTH, PLAYER_MAINDAO_COLLECTION_NAME);
+	CPlayerUpdateDAO* pPlayerUpdateDAO = pDAO->ToClass(this);
+
+	if (Equals(pPlayerUpdateDAO))
+	{
+		pPlayerUpdateDAO->m_PropSelectionFlags.SetFlag(m_PropSelectionFlags);
+		return CDAOThread::EDAOCollisionResolution::ReplaceQueued;
+	}
+
+	return CDAOThread::EDAOCollisionResolution::None;
+}
+
+void CPlayerUpdateDAO::Execute(CKeyValuesEngine* pKVEngine)
+{
+	char path[MAX_PATH];
+	BuildKeyValuesPath(PLAYER_MAIN_DAO_COLLECTION_NAME, path, sizeof(path));
+	KeyValues* pPlayerData = pKVEngine->LoadFromFile(path, PLAYER_MAIN_DAO_COLLECTION_NAME, true);
+	pPlayerData->SetString("steamId", m_NetworkIdString);
+	pPlayerData->SetString("name", m_Name);
+
+	if (m_PropSelectionFlags.IsFlagSet(CHL2RP_Player::EDALMainPropSelection::Seconds))
+	{
+		pPlayerData->SetInt("seconds", m_iSeconds);
+	}
+
+	if (m_PropSelectionFlags.IsFlagSet(CHL2RP_Player::EDALMainPropSelection::Crime))
+	{
+		pPlayerData->SetInt("crime", m_iCrime);
+	}
+
+	if (m_PropSelectionFlags.IsFlagSet(CHL2RP_Player::EDALMainPropSelection::AccessFlags))
+	{
+		pPlayerData->SetInt("accessFlags", m_AccessFlags);
+	}
+
+	if (m_PropSelectionFlags.IsFlagSet(CHL2RP_Player::EDALMainPropSelection::Health))
+	{
+		pPlayerData->SetInt("health", m_iHealth);
+	}
+
+	if (m_PropSelectionFlags.IsFlagSet(CHL2RP_Player::EDALMainPropSelection::Armor))
+	{
+		pPlayerData->SetInt("suit", m_iArmor);
+	}
+
+	pKVEngine->SaveToFile(pPlayerData, path);
+}
+
+void CPlayerUpdateDAO::Execute(CSQLEngine* pSQL)
+{
+	char query[DAL_ENGINE_SQL_QUERY_SIZE];
+	int queryLen = Q_snprintf(query, sizeof(query), "UPDATE %s SET name = ?",
+		PLAYER_MAIN_DAO_COLLECTION_NAME);
+
+	if (m_PropSelectionFlags.IsFlagSet(CHL2RP_Player::EDALMainPropSelection::Seconds))
+	{
+		queryLen += Q_snprintf(query + queryLen, sizeof(query) - queryLen,
+			", seconds = %i", m_iSeconds);
+	}
+
+	if (m_PropSelectionFlags.IsFlagSet(CHL2RP_Player::EDALMainPropSelection::Crime))
+	{
+		queryLen += Q_snprintf(query + queryLen, sizeof(query) - queryLen,
+			", crime = %i", m_iCrime);
+	}
+
+	if (m_PropSelectionFlags.IsFlagSet(CHL2RP_Player::EDALMainPropSelection::AccessFlags))
+	{
+		queryLen += Q_snprintf(query + queryLen, sizeof(query) - queryLen,
+			", accessFlags = %i", m_AccessFlags);
+	}
+
+	if (m_PropSelectionFlags.IsFlagSet(CHL2RP_Player::EDALMainPropSelection::Health))
+	{
+		queryLen += Q_snprintf(query + queryLen, sizeof(query) - queryLen,
+			", health = %i", m_iHealth);
+	}
+
+	if (m_PropSelectionFlags.IsFlagSet(CHL2RP_Player::EDALMainPropSelection::Armor))
+	{
+		queryLen += Q_snprintf(query + queryLen, sizeof(query) - queryLen,
+			", suit = %i", m_iArmor);
+	}
+
+	Q_strncpy(query + queryLen, " WHERE steamId = ?;", sizeof(query) - queryLen);
+	void* pStmt = pSQL->PrepareStatement(query);
+	pSQL->BindString(pStmt, 1, m_Name);
+	pSQL->BindString(pStmt, 2, m_NetworkIdString);
+	pSQL->ExecutePreparedStatement(pStmt);
+}
+
+CDAOThread::EDAOCollisionResolution CPlayersAmmoInitDAO::Collide(IDAO* pDAO)
+{
+	return TryResolveReplacement(pDAO->ToClass(this) != NULL);
+}
+
+void CPlayersAmmoInitDAO::Execute(CSQLEngine* pSQL)
+{
+	pSQL->FormatAndExecuteQuery(PLAYER_AMMO_DAO_SQL_SETUP_QUERY, PLAYER_AMMO_DAO_COLLECTION_NAME,
+		MAX_NETWORKID_LENGTH, PLAYER_MAIN_DAO_COLLECTION_NAME);
 }
 
 CPlayerAmmoDAO::CPlayerAmmoDAO(CHL2RP_Player* pPlayer, int playerAmmoIndex)
 	: CPlayerDAO(pPlayer), m_iAmmoIndex(playerAmmoIndex)
 {
-
+	Assert(m_iAmmoIndex > 0);
 }
 
-bool CPlayerAmmoDAO::ShouldBeReplacedBy(IDAO* pDAO)
+// Assumes order: CPlayerAmmoInsertDAO < CPlayerAmmoUpdateDAO < CPlayerAmmoDeleteDAO
+CDAOThread::EDAOCollisionResolution CPlayerAmmoDAO::Collide(IDAO* pDAO)
 {
-	CPlayerAmmoDAO* pPlayerAmmoDAO = pDAO->ToClass(this);
-	return (CPlayerDAO::ShouldBeReplacedBy(pPlayerAmmoDAO)
-		&& pPlayerAmmoDAO->m_iAmmoIndex == m_iAmmoIndex);
+	return TryResolveReplacement(Equals(pDAO->ToClass(this)));
 }
 
-void CPlayerAmmoDAO::BindSQLDTO(CSQLEngine* pSQL, void* pStmt, int networkIdStringPos, int ammoIndexPos)
+bool CPlayerAmmoDAO::Equals(CPlayerAmmoDAO* pDAO)
 {
-	CPlayerDAO::BindSQLDTO(pSQL, pStmt, networkIdStringPos);
-	pSQL->BindInt(pStmt, ammoIndexPos, m_iAmmoIndex);
+	return (CPlayerDAO::Equals(pDAO) && pDAO->m_iAmmoIndex == m_iAmmoIndex);
 }
 
 CPlayerAmmoSaveDAO::CPlayerAmmoSaveDAO(CHL2RP_Player* pPlayer, int playerAmmoIndex)
-	: CPlayerAmmoDAO(pPlayer, playerAmmoIndex), m_iAmmoCount(pPlayer->GetAmmoCount(playerAmmoIndex))
+	: CPlayerAmmoDAO(pPlayer, playerAmmoIndex), m_iAmmoCount(Max(pPlayer->GetAmmoCount(playerAmmoIndex), 0))
 {
 
 }
 
-void CPlayerAmmoSaveDAO::ExecuteKeyValues(CKeyValuesEngine* pKeyValues)
+void CPlayerAmmoSaveDAO::Execute(CKeyValuesEngine* pKVEngine)
 {
 	char path[MAX_PATH];
-	BuildKeyValuesPath(PLAYER_AMMODAO_COLLECTION_NAME, path, sizeof(path));
-	KeyValues* pResult = pKeyValues->LoadFromFile(path, PLAYER_AMMODAO_COLLECTION_NAME, true);
+	BuildKeyValuesPath(PLAYER_AMMO_DAO_COLLECTION_NAME, path, sizeof(path));
+	KeyValues* pResult = pKVEngine->LoadFromFile(path, PLAYER_AMMO_DAO_COLLECTION_NAME, true);
 	pResult->SetInt(NULL, m_iAmmoIndex);
 	pResult->SetInt(pResult->GetString(), m_iAmmoCount);
-	pKeyValues->SaveToFile(pResult, path);
+	pKVEngine->SaveToFile(pResult, path);
 }
 
-void CPlayerAmmoSaveDAO::ExecuteSQLite(CSQLEngine* pSQL)
+CPlayerAmmoInsertDAO::CPlayerAmmoInsertDAO(CHL2RP_Player* pPlayer, int playerAmmoIndex)
+	: CPlayerAmmoSaveDAO(pPlayer, playerAmmoIndex)
 {
-	// Secure CHECK constraints!
-	if (m_iAmmoIndex > 0 && m_iAmmoCount >= 0)
+
+}
+
+CDAOThread::EDAOCollisionResolution CPlayerAmmoInsertDAO::Collide(CKeyValuesEngine* pKVEngine, IDAO* pDAO)
+{
+	if (Equals(pDAO->ToClass<CPlayerAmmoDeleteDAO>()))
 	{
-		pSQL->BeginTxn();
-		ExecutePreparedSQLStatement(pSQL, PLAYER_AMMODAO_SQLITE_INSERT_QUERY, 2, 3, 1);
-		ExecutePreparedSQLStatement(pSQL, PLAYER_AMMODAO_SQLITE_UPDATE_QUERY, 1, 2, 3);
-		pSQL->EndTxn();
+		return CDAOThread::EDAOCollisionResolution::RemoveBothAndStop;
 	}
+
+	return CPlayerAmmoDAO::Collide(pDAO);
 }
 
-void CPlayerAmmoSaveDAO::ExecuteMySQL(CSQLEngine* pSQL)
+CDAOThread::EDAOCollisionResolution CPlayerAmmoInsertDAO::Collide(CSQLEngine* pSQL, IDAO* pDAO)
 {
-	void* pStmt = PrepareSQLStatement(pSQL, PLAYER_AMMODAO_MYSQL_SAVE_QUERY, 1, 2, 3);
-	pSQL->BindInt(pStmt, 4, m_iAmmoCount);
+	if (Equals(pDAO->ToClass<CPlayerAmmoDeleteDAO>()))
+	{
+		return CDAOThread::EDAOCollisionResolution::RemoveBothAndStop;
+	}
+
+	return TryResolveReplacement(Equals(pDAO->ToClass(this)));
+}
+
+void CPlayerAmmoInsertDAO::Execute(CSQLEngine* pSQL)
+{
+	void* pStmt = pSQL->FormatAndPrepareStatement("INSERT INTO %s (steamId, `index`, count) "
+		"VALUES (?, %i, %i);", PLAYER_AMMO_DAO_COLLECTION_NAME, m_iAmmoIndex, m_iAmmoCount);
+	BindSQLDTO(pSQL, pStmt);
 	pSQL->ExecutePreparedStatement(pStmt);
 }
 
-void* CPlayerAmmoSaveDAO::PrepareSQLStatement(CSQLEngine* pSQL, const char* pQueryText,
-	int networkIdStringPos, int ammoIndexPos, int ammoCountPos)
+CPlayerAmmoUpdateDAO::CPlayerAmmoUpdateDAO(CHL2RP_Player* pPlayer, int playerAmmoIndex)
+	: CPlayerAmmoSaveDAO(pPlayer, playerAmmoIndex)
 {
-	void* pStmt = pSQL->PrepareStatement(pQueryText);
-	BindSQLDTO(pSQL, pStmt, networkIdStringPos, ammoIndexPos);
-	pSQL->BindInt(pStmt, ammoCountPos, m_iAmmoCount);
-	return pStmt;
+
 }
 
-void CPlayerAmmoSaveDAO::ExecutePreparedSQLStatement(CSQLEngine* pSQL, const char* pQueryText,
-	int networkIdStringPos, int ammoIndexPos, int ammoCountPos)
+void CPlayerAmmoUpdateDAO::Execute(CSQLEngine* pSQL)
 {
-	void* pStmt = PrepareSQLStatement(pSQL, pQueryText, networkIdStringPos, ammoIndexPos, ammoCountPos);
+	void* pStmt = pSQL->FormatAndPrepareStatement("UPDATE %s SET count = %i "
+		"WHERE steamId = ? AND `index` = %i;",
+		PLAYER_AMMO_DAO_COLLECTION_NAME, m_iAmmoCount, m_iAmmoIndex);
+	BindSQLDTO(pSQL, pStmt);
 	pSQL->ExecutePreparedStatement(pStmt);
 }
 
@@ -511,11 +579,11 @@ CPlayerAmmoDeleteDAO::CPlayerAmmoDeleteDAO(CHL2RP_Player* pPlayer, int playerAmm
 
 }
 
-void CPlayerAmmoDeleteDAO::ExecuteKeyValues(CKeyValuesEngine* pKeyValues)
+void CPlayerAmmoDeleteDAO::Execute(CKeyValuesEngine* pKVEngine)
 {
 	char path[MAX_PATH];
-	BuildKeyValuesPath(PLAYER_AMMODAO_COLLECTION_NAME, path, sizeof(path));
-	KeyValues* pResult = pKeyValues->LoadFromFile(path, PLAYER_AMMODAO_COLLECTION_NAME);
+	BuildKeyValuesPath(PLAYER_AMMO_DAO_COLLECTION_NAME, path, sizeof(path));
+	KeyValues* pResult = pKVEngine->LoadFromFile(path, PLAYER_AMMO_DAO_COLLECTION_NAME);
 
 	if (pResult != NULL)
 	{
@@ -525,28 +593,29 @@ void CPlayerAmmoDeleteDAO::ExecuteKeyValues(CKeyValuesEngine* pKeyValues)
 		if (pAmmoData != NULL)
 		{
 			pResult->RemoveSubKey(pAmmoData);
-			pKeyValues->SaveToFile(pResult, path);
+			pKVEngine->SaveToFile(pResult, path);
 		}
 	}
 }
 
-void CPlayerAmmoDeleteDAO::ExecuteSQL(CSQLEngine* pSQL)
+void CPlayerAmmoDeleteDAO::Execute(CSQLEngine* pSQL)
 {
-	void* pStmt = pSQL->PrepareStatement(PLAYER_AMMODAO_MYSQL_DELETE_QUERY);
-	BindSQLDTO(pSQL, pStmt, 1, 2);
+	void* pStmt = pSQL->FormatAndPrepareStatement("DELETE FROM %s WHERE steamId = ? AND `index` = %i;",
+		PLAYER_AMMO_DAO_COLLECTION_NAME, m_iAmmoIndex);
+	BindSQLDTO(pSQL, pStmt);
 	pSQL->ExecutePreparedStatement(pStmt);
 }
 
-bool CPlayerWeaponsInitDAO::ShouldBeReplacedBy(IDAO* pDAO)
+CDAOThread::EDAOCollisionResolution CPlayerWeaponsInitDAO::Collide(IDAO* pDAO)
 {
-	return (pDAO->ToClass(this) != NULL);
+	return TryResolveReplacement(pDAO->ToClass(this) != NULL);
 }
 
-void CPlayerWeaponsInitDAO::ExecuteSQL(CSQLEngine* pSQL)
+void CPlayerWeaponsInitDAO::Execute(CSQLEngine* pSQL)
 {
-	pSQL->ExecuteFormatQuery(PLAYER_WEAPONDAO_SQL_SETUP_QUERY, NULL,
-		PLAYER_WEAPONDAO_COLLECTION_NAME, MAX_NETWORKID_LENGTH, MAX_WEAPON_STRING,
-		PLAYER_MAINDAO_COLLECTION_NAME, WEAPON_NOCLIP, WEAPON_NOCLIP);
+	pSQL->FormatAndExecuteQuery(PLAYER_WEAPON_DAO_SQL_SETUP_QUERY, PLAYER_WEAPON_DAO_COLLECTION_NAME,
+		MAX_NETWORKID_LENGTH, MAX_WEAPON_STRING, PLAYER_MAIN_DAO_COLLECTION_NAME, WEAPON_NOCLIP,
+		WEAPON_NOCLIP);
 }
 
 CPlayerWeaponDAO::CPlayerWeaponDAO(CHL2RP_Player* pPlayer, CBaseCombatWeapon* pWeapon)
@@ -555,72 +624,82 @@ CPlayerWeaponDAO::CPlayerWeaponDAO(CHL2RP_Player* pPlayer, CBaseCombatWeapon* pW
 	Q_strcpy(m_WeaponClassname, pWeapon->GetClassname());
 }
 
-bool CPlayerWeaponDAO::ShouldBeReplacedBy(IDAO* pDAO)
+// Assumes order: CPlayerWeaponInsertDAO < CPlayerWeaponUpdateDAO < CPlayerWeaponDeleteDAO
+CDAOThread::EDAOCollisionResolution CPlayerWeaponDAO::Collide(IDAO* pDAO)
 {
-	CPlayerWeaponDAO* pPlayerWeaponDAO = pDAO->ToClass(this);
-	return (CPlayerDAO::ShouldBeReplacedBy(pPlayerWeaponDAO)
-		&& !Q_strcmp(pPlayerWeaponDAO->m_WeaponClassname, m_WeaponClassname));
+	return TryResolveReplacement(Equals(pDAO->ToClass(this)));
 }
 
-void CPlayerWeaponDAO::BindSQLDTO(CSQLEngine* pSQL, void* pStmt, int networkIdStringPos, int weaponClassnamePos)
+bool CPlayerWeaponDAO::Equals(CPlayerWeaponDAO* pDAO)
 {
-	CPlayerDAO::BindSQLDTO(pSQL, pStmt, networkIdStringPos);
-	pSQL->BindString(pStmt, weaponClassnamePos, m_WeaponClassname);
+	return (CPlayerDAO::Equals(pDAO) && Q_strcmp(pDAO->m_WeaponClassname, m_WeaponClassname) == 0);
 }
 
 CPlayerWeaponSaveDAO::CPlayerWeaponSaveDAO(CHL2RP_Player* pPlayer, CBaseCombatWeapon* pWeapon)
-	: CPlayerWeaponDAO(pPlayer, pWeapon), m_iClip1(pWeapon->Clip1()), m_iClip2(pWeapon->Clip2())
+	: CPlayerWeaponDAO(pPlayer, pWeapon), m_iClip1(Max(pWeapon->Clip1(), WEAPON_NOCLIP)),
+	m_iClip2(Max(pWeapon->Clip2(), WEAPON_NOCLIP))
 {
 
 }
 
-void CPlayerWeaponSaveDAO::ExecuteKeyValues(CKeyValuesEngine* pKeyValues)
+void CPlayerWeaponSaveDAO::Execute(CKeyValuesEngine* pKVEngine)
 {
 	char path[MAX_PATH];
-	BuildKeyValuesPath(PLAYER_WEAPONDAO_COLLECTION_NAME, path, sizeof(path));
-	KeyValues* pResult = pKeyValues->LoadFromFile(path, PLAYER_WEAPONDAO_COLLECTION_NAME, true);
+	BuildKeyValuesPath(PLAYER_WEAPON_DAO_COLLECTION_NAME, path, sizeof(path));
+	KeyValues* pResult = pKVEngine->LoadFromFile(path, PLAYER_WEAPON_DAO_COLLECTION_NAME, true);
 	KeyValues* pWeaponData = pResult->FindKey(m_WeaponClassname, true);
 	pWeaponData->SetInt("clip1", m_iClip1);
 	pWeaponData->SetInt("clip2", m_iClip2);
-	pKeyValues->SaveToFile(pResult, path);
+	pKVEngine->SaveToFile(pResult, path);
 }
 
-void CPlayerWeaponSaveDAO::ExecuteSQLite(CSQLEngine* pSQL)
+CPlayerWeaponInsertDAO::CPlayerWeaponInsertDAO(CHL2RP_Player* pPlayer, CBaseCombatWeapon* pWeapon)
+	: CPlayerWeaponSaveDAO(pPlayer, pWeapon)
 {
-	// Secure CHECK constraints!
-	if (m_iClip1 >= WEAPON_NOCLIP && m_iClip2 >= WEAPON_NOCLIP)
+
+}
+
+CDAOThread::EDAOCollisionResolution CPlayerWeaponInsertDAO::Collide(CKeyValuesEngine* pKVEngine, IDAO* pDAO)
+{
+	if (Equals(pDAO->ToClass<CPlayerWeaponDeleteDAO>()))
 	{
-		pSQL->BeginTxn();
-		ExecutePreparedSQLStatement(pSQL, PLAYER_WEAPONDAO_SQLITE_UPDATE_QUERY, 3, 4, 1, 2);
-		ExecutePreparedSQLStatement(pSQL, PLAYER_WEAPONDAO_SQLITE_INSERT_QUERY, 1, 2, 3, 4);
-		pSQL->EndTxn();
+		return CDAOThread::EDAOCollisionResolution::RemoveBothAndStop;
 	}
+
+	return CPlayerWeaponDAO::Collide(pDAO);
 }
 
-void CPlayerWeaponSaveDAO::ExecuteMySQL(CSQLEngine* pSQL)
+CDAOThread::EDAOCollisionResolution CPlayerWeaponInsertDAO::Collide(CSQLEngine* pSQL, IDAO* pDAO)
 {
-	pSQL->BeginTxn();
-	void* pStmt = PrepareSQLStatement(pSQL, PLAYER_WEAPONDAO_MYSQL_SAVE_QUERY, 1, 2, 3, 4);
-	pSQL->BindInt(pStmt, 5, m_iClip1);
-	pSQL->BindInt(pStmt, 6, m_iClip2);
+	if (Equals(pDAO->ToClass<CPlayerWeaponDeleteDAO>()))
+	{
+		return CDAOThread::EDAOCollisionResolution::RemoveBothAndStop;
+	}
+
+	return TryResolveReplacement(Equals(pDAO->ToClass(this)));
+}
+
+void CPlayerWeaponInsertDAO::Execute(CSQLEngine* pSQL)
+{
+	void* pStmt = pSQL->FormatAndPrepareStatement("INSERT INTO %s (steamId, weapon, clip1, clip2) "
+		"VALUES (?, '%s', %i, %i);", PLAYER_WEAPON_DAO_COLLECTION_NAME, m_WeaponClassname,
+		m_iClip1, m_iClip2);
+	BindSQLDTO(pSQL, pStmt);
 	pSQL->ExecutePreparedStatement(pStmt);
-	pSQL->EndTxn();
 }
 
-void* CPlayerWeaponSaveDAO::PrepareSQLStatement(CSQLEngine* pSQL, const char* pQueryText,
-	int networkIdStringPos, int weaponPos, int clip1Pos, int clip2Pos)
+CPlayerWeaponUpdateDAO::CPlayerWeaponUpdateDAO(CHL2RP_Player* pPlayer, CBaseCombatWeapon* pWeapon)
+	: CPlayerWeaponSaveDAO(pPlayer, pWeapon)
 {
-	void* pStmt = pSQL->PrepareStatement(pQueryText);
-	BindSQLDTO(pSQL, pStmt, networkIdStringPos, weaponPos);
-	pSQL->BindInt(pStmt, clip1Pos, m_iClip1);
-	pSQL->BindInt(pStmt, clip2Pos, m_iClip2);
-	return pStmt;
+
 }
 
-void CPlayerWeaponSaveDAO::ExecutePreparedSQLStatement(CSQLEngine* pSQL, const char* pQueryText,
-	int networkIdStringPos, int weaponPos, int clip1Pos, int clip2Pos)
+void CPlayerWeaponUpdateDAO::Execute(CSQLEngine* pSQL)
 {
-	void* pStmt = PrepareSQLStatement(pSQL, pQueryText, networkIdStringPos, weaponPos, clip1Pos, clip2Pos);
+	void* pStmt = pSQL->FormatAndPrepareStatement("UPDATE %s SET clip1 = %i, clip2 = %i "
+		"WHERE steamId = ? AND weapon = '%s';", PLAYER_WEAPON_DAO_COLLECTION_NAME,
+		m_iClip1, m_iClip2, m_WeaponClassname);
+	BindSQLDTO(pSQL, pStmt);
 	pSQL->ExecutePreparedStatement(pStmt);
 }
 
@@ -630,11 +709,11 @@ CPlayerWeaponDeleteDAO::CPlayerWeaponDeleteDAO(CHL2RP_Player* pPlayer, CBaseComb
 
 }
 
-void CPlayerWeaponDeleteDAO::ExecuteKeyValues(CKeyValuesEngine* pKeyValues)
+void CPlayerWeaponDeleteDAO::Execute(CKeyValuesEngine* pKVEngine)
 {
 	char path[MAX_PATH];
-	BuildKeyValuesPath(PLAYER_WEAPONDAO_COLLECTION_NAME, path, sizeof(path));
-	KeyValues* pResult = pKeyValues->LoadFromFile(path, PLAYER_WEAPONDAO_COLLECTION_NAME);
+	BuildKeyValuesPath(PLAYER_WEAPON_DAO_COLLECTION_NAME, path, sizeof(path));
+	KeyValues* pResult = pKVEngine->LoadFromFile(path, PLAYER_WEAPON_DAO_COLLECTION_NAME);
 
 	if (pResult != NULL)
 	{
@@ -643,14 +722,15 @@ void CPlayerWeaponDeleteDAO::ExecuteKeyValues(CKeyValuesEngine* pKeyValues)
 		if (pWeaponData != NULL)
 		{
 			pResult->RemoveSubKey(pWeaponData);
-			pKeyValues->SaveToFile(pResult, path);
+			pKVEngine->SaveToFile(pResult, path);
 		}
 	}
 }
 
-void CPlayerWeaponDeleteDAO::ExecuteSQL(CSQLEngine* pSQL)
+void CPlayerWeaponDeleteDAO::Execute(CSQLEngine* pSQL)
 {
-	void* pStmt = pSQL->PrepareStatement(PLAYER_WEAPONDAO_SQL_DELETE_QUERY);
-	BindSQLDTO(pSQL, pStmt, 1, 2);
+	void* pStmt = pSQL->FormatAndPrepareStatement("DELETE FROM %s WHERE steamId = ? AND weapon = '%s';",
+		PLAYER_WEAPON_DAO_COLLECTION_NAME, m_WeaponClassname);
+	BindSQLDTO(pSQL, pStmt);
 	pSQL->ExecutePreparedStatement(pStmt);
 }

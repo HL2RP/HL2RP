@@ -86,7 +86,7 @@ public:
 		const char* pToken, const char* pRawTranslation);
 
 	void SaveTranslation(CHL2RP_Player* pPlayer, const char* pRawTranslation);
-	void DiscardTranslation(CHL2RP_Player* pPlayer);
+	void RewindHeaderMenu(CHL2RP_Player* pPlayer);
 };
 
 class CLocalizationSaveItem : public CMenuAwareItem<CLocalizationSaveMenu>

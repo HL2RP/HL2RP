@@ -90,7 +90,7 @@ class CHL2RP_Player : public CHL2MP_Player
 	void SetIdealActivity(Activity idealActivity, int sequence);
 	void TrySetIdealActivityOrGesture(Activity standActivity, Activity crouchedActivity,
 		Activity standGesture, Activity crouchedGesture, float duration = 0.0f);
-	void TryUpsertWeapon(CBaseCombatWeapon* pWeapon);
+	void TrySyncWeapon(CBaseCombatWeapon* pWeapon);
 	CBaseEntity* FindRandomNearbySpawnPoint(const char* pSpawnPointClassName);
 	void CenterHUDLinesClearContextThink();
 
@@ -117,22 +117,43 @@ public:
 		SaveData = (1 << 1)
 	};
 
+	enum EDALMainPropSelection
+	{
+		Name = (1 << 0),
+		Seconds = (1 << 1),
+		Crime = (1 << 2),
+		Health = (1 << 3),
+		Armor = (1 << 4),
+		AccessFlags = (1 << 5)
+	};
+
 	CHL2RP_Player();
 
 	void SetModel(const char* pModelPath) OVERRIDE;
 	void SetArmorValue(int armorValue) OVERRIDE;
 
-	bool IsAdmin() const;
+	bool IsAdmin() const
+	{
+		return (m_AccessFlags.IsFlagSet(EAccessFlag::Admin));
+	}
+
 	const char* GetNetworkIDString();
-	void TrySyncMainData();
 	void SetCrime(int crime);
 	void SetAccessFlags(int accessFlags);
 	void AddAlertHUDLine(const char* pLine, float duration,
 		CHUDChannelLine::EType type = CHUDChannelLine::None);
 	void SetupSoundsByJobTeam();
 	void TryGiveLoadedHpAndArmor(int health, int armor);
-	void TryGiveLoadedWeapon(const char* pWeaponClassName, int clip1, int clip2);
-	template<class T = CPlayerDialog, typename... U> void DisplayDialog(U... args);
+	CBaseCombatWeapon *TryGiveLoadedWeapon(const char* pWeaponClassName, int clip1, int clip2);
+
+	template<class T = CPlayerDialog, typename... U> void DisplayDialog(U... args)
+	{
+		CPlayerDialog* pDialog = new T(this, args...);
+		DisplayDialog(pDialog);
+	}
+
+	// Input: propSelectionMask - A mask from EDALMainPropSelection values
+	void TrySyncMainData(int propSelectionMask);
 
 	// Queries and caches network ID string from engine. Then, attempts to load main data.
 	// Output: Whether pNetworkIdString matches this player's cached network ID string
@@ -151,7 +172,7 @@ public:
 	float m_flNextHUDChannelTime[MAX_NETMESSAGE];
 	CPlayerDialog* m_pCurrentDialog;
 	int m_iLastDialogLevel;
-	CUtlFlags<int> m_DALSyncFlags;
+	CUtlFlags<int> m_DALSyncCaps;
 
 	// To be filled when the results of equipment data, loaded from DB, are handled while dead.
 	// The real equipment should be given on next spawn, from this KV.
@@ -162,18 +183,6 @@ public:
 FORCEINLINE CHL2RP_Player* ToHL2RPPlayer_Fast(CBaseEntity* pEntity)
 {
 	return static_cast<CHL2RP_Player*>(pEntity);
-}
-
-FORCEINLINE bool CHL2RP_Player::IsAdmin() const
-{
-	return (m_AccessFlags.IsFlagSet(EAccessFlag::Admin));
-}
-
-template<class T, typename... U>
-FORCEINLINE void CHL2RP_Player::DisplayDialog(U... args)
-{
-	CPlayerDialog* pDialog = new T(this, args...);
-	DisplayDialog(pDialog);
 }
 
 // Downcasts shorter from CBaseEntity to this class (safe version)

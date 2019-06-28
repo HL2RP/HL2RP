@@ -1,9 +1,9 @@
 #include <cbase.h>
 #include "HL2RPDAL.h"
-#include "DALEngine.h"
 #include "DispenserDAO.h"
 #include <filesystem.h>
 #include <HL2RPRules.h>
+#include "IDALEngine.h"
 #include "DAL/JobDAO.h"
 #include "PhraseDAO.h"
 #include "PlayerDAO.h"
@@ -48,6 +48,7 @@ int CDAOThread::Run()
 				Reply(CallResponse_None);
 
 				ProcessDAOList();
+				Assert(m_WorkerWaitingState == WorkerWaitingState_ProcessDAOList);
 			}
 			else if (request == ECallRequest::Stop)
 			{
@@ -69,37 +70,37 @@ int CDAOThread::Run()
 
 void CDAOThread::InsertDAO(IDAO* pDAO)
 {
-	Assert(pDAO != NULL);
+	Assert(GetHL2RPDALEngine() != NULL);
 	AUTO_LOCK(m_DAOListMutex);
 
 	// Start colliding with existing DAOs to optimize out the list
-	for (UtlPtrLinkedListIndex_t i = m_DAOList.Head(); m_DAOList.IsValidIndex(i);
-		i = m_DAOList.Next(i))
+	for (int i = m_DAOList.Tail(), incomingDAOIndex = m_DAOList.AddToTail(pDAO);
+		m_DAOList.IsValidIndex(i); i = m_DAOList.Previous(i))
 	{
-		if (m_DAOList[i]->ShouldBeReplacedBy(pDAO))
+		EDAOCollisionResolution resolution = GetHL2RPDALEngine()->DispatchCollide(m_DAOList[i], pDAO);
+
+		switch (resolution)
+		{
+		case EDAOCollisionResolution::ReplaceQueued:
 		{
 			ConDColorMsg(COLOR_GREEN, "DAL Optimization: Replacing %s with %s!\n",
 				typeid(*m_DAOList[i]).name(), typeid(*pDAO).name());
-			m_DAOList.InsertBefore(i, pDAO);
+			delete m_DAOList[i];
+			m_DAOList.Remove(incomingDAOIndex);
+			m_DAOList[i] = pDAO;
+			incomingDAOIndex = i;
+			break;
 		}
-		else if (m_DAOList[i]->ShouldRemoveBoth(pDAO))
+		case EDAOCollisionResolution::RemoveBothAndStop:
 		{
 			ConDColorMsg(COLOR_GREEN, "DAL Optimization: Removing %s and %s!\n",
 				typeid(*m_DAOList[i]).name(), typeid(*pDAO).name());
-			delete pDAO;
+			delete m_DAOList[i], pDAO;
+			m_DAOList.Remove(incomingDAOIndex);
+			return m_DAOList.Remove(i);
 		}
-		else
-		{
-			continue;
 		}
-
-		// At this point, the initially existing DAO should be removed
-		delete m_DAOList[i];
-		return m_DAOList.Remove(i);
 	}
-
-	// No removal happened, append it to the list normally
-	m_DAOList.AddToTail(pDAO);
 }
 
 void CDAOThread::ProcessDAOList()
@@ -108,28 +109,27 @@ void CDAOThread::ProcessDAOList()
 
 	for (;;)
 	{
-		// Always protect the shared DAO list (via lock)
-		m_DAOListMutex.Lock();
-
-		UtlPtrLinkedListIndex_t head = m_DAOList.Head();
-
-		if (!m_DAOList.IsValidIndex(head))
 		{
-			m_DAOListMutex.Unlock();
-			m_WorkerWaitingState = WorkerWaitingState_ProcessDAOList;
-			break;
-		}
+			// Always protect the shared DAO list (via lock)
+			AUTO_LOCK(m_DAOListMutex);
 
-		// Extract next DAO (head) and release the lock, as it's safe already
-		m_pHandlingDAO = m_DAOList[head];
-		m_DAOList.Remove(head);
-		m_DAOListMutex.Unlock();
+			if (m_DAOList.Count() < 1)
+			{
+				m_WorkerWaitingState = EWorkerWaitingState::WorkerWaitingState_ProcessDAOList;
+				break;
+			}
+
+			// Extract next DAO (head) and release the lock, as it's safe already
+			int head = m_DAOList.Head();
+			m_pHandlingDAO = m_DAOList[head];
+			m_DAOList.Remove(head);
+		}
 
 		try
 		{
 			GetHL2RPDALEngine()->DispatchExecute(m_pHandlingDAO);
 
-			// Wait for main thread to process results for best concurrent safety
+			// Wait for main thread to process results for concurrency safety
 			m_WorkerWaitingState = WorkerWaitingState_AckResultsHandled;
 
 			for (unsigned int request;;)
@@ -139,13 +139,11 @@ void CDAOThread::ProcessDAOList()
 				{
 					continue;
 				}
-
-				m_WorkerWaitingState = WorkerWaitingState_None;
-
-				if (request == CallRequest_AckResultsHandled)
+				else if (request == CallRequest_AckResultsHandled)
 				{
 					GetHL2RPDALEngine()->CloseResults();
 					m_pHandlingDAO = NULL;
+					m_WorkerWaitingState = WorkerWaitingState_None;
 					Reply(ECallResponse::ResultsClosed);
 					break;
 				}
@@ -181,7 +179,7 @@ void CDAOThread::AddAsyncDAO(IDAO* pDAO)
 	}
 }
 
-void CDAOThread::TryHandleDAOResults()
+bool CDAOThread::TryHandleDAOResults()
 {
 	// Check if worker thread awaits handling results in the main thread
 	if (m_WorkerWaitingState == WorkerWaitingState_AckResultsHandled)
@@ -190,45 +188,63 @@ void CDAOThread::TryHandleDAOResults()
 		GetHL2RPDALEngine()->DispatchHandleResults(m_pHandlingDAO);
 		delete m_pHandlingDAO;
 		CallWorker(CallRequest_AckResultsHandled);
+		return true;
 	}
+
+	return false;
 }
 
 // Stops the thread, not before fully processing the DAO list
 void CDAOThread::ProcessDAOListAndStop()
 {
-	// Was the thread even started?
-	while (IsThreadRunning())
-	{
-		TryHandleDAOResults();
+	int daoCount;
 
-		if (m_WorkerWaitingState == WorkerWaitingState_ProcessDAOList)
+	{
+		AUTO_LOCK(m_DAOListMutex);
+		daoCount = m_DAOList.Count();
+
+		if (daoCount > 0)
 		{
-			CallWorker(ECallRequest::Stop);
+			if (m_pHandlingDAO != NULL)
+			{
+				daoCount++;
+			}
+
+			Warning("CDAOThread: Server paused to complete %i pending database operations. "
+				"If you shutdown the server, game data will be lost. Please wait...\n", daoCount);
 		}
 	}
-}
 
-CHL2RPDAL::CHL2RPDAL() : m_pEngine(NULL)
-{
+	// Was the thread even started?
+	if (IsThreadRunning())
+	{
+		while (m_WorkerWaitingState != WorkerWaitingState_ProcessDAOList)
+		{
+			if (TryHandleDAOResults())
+			{
+				if (--daoCount > 0)
+				{
+					Msg("CDAOThread: There are now %i pending database operations before resuming the server\n",
+						daoCount);
+					continue;
+				}
 
+				Msg("CDAOThread: All pending database operations have been completed. Resuming server...\n");
+			}
+		}
+
+		CallWorker(ECallRequest::Stop);
+	}
 }
 
 CHL2RPDAL::~CHL2RPDAL()
 {
-	// Free the DAL Engine handler
-	if (m_pEngine != NULL)
+	// In presence of a containing module, we must unload it outside the interface,
+	// and the interface will be destroyed along it. Closing the module inside the interface is unsafe.
+	if (m_EngineRef != NULL && m_EngineRef->GetModule() != NULL)
 	{
-		// In presence of a containing module, unloading it already calls the destructor
-		if (m_pEngine->GetModule() != NULL)
-		{
-			Sys_UnloadModule(m_pEngine->GetModule());
-		}
-		else
-		{
-			delete m_pEngine;
-		}
-
-		m_pEngine = NULL;
+		Sys_UnloadModule(m_EngineRef->GetModule());
+		m_EngineRef = NULL;
 	}
 }
 
@@ -251,8 +267,8 @@ void CHL2RPDAL::Init()
 		engine->GetGameDir(savePath, sizeof(savePath));
 		Q_MakeAbsolutePath(savePath, sizeof(savePath),
 			databaseInfo->GetString("database", HL2RP_DAL_KEYVALUES_DEFAULT_SAVEDIR_NAME), savePath);
-		filesystem->AddSearchPath(savePath, DALENGINE_KEYVALUES_SAVE_PATH_ID);
-		m_pEngine = new CKeyValuesEngine;
+		filesystem->AddSearchPath(savePath, DAL_ENGINE_KEYVALUES_SAVE_PATH_ID);
+		m_EngineRef = new CKeyValuesEngine;
 	}
 	else if (Q_strcmp(pDriverName, HL2RP_DAL_SQLITE_DRIVER_NAME) == 0)
 	{
@@ -269,7 +285,7 @@ void CHL2RPDAL::Init()
 		CSysModule* pSQLiteEngineModule;
 		CSQLEngine* pSQLiteEngineIface;
 
-		if (!Sys_LoadInterface(sqliteEnginePath, DALENGINE_SQLITE_IMPL_VERSION_STRING,
+		if (!Sys_LoadInterface(sqliteEnginePath, DAL_ENGINE_SQLITE_IMPL_VERSION_STRING,
 			&pSQLiteEngineModule, (void**)& pSQLiteEngineIface))
 		{
 			return Msg("SQLite3 error: driver was configured to be used but SQLite3 library is"
@@ -286,7 +302,7 @@ void CHL2RPDAL::Init()
 		}
 
 		pSQLiteEngineIface->SetModule(pSQLiteEngineModule);
-		m_pEngine = pSQLiteEngineIface;
+		m_EngineRef = pSQLiteEngineIface;
 	}
 	else if (Q_strcmp(pDriverName, HL2RP_DAL_MYSQL_DRIVER_NAME) == 0)
 	{
@@ -298,7 +314,7 @@ void CHL2RPDAL::Init()
 		CSysModule* pMySQLEngineModule;
 		CSQLEngine* pMySQLEngineIface;
 
-		if (!Sys_LoadInterface(mySQLEnginePath, DALENGINE_MYSQL_IMPL_VERSION_STRING,
+		if (!Sys_LoadInterface(mySQLEnginePath, DAL_ENGINE_MYSQL_IMPL_VERSION_STRING,
 			&pMySQLEngineModule, (void**)& pMySQLEngineIface))
 		{
 			return Msg("MySQL error: driver was configured to be used but MySQL Connector library"
@@ -313,7 +329,7 @@ void CHL2RPDAL::Init()
 		}
 
 		pMySQLEngineIface->SetModule(pMySQLEngineModule);
-		m_pEngine = pMySQLEngineIface;
+		m_EngineRef = pMySQLEngineIface;
 	}
 	else
 	{

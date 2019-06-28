@@ -8,9 +8,9 @@ class CPropRationDispenser;
 
 class CDispensersInitDAO : public IDAO
 {
-	bool ShouldBeReplacedBy(IDAO* pDAO);
-	void ExecuteSQLite(CSQLEngine* pSQL) OVERRIDE;
-	void ExecuteMySQL(CSQLEngine* pSQL) OVERRIDE;
+	CDAOThread::EDAOCollisionResolution Collide(IDAO* pDAO) OVERRIDE;
+	void Execute(CSQLiteEngine* pSQLite) OVERRIDE;
+	void Execute(CMySQLEngine* pMySQL) OVERRIDE;
 };
 
 // Shares DTO among Dispenser DAOs
@@ -19,7 +19,7 @@ class CMapDispenserDAO : public IDAO
 protected:
 	CMapDispenserDAO();
 
-	bool ShouldBeReplacedBy(CMapDispenserDAO* pThisClassDAO);
+	bool Equals(CMapDispenserDAO* pDAO);
 	void BuildKeyValuesPath(char* pDest, int destSize);
 	void BindSQLDTO(CSQLEngine* pSQL, void* pStmt, int mapNamePos);
 
@@ -28,9 +28,9 @@ protected:
 
 class CDispensersLoadDAO : public CMapDispenserDAO
 {
-	bool ShouldBeReplacedBy(IDAO* pDAO);
-	void ExecuteKeyValues(CKeyValuesEngine* pKeyValues) OVERRIDE;
-	void ExecuteSQL(CSQLEngine* pSQL) OVERRIDE;
+	CDAOThread::EDAOCollisionResolution Collide(IDAO* pDAO) OVERRIDE;
+	void Execute(CKeyValuesEngine* pKVEngine) OVERRIDE;
+	void Execute(CSQLEngine* pSQL) OVERRIDE;
 	void HandleResults(KeyValues* pResults) OVERRIDE;
 };
 
@@ -40,7 +40,9 @@ class CDispenserHandleDAO : public CMapDispenserDAO
 protected:
 	CDispenserHandleDAO(CPropRationDispenser* pDispenser);
 
-	bool ShouldBeReplacedBy(CDispenserHandleDAO* pThisClassDAO);
+	CDAOThread::EDAOCollisionResolution Collide(IDAO* pDAO) OVERRIDE;
+
+	bool Equals(CDispenserHandleDAO* pDAO);
 
 	CHandle<CPropRationDispenser> m_DispenserHandle;
 };
@@ -60,45 +62,40 @@ class CDispenserCoordsDAO : public CDispenserHandleDAO
 protected:
 	CDispenserCoordsDAO(CPropRationDispenser* pDispenser);
 
-	void* PrepareSQLStatement(CSQLEngine* pSQL, const char* pQueryText, int mapNamePos,
-		int xPos, int yPos, int zPos, int yawPos);
-
 	Vector m_vecCoords;
 	vec_t m_flYaw;
 };
 
-class CDispenserFirstSaveDAO : public CDispenserCoordsDAO
+class CDispenserInsertSaveDAO : public CDispenserCoordsDAO
 {
-	bool ShouldBeReplacedBy(IDAO* pDAO) OVERRIDE;
-	bool ShouldRemoveBoth(IDAO* pDAO) OVERRIDE;
-	void ExecuteKeyValues(CKeyValuesEngine* pKeyValues) OVERRIDE;
-	void ExecuteSQL(CSQLEngine* pSQL) OVERRIDE;
+	CDAOThread::EDAOCollisionResolution Collide(CKeyValuesEngine* pKVEngine, IDAO* pDAO) OVERRIDE;
+	CDAOThread::EDAOCollisionResolution Collide(CSQLEngine* pSQL, IDAO* pDAO) OVERRIDE;
+	void Execute(CKeyValuesEngine* pKVEngine) OVERRIDE;
+	void Execute(CSQLEngine* pSQL) OVERRIDE;
 	void HandleResults(KeyValues* pResults) OVERRIDE;
 
 public:
-	CDispenserFirstSaveDAO(CPropRationDispenser* pDispenser);
+	CDispenserInsertSaveDAO(CPropRationDispenser* pDispenser);
 };
 
-class CDispenserFurtherSaveDAO : public CDispenserCoordsDAO
+class CDispenserUpdateDAO : public CDispenserCoordsDAO
 {
-	bool ShouldBeReplacedBy(IDAO* pDAO) OVERRIDE;
-	void ExecuteKeyValues(CKeyValuesEngine* pKeyValues) OVERRIDE;
-	void ExecuteSQLite(CSQLEngine* pSQL) OVERRIDE;
-	void ExecuteMySQL(CSQLEngine* pSQL) OVERRIDE;
+	void Execute(CKeyValuesEngine* pKVEngine) OVERRIDE;
+	void Execute(CSQLEngine* pSQL) OVERRIDE;
 
 public:
-	CDispenserFurtherSaveDAO(CPropRationDispenser* pDispenser);
+	CDispenserUpdateDAO(CPropRationDispenser* pDispenser);
 
 protected:
-	CDispenserDatabaseIdDto m_DispenserDatabaseIdDto;
+	CDispenserDatabaseIdDto m_DatabaseIdDto;
 };
 
 class CDispenserDeleteDAO : public CDispenserHandleDAO
 {
-	void ExecuteKeyValues(CKeyValuesEngine* pKeyValues) OVERRIDE;
-	void ExecuteSQL(CSQLEngine* pSQL) OVERRIDE;
+	void Execute(CKeyValuesEngine* pKVEngine) OVERRIDE;
+	void Execute(CSQLEngine* pSQL) OVERRIDE;
 
-	CDispenserDatabaseIdDto m_DispenserDatabaseIdDto;
+	CDispenserDatabaseIdDto m_DatabaseIdDto;
 
 public:
 	CDispenserDeleteDAO(CPropRationDispenser* pDispenser);

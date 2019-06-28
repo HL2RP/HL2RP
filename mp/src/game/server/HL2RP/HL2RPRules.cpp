@@ -2,8 +2,7 @@
 #include "HL2RPRules.h"
 #include <ai_basenpc.h>
 #include "AutoLocalizer.h"
-#include "DAL/DALEngine.h"
-#include "DAL/IDAO.h"
+#include "DAL/IDALEngine.h"
 #include "HL2RPProperty.h"
 #include "HL2RP_Defs.h"
 #include "HL2RP_Player.h"
@@ -210,7 +209,7 @@ void CHL2RPRules::ClientDisconnected(edict_t* pEdict)
 	if (pPlayer != NULL)
 	{
 		// Weapons/ammo are going to be removed (on this BaseClass chain). Must disable syncing while disconnecting.
-		pPlayer->m_DALSyncFlags.ClearAllFlags();
+		pPlayer->m_DALSyncCaps.ClearAllFlags();
 
 		// ONLY AFTER syncing is off, clear safely the active weapon so BaseClass chain doesn't drop it
 		pPlayer->ClearActiveWeapon();
@@ -630,9 +629,9 @@ public:
 	CUserInputDAO(const char* pQueryText);
 
 private:
-	void ExecuteSQL(CSQLEngine* pSQL) OVERRIDE;
+	void Execute(CSQLEngine* pSQL) OVERRIDE;
 
-	char m_QueryText[HL2RP_DAL_SQL_ENGINE_QUERY_SIZE];
+	char m_QueryText[DAL_ENGINE_SQL_QUERY_SIZE];
 };
 
 CUserInputDAO::CUserInputDAO(const char* pQueryText)
@@ -640,7 +639,7 @@ CUserInputDAO::CUserInputDAO(const char* pQueryText)
 	Q_strncpy(m_QueryText, pQueryText, sizeof(m_QueryText));
 }
 
-void CUserInputDAO::ExecuteSQL(CSQLEngine* pSQL)
+void CUserInputDAO::Execute(CSQLEngine* pSQL)
 {
 	pSQL->ExecuteQuery(m_QueryText);
 }

@@ -47,11 +47,11 @@ void CDispenserMenu::TrySaveDispenser(CHL2RP_Player* pPlayer, CPropRationDispens
 	{
 		if (pDispenser->m_iDatabaseId == IDAO_INVALID_DATABASE_ID)
 		{
-			TryCreateAsyncDAO<CDispenserFirstSaveDAO>(pDispenser);
+			TryCreateAsyncDAO<CDispenserInsertSaveDAO>(pDispenser);
 		}
 		else
 		{
-			TryCreateAsyncDAO<CDispenserFurtherSaveDAO>(pDispenser);
+			TryCreateAsyncDAO<CDispenserUpdateDAO>(pDispenser);
 		}
 	}
 }

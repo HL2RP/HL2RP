@@ -54,8 +54,8 @@ $Project
 		{
 			$Folder "DAL"
 			{
-				$File	"HL2RP\DAL\DALEngine.cpp"
-				$File	"HL2RP\DAL\DALEngine.h"
+				$File	"HL2RP\DAL\IDALEngine.cpp"
+				$File	"HL2RP\DAL\IDALEngine.h"
 				$File	"HL2RP\DAL\DispenserDAO.cpp"
 				$File	"HL2RP\DAL\DispenserDAO.h"
 				$File	"HL2RP\DAL\HL2RPDAL.cpp"

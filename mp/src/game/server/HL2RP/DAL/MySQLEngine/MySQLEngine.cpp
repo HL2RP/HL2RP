@@ -1,5 +1,4 @@
-#include <DALEngine.h>
-#include <IDAO.h>
+#include <IDALEngine.h>
 #include <errmsg.h>
 #include <mysql.h>
 #include <mysqld_error.h>
@@ -35,7 +34,7 @@ CMySQLBindWrapper::~CMySQLBindWrapper()
 	}
 }
 
-class CMySQLEngine : public CSQLEngine
+class CMySQLEngineImpl : public CMySQLEngine
 {
 	void DispatchExecute(IDAO* pDAO) OVERRIDE;
 	void CloseResults() OVERRIDE;
@@ -59,7 +58,7 @@ class CMySQLEngine : public CSQLEngine
 	CUtlHashtable<MYSQL_STMT*, CUtlVector<CMySQLBindWrapper>> m_bindWrappersMap;
 
 public:
-	~CMySQLEngine();
+	~CMySQLEngineImpl();
 
 	void ClearBindings(MYSQL_STMT* pStmt);
 };
@@ -68,13 +67,16 @@ class CMySQLDAOException : public CDAOException
 {
 	bool ShouldRetry() OVERRIDE;
 
-	void PrintDetailedWarning(const char* pErrorMsg, int errorCode);
+	void PrintDetailedWarning(const char* pErrorMsg, int errorCode)
+	{
+		Warning("MySQL error: %s [Code: %i]\n", pErrorMsg, errorCode);
+	}
 
 	int m_iErrorCode;
 
 public:
 	CMySQLDAOException(MYSQL& connection);
-	CMySQLDAOException(MYSQL_STMT* pStmt, CMySQLEngine* pMySQLEngine);
+	CMySQLDAOException(MYSQL_STMT* pStmt, CMySQLEngineImpl* pMySQLEngine);
 	CMySQLDAOException(const MYSQL_BIND& bind, const char* pWarning, ...);
 };
 
@@ -83,7 +85,7 @@ CMySQLDAOException::CMySQLDAOException(MYSQL& connection) : m_iErrorCode(mysql_e
 	PrintDetailedWarning(mysql_error(&connection), m_iErrorCode);
 }
 
-CMySQLDAOException::CMySQLDAOException(MYSQL_STMT* pStmt, CMySQLEngine* pMySQLEngine)
+CMySQLDAOException::CMySQLDAOException(MYSQL_STMT* pStmt, CMySQLEngineImpl* pMySQLEngine)
 	: m_iErrorCode(mysql_stmt_errno(pStmt))
 {
 	pMySQLEngine->ClearBindings(pStmt);
@@ -119,38 +121,33 @@ bool CMySQLDAOException::ShouldRetry()
 	return false;
 }
 
-FORCEINLINE void CMySQLDAOException::PrintDetailedWarning(const char* pErrorMsg, int errorCode)
+void CMySQLEngineImpl::DispatchExecute(IDAO* pDAO)
 {
-	Warning("MySQL error: %s [Code: %i]\n", pErrorMsg, errorCode);
+	pDAO->Execute(this);
 }
 
-void CMySQLEngine::DispatchExecute(IDAO* pDAO)
-{
-	pDAO->ExecuteMySQL(this);
-}
-
-void CMySQLEngine::CloseResults()
+void CMySQLEngineImpl::CloseResults()
 {
 	CSQLEngine::CloseResults();
 	m_bindWrappersMap.RemoveAll();
 }
 
-void CMySQLEngine::BeginTxn()
+void CMySQLEngineImpl::BeginTxn()
 {
-	CMySQLEngine::ExecuteQuery("START TRANSACTION;");
+	CMySQLEngineImpl::ExecuteQuery("START TRANSACTION;");
 }
 
-void CMySQLEngine::EndTxn()
+void CMySQLEngineImpl::EndTxn()
 {
-	CMySQLEngine::ExecuteQuery("COMMIT;");
+	CMySQLEngineImpl::ExecuteQuery("COMMIT;");
 }
 
-CMySQLEngine::~CMySQLEngine()
+CMySQLEngineImpl::~CMySQLEngineImpl()
 {
 	mysql_close(&m_Connection);
 }
 
-bool CMySQLEngine::Connect(const char* pHostName, const char* pUserName,
+bool CMySQLEngineImpl::Connect(const char* pHostName, const char* pUserName,
 	const char* pPassText, const char* pSchemaName, int port)
 {
 	mysql_init(&m_Connection);
@@ -167,7 +164,7 @@ bool CMySQLEngine::Connect(const char* pHostName, const char* pUserName,
 	return false;
 }
 
-void* CMySQLEngine::PrepareStatement(const char* pQueryText)
+void* CMySQLEngineImpl::PrepareStatement(const char* pQueryText)
 {
 	MYSQL_STMT* pStmt = mysql_stmt_init(&m_Connection);
 
@@ -184,7 +181,7 @@ void* CMySQLEngine::PrepareStatement(const char* pQueryText)
 	throw CDAOException();
 }
 
-void CMySQLEngine::BindInt(void* pStmt, int position, int value)
+void CMySQLEngineImpl::BindInt(void* pStmt, int position, int value)
 {
 	MYSQL_BIND param{}; // Already sets some required members fine
 	param.buffer_type = MYSQL_TYPE_LONG;
@@ -192,7 +189,7 @@ void CMySQLEngine::BindInt(void* pStmt, int position, int value)
 	AddStatementBind(pStmt, param, position);
 }
 
-void CMySQLEngine::BindFloat(void* pStmt, int position, float value)
+void CMySQLEngineImpl::BindFloat(void* pStmt, int position, float value)
 {
 	MYSQL_BIND param{}; // Already sets some required members fine
 	param.buffer_type = MYSQL_TYPE_FLOAT;
@@ -200,7 +197,7 @@ void CMySQLEngine::BindFloat(void* pStmt, int position, float value)
 	AddStatementBind(pStmt, param, position);
 }
 
-void CMySQLEngine::BindString(void* pStmt, int position, const char* pValue)
+void CMySQLEngineImpl::BindString(void* pStmt, int position, const char* pValue)
 {
 	MYSQL_BIND param{}; // Already sets some required members fine
 	param.buffer_type = MYSQL_TYPE_STRING;
@@ -210,7 +207,7 @@ void CMySQLEngine::BindString(void* pStmt, int position, const char* pValue)
 	AddStatementBind(pStmt, param, position);
 }
 
-void CMySQLEngine::ExecutePreparedStatement(void* pStmt, const char* pResultName)
+void CMySQLEngineImpl::ExecutePreparedStatement(void* pStmt, const char* pResultName)
 {
 	MYSQL_STMT* pMySQLStmt = static_cast<MYSQL_STMT*>(pStmt);
 	UtlHashHandle_t handle = m_bindWrappersMap.Find(pMySQLStmt);
@@ -306,7 +303,7 @@ void CMySQLEngine::ExecutePreparedStatement(void* pStmt, const char* pResultName
 	mysql_stmt_close(pMySQLStmt);
 }
 
-void CMySQLEngine::ExecuteQuery(const char* pQueryText, const char* pResultName)
+void CMySQLEngineImpl::ExecuteQuery(const char* pQueryText, const char* pResultName)
 {
 	if (mysql_real_query(&m_Connection, pQueryText, Q_strlen(pQueryText)) != 0)
 	{
@@ -337,7 +334,7 @@ void CMySQLEngine::ExecuteQuery(const char* pQueryText, const char* pResultName)
 	}
 }
 
-void CMySQLEngine::AddStatementBind(void* pStmt, const MYSQL_BIND& bind, int position)
+void CMySQLEngineImpl::AddStatementBind(void* pStmt, const MYSQL_BIND& bind, int position)
 {
 	MYSQL_STMT* pMySQLStmt = static_cast<MYSQL_STMT*>(pStmt);
 	int count = mysql_stmt_param_count(pMySQLStmt);
@@ -376,9 +373,9 @@ void CMySQLEngine::AddStatementBind(void* pStmt, const MYSQL_BIND& bind, int pos
 		" prepared statement. Positions should start from 1.\n", position);
 }
 
-void CMySQLEngine::ClearBindings(MYSQL_STMT* pStmt)
+void CMySQLEngineImpl::ClearBindings(MYSQL_STMT* pStmt)
 {
 	m_bindWrappersMap.Remove(pStmt);
 }
 
-EXPOSE_SINGLE_INTERFACE(CMySQLEngine, CSQLEngine, DALENGINE_MYSQL_IMPL_VERSION_STRING);
+EXPOSE_SINGLE_INTERFACE(CMySQLEngineImpl, CSQLEngine, DAL_ENGINE_MYSQL_IMPL_VERSION_STRING);

@@ -7,28 +7,25 @@
 
 class CPhrasesInitDAO : public IDAO
 {
-	bool ShouldBeReplacedBy(IDAO* pDAO);
-	void ExecuteSQL(CSQLEngine* pSQL) OVERRIDE;
+	CDAOThread::EDAOCollisionResolution Collide(IDAO* pDAO);
+	void Execute(CSQLEngine* pSQL) OVERRIDE;
 };
 
 class CPhrasesLoadDAO : public IDAO
 {
-	void ExecuteKeyValues(CKeyValuesEngine* pKeyValues) OVERRIDE;
-	void ExecuteSQL(CSQLEngine* pSQL) OVERRIDE;
+	void Execute(CKeyValuesEngine* pKVEngine) OVERRIDE;
+	void Execute(CSQLEngine* pSQL) OVERRIDE;
 	void HandleResults(KeyValues* pResults) OVERRIDE;
 };
 
 class CPhraseSaveDAO : public IDAO
 {
-	bool ShouldBeReplacedBy(IDAO* pDAO) OVERRIDE;
-	void ExecuteKeyValues(CKeyValuesEngine* pKeyValues) OVERRIDE;
-	void ExecuteSQLite(CSQLEngine* pSQL) OVERRIDE;
-	void ExecuteMySQL(CSQLEngine* pSQL) OVERRIDE;
+	CDAOThread::EDAOCollisionResolution Collide(IDAO* pDAO) OVERRIDE;
+	void Execute(CKeyValuesEngine* pKVEngine) OVERRIDE;
+	void Execute(CSQLiteEngine* pSQLite) OVERRIDE;
+	void Execute(CMySQLEngine* pMySQL) OVERRIDE;
 
-	void* PrepareSQLStatement(CSQLEngine* pSQL, const char* pQueryText, int headerNamePos,
-		int langShortNamePos, int translationTextPos);
-	void ExecutePreparedSQLStatement(CSQLEngine* pSQL, const char* pQueryText, int headerNamePos,
-		int langShortNamePos, int translationTextPos);
+	CDAOThread::EDAOCollisionResolution Collide(CPhraseSaveDAO* pDAO);
 
 	// NOTE: This should point to a global KeyValues object (phrase overrides), which for now is always valid.
 	// Stay alerted on this variable for future changes!! (Thread safety)

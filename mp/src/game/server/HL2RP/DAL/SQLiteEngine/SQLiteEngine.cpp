@@ -1,6 +1,5 @@
-#include <DALEngine.h>
+#include <IDALEngine.h>
 #include <filesystem.h>
-#include <IDAO.h>
 #include <sqlite3.h>
 
 class CSQLiteDAOException : public CDAOException
@@ -16,7 +15,7 @@ CSQLiteDAOException::CSQLiteDAOException(sqlite3* pConnection, const char* pQuer
 }
 
 // NOTE: Many SQLite API operations are HARMLESS when passing NULL pointers
-class CSQLiteEngine : public CSQLEngine
+class CSQLiteEngineImpl : public CSQLiteEngine
 {
 	void DispatchExecute(IDAO* pDAO) OVERRIDE;
 	void BeginTxn() OVERRIDE;
@@ -33,37 +32,37 @@ class CSQLiteEngine : public CSQLEngine
 	sqlite3* m_pConnection;
 
 public:
-	CSQLiteEngine();
+	CSQLiteEngineImpl();
 
-	~CSQLiteEngine();
+	~CSQLiteEngineImpl();
 };
 
-CSQLiteEngine::CSQLiteEngine() : m_pConnection(NULL)
+CSQLiteEngineImpl::CSQLiteEngineImpl() : m_pConnection(NULL)
 {
 
 }
 
-CSQLiteEngine::~CSQLiteEngine()
+CSQLiteEngineImpl::~CSQLiteEngineImpl()
 {
 	sqlite3_close_v2(m_pConnection);
 }
 
-void CSQLiteEngine::DispatchExecute(IDAO* pDAO)
+void CSQLiteEngineImpl::DispatchExecute(IDAO* pDAO)
 {
-	pDAO->ExecuteSQLite(this);
+	pDAO->Execute(this);
 }
 
-void CSQLiteEngine::BeginTxn()
+void CSQLiteEngineImpl::BeginTxn()
 {
-	CSQLiteEngine::ExecuteQuery("BEGIN TRANSACTION");
+	CSQLiteEngineImpl::ExecuteQuery("BEGIN TRANSACTION");
 }
 
-void CSQLiteEngine::EndTxn()
+void CSQLiteEngineImpl::EndTxn()
 {
-	CSQLiteEngine::ExecuteQuery("COMMIT TRANSACTION");
+	CSQLiteEngineImpl::ExecuteQuery("COMMIT TRANSACTION");
 }
 
-bool CSQLiteEngine::Connect(const char* pHostName, const char* pUserName,
+bool CSQLiteEngineImpl::Connect(const char* pHostName, const char* pUserName,
 	const char* pPassText, const char* pSchemaName, int port)
 {
 	if (sqlite3_open(pSchemaName, &m_pConnection) == SQLITE_OK)
@@ -76,7 +75,7 @@ bool CSQLiteEngine::Connect(const char* pHostName, const char* pUserName,
 			// Enable Write Ahead Logging. Makes execution faster and reduces concurrent locking errors.
 			// I enabled this in release only since this causes writes to happen on an intermediate file,
 			// delaying writes on the main SQLite3 file until N bytes and making it harder to debug the data.
-			CSQLiteEngine::ExecuteQuery("PRAGMA journal_mode = WAL;");
+			CSQLiteEngineImpl::ExecuteQuery("PRAGMA journal_mode = WAL;");
 		}
 
 		return true;
@@ -87,7 +86,7 @@ bool CSQLiteEngine::Connect(const char* pHostName, const char* pUserName,
 	return false;
 }
 
-void* CSQLiteEngine::PrepareStatement(const char* pQueryText)
+void* CSQLiteEngineImpl::PrepareStatement(const char* pQueryText)
 {
 	sqlite3_stmt* pStmt;
 
@@ -99,7 +98,7 @@ void* CSQLiteEngine::PrepareStatement(const char* pQueryText)
 	return pStmt;
 }
 
-void CSQLiteEngine::BindInt(void* pStmt, int position, int value)
+void CSQLiteEngineImpl::BindInt(void* pStmt, int position, int value)
 {
 	sqlite3_stmt* pSQLite3Stmt = reinterpret_cast<sqlite3_stmt*>(pStmt);
 
@@ -109,7 +108,7 @@ void CSQLiteEngine::BindInt(void* pStmt, int position, int value)
 	}
 }
 
-void CSQLiteEngine::BindFloat(void* pStmt, int position, float value)
+void CSQLiteEngineImpl::BindFloat(void* pStmt, int position, float value)
 {
 	sqlite3_stmt* pSQLite3Stmt = reinterpret_cast<sqlite3_stmt*>(pStmt);
 
@@ -119,7 +118,7 @@ void CSQLiteEngine::BindFloat(void* pStmt, int position, float value)
 	}
 }
 
-void CSQLiteEngine::BindString(void* pStmt, int position, const char* pValue)
+void CSQLiteEngineImpl::BindString(void* pStmt, int position, const char* pValue)
 {
 	sqlite3_stmt* pSQLite3Stmt = reinterpret_cast<sqlite3_stmt*>(pStmt);
 
@@ -129,7 +128,7 @@ void CSQLiteEngine::BindString(void* pStmt, int position, const char* pValue)
 	}
 }
 
-void CSQLiteEngine::ExecutePreparedStatement(void* pStmt, const char* pResultName)
+void CSQLiteEngineImpl::ExecutePreparedStatement(void* pStmt, const char* pResultName)
 {
 	sqlite3_stmt* pSQLite3Stmt = reinterpret_cast<sqlite3_stmt*>(pStmt);
 
@@ -187,10 +186,10 @@ void CSQLiteEngine::ExecutePreparedStatement(void* pStmt, const char* pResultNam
 	sqlite3_finalize(pSQLite3Stmt);
 }
 
-void CSQLiteEngine::ExecuteQuery(const char* pQueryText, const char* pResultName)
+void CSQLiteEngineImpl::ExecuteQuery(const char* pQueryText, const char* pResultName)
 {
-	void* pStmt = CSQLiteEngine::PrepareStatement(pQueryText);
-	CSQLiteEngine::ExecutePreparedStatement(pStmt, pResultName);
+	void* pStmt = CSQLiteEngineImpl::PrepareStatement(pQueryText);
+	CSQLiteEngineImpl::ExecutePreparedStatement(pStmt, pResultName);
 }
 
-EXPOSE_SINGLE_INTERFACE(CSQLiteEngine, CSQLEngine, DALENGINE_SQLITE_IMPL_VERSION_STRING);
+EXPOSE_SINGLE_INTERFACE(CSQLiteEngineImpl, CSQLEngine, DAL_ENGINE_SQLITE_IMPL_VERSION_STRING);

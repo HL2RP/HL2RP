@@ -182,10 +182,10 @@ void CLocalizationSaveMenu::SaveTranslation(CHL2RP_Player* pPlayer, const char* 
 {
 	GetHL2RPAutoLocalizer().SetRawTranslation(m_pLangShortName, m_Token, pRawTranslation);
 	TryCreateAsyncDAO<CPhraseSaveDAO>(m_pLangShortName, m_Token, pRawTranslation);
-	Display(pPlayer);
+	RewindHeaderMenu(pPlayer);
 }
 
-void CLocalizationSaveMenu::DiscardTranslation(CHL2RP_Player* pPlayer)
+void CLocalizationSaveMenu::RewindHeaderMenu(CHL2RP_Player* pPlayer)
 {
 	pPlayer->DisplayDialog<CLocalizationTokenMenu>(m_pLangShortName);
 }
@@ -206,7 +206,7 @@ void CLocalizationSaveItem::HandleSelection(CMenu* pMenu, CHL2RP_Player* pPlayer
 
 void CLocalizationDiscardItem::HandleSelection(CMenu* pMenu, CHL2RP_Player* pPlayer)
 {
-	m_pMenu->DiscardTranslation(pPlayer);
+	m_pMenu->RewindHeaderMenu(pPlayer);
 }
 
 void CJobAddItem::HandleSelection(CMenu* pMenu, CHL2RP_Player* pPlayer)
@@ -337,7 +337,8 @@ void CJobSaveMenu::SaveJob(CHL2RP_Player* pPlayer)
 	CBaseEntity::PrecacheModel(m_Path);
 	SJob job(m_Path);
 	HL2RPRules()->m_JobTeamsModels[m_JobTeamIndex].Insert(m_Alias, job);
-	TryCreateAsyncDAO<CJobSaveDAO>(m_Alias, m_Path, m_JobTeamIndex);
+	TryCreateAsyncDAO<CJobInsertDAO>(m_Alias, m_Path, m_JobTeamIndex);
+	pPlayer->DisplayDialog<CJobManageMenu>();
 }
 
 void CJobSaveItem::HandleSelection(CMenu* pMenu, CHL2RP_Player* pPlayer)

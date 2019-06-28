@@ -123,7 +123,7 @@ CHL2RP_Player::CHL2RP_Player() : m_JobTeamIndex(EJobTeamIndex::Citizen)
 	m_flNextOpenInventoryTime = FLT_MAX;
 	m_HiddenGesture.m_Activity = ACT_INVALID;
 	m_iRemainingStickyWalkHints = HL2RP_PLAYER_MAX_STICKY_WALK_HINTS;
-	m_DALSyncFlags.SetFlag(EDALSyncCap::LoadData);
+	m_DALSyncCaps.SetFlag(EDALSyncCap::LoadData);
 }
 
 CHL2RP_Player::~CHL2RP_Player()
@@ -150,10 +150,10 @@ void CHL2RP_Player::InitialSpawn()
 
 	// Early network ID string load case?
 	if (!IsFakeClient() && Q_strcmp(GetNetworkIDString(), "") != 0
-		&& m_DALSyncFlags.IsFlagSet(EDALSyncCap::LoadData))
+		&& m_DALSyncCaps.IsFlagSet(EDALSyncCap::LoadData))
 	{
 		TryCreateAsyncDAO<CPlayerLoadDAO>(this);
-		m_DALSyncFlags.ClearFlag(EDALSyncCap::LoadData);
+		m_DALSyncCaps.ClearFlag(EDALSyncCap::LoadData);
 	}
 
 	SetContextThink(&CHL2RP_Player::PlayTimeContextThink, gpGlobals->curtime + HL2RP_PLAYER_HUD_INTERVAL,
@@ -624,51 +624,62 @@ void CHL2RP_Player::SetWeapon(int i, CBaseCombatWeapon* pWeapon)
 		for (i = m_hMyWeapons.Count() - 1; i >= 0 && GetWeapon(i) != NULL; i--);
 	}
 
-	if (m_DALSyncFlags.IsFlagSet(EDALSyncCap::SaveData))
+	CBaseCombatWeapon* pOldWeapon = GetWeapon(i);
+	BaseClass::SetWeapon(i, pWeapon);
+
+	if (m_DALSyncCaps.IsFlagSet(EDALSyncCap::SaveData))
 	{
 		if (pWeapon != NULL)
 		{
-			TryCreateAsyncDAO<CPlayerWeaponSaveDAO>(this, pWeapon);
+			if (pOldWeapon == NULL)
+			{
+				return TryCreateAsyncDAO<CPlayerWeaponInsertDAO>(this, pWeapon);
+			}
+
+			TryCreateAsyncDAO<CPlayerWeaponUpdateDAO>(this, pWeapon);
 		}
-		else if (GetWeapon(i) != NULL)
+		else if (pOldWeapon != NULL)
 		{
-			TryCreateAsyncDAO<CPlayerWeaponDeleteDAO>(this, GetWeapon(i));
+			TryCreateAsyncDAO<CPlayerWeaponDeleteDAO>(this, pOldWeapon);
 		}
 	}
 
-	BaseClass::SetWeapon(i, pWeapon);
 }
 
 void CHL2RP_Player::OnSetWeaponClip1(CBaseCombatWeapon* pWeapon)
 {
-	TryUpsertWeapon(pWeapon);
+	TrySyncWeapon(pWeapon);
 }
 
 void CHL2RP_Player::OnSetWeaponClip2(CBaseCombatWeapon* pWeapon)
 {
-	TryUpsertWeapon(pWeapon);
+	TrySyncWeapon(pWeapon);
 }
 
 void CHL2RP_Player::SetHealth(int health)
 {
 	BaseClass::SetHealth(health);
-	TrySyncMainData();
+	TrySyncMainData(EDALMainPropSelection::Health);
 }
 
 void CHL2RP_Player::SetAmmoCount(int count, int ammoIndex)
 {
+	int prevCount = m_iAmmo[ammoIndex];
 	BaseClass::SetAmmoCount(count, ammoIndex);
 
-	if (m_DALSyncFlags.IsFlagSet(EDALSyncCap::SaveData))
+	if (m_DALSyncCaps.IsFlagSet(EDALSyncCap::SaveData))
 	{
-		if (m_iAmmo[ammoIndex] > 0)
+		if (count > 0)
 		{
-			TryCreateAsyncDAO<CPlayerAmmoSaveDAO>(this, ammoIndex);
+			if (prevCount < 1)
+			{
+				return TryCreateAsyncDAO<CPlayerAmmoInsertDAO>(this, ammoIndex);
+			}
+
+			return TryCreateAsyncDAO<CPlayerAmmoUpdateDAO>(this, ammoIndex);
 		}
-		else
-		{
-			TryCreateAsyncDAO<CPlayerAmmoDeleteDAO>(this, ammoIndex);
-		}
+
+		return TryCreateAsyncDAO<CPlayerAmmoDeleteDAO>(this, ammoIndex);
 	}
 }
 
@@ -716,7 +727,7 @@ void CHL2RP_Player::SetModel(const char* pModelPath)
 void CHL2RP_Player::SetArmorValue(int armorValue)
 {
 	BaseClass::SetArmorValue(armorValue);
-	TrySyncMainData();
+	TrySyncMainData(EDALMainPropSelection::Armor);
 }
 
 void CHL2RP_Player::DisplayDialog(CPlayerDialog* pDialog)
@@ -760,7 +771,7 @@ void CHL2RP_Player::PlayTimeContextThink()
 {
 	m_iSeconds = Clamp(m_iSeconds + 1, m_iSeconds, INT_MAX);
 	m_iCrime = ::Max(0, m_iCrime - 1);
-	TrySyncMainData();
+	TrySyncMainData(EDALMainPropSelection::Seconds | EDALMainPropSelection::Crime);
 	SetNextThink(gpGlobals->curtime + HL2RP_PLAYER_HUD_INTERVAL, HL2RP_PLAYER_PLAYTIME_THINKCONTEXT_STRING);
 }
 
@@ -823,11 +834,11 @@ void CHL2RP_Player::TrySetIdealActivityOrGesture(Activity standActivity, Activit
 	}
 }
 
-void CHL2RP_Player::TryUpsertWeapon(CBaseCombatWeapon* pWeapon)
+void CHL2RP_Player::TrySyncWeapon(CBaseCombatWeapon* pWeapon)
 {
-	if (m_DALSyncFlags.IsFlagSet(EDALSyncCap::SaveData))
+	if (m_DALSyncCaps.IsFlagSet(EDALSyncCap::SaveData))
 	{
-		TryCreateAsyncDAO<CPlayerWeaponSaveDAO>(this, pWeapon);
+		TryCreateAsyncDAO<CPlayerWeaponUpdateDAO>(this, pWeapon);
 	}
 }
 
@@ -847,10 +858,10 @@ bool CHL2RP_Player::LateLoadMainData(const char* pNetworkIdString)
 {
 	if (Q_strcmp(GetNetworkIDString(), pNetworkIdString) == 0)
 	{
-		if (m_DALSyncFlags.IsFlagSet(EDALSyncCap::LoadData))
+		if (m_DALSyncCaps.IsFlagSet(EDALSyncCap::LoadData))
 		{
 			TryCreateAsyncDAO<CPlayerLoadDAO>(this);
-			m_DALSyncFlags.ClearFlag(EDALSyncCap::LoadData);
+			m_DALSyncCaps.ClearFlag(EDALSyncCap::LoadData);
 		}
 
 		return true;
@@ -859,24 +870,17 @@ bool CHL2RP_Player::LateLoadMainData(const char* pNetworkIdString)
 	return false;
 }
 
-void CHL2RP_Player::TrySyncMainData()
-{
-	if (m_DALSyncFlags.IsFlagSet(EDALSyncCap::SaveData))
-	{
-		TryCreateAsyncDAO<CPlayerSaveDAO>(this);
-	}
-}
-
 void CHL2RP_Player::SetCrime(int crime)
 {
 	m_iCrime = crime;
-	TrySyncMainData();
+	TrySyncMainData(EDALMainPropSelection::Crime);
 }
 
 void CHL2RP_Player::SetAccessFlags(int accessFlags)
 {
 	m_AccessFlags.ClearAllFlags();
 	m_AccessFlags.SetFlag(accessFlags);
+	TrySyncMainData(EDALMainPropSelection::AccessFlags);
 }
 
 void CHL2RP_Player::AddAlertHUDLine(const char* pLine, float duration, CHUDChannelLine::EType type)
@@ -935,7 +939,7 @@ void CHL2RP_Player::TryGiveLoadedHpAndArmor(int health, int armor)
 	SetArmorValue(UTIL_EnsureAddition(ArmorValue(), armor));
 }
 
-void CHL2RP_Player::TryGiveLoadedWeapon(const char* pWeaponClassName, int clip1, int clip2)
+CBaseCombatWeapon* CHL2RP_Player::TryGiveLoadedWeapon(const char* pWeaponClassName, int clip1, int clip2)
 {
 	// We check this just in case, even when I shouldn't have it if called from Spawn (loaded on death)
 	CBaseCombatWeapon* pWeapon = Weapon_OwnsThisType(pWeaponClassName);
@@ -950,7 +954,8 @@ void CHL2RP_Player::TryGiveLoadedWeapon(const char* pWeaponClassName, int clip1,
 			if (!pEntity->IsBaseCombatWeapon())
 			{
 				// Remove this entity as it's useless here
-				return UTIL_RemoveImmediate(pEntity);
+				UTIL_RemoveImmediate(pEntity);
+				return NULL;
 			}
 
 			// Begin task: Assign loaded clips and reserve ammo to the weapon, and equip it
@@ -978,24 +983,35 @@ void CHL2RP_Player::TryGiveLoadedWeapon(const char* pWeaponClassName, int clip1,
 			pWeapon->SetSecondaryAmmoCount(0);
 			Weapon_Equip(pWeapon); // Don't replace by Touch, to avoid weapon not giving when player is stuck
 		}
+	}
+	else
+	{
+		// Check this to prevent HUD from showing 0 ammo, if we ended with clip1 != WEAPON_NOCLIP
+		if (pWeapon->UsesClipsForAmmo1())
+		{
+			// NOTE: Since limits for weapon clips are defined, we don't want to exceed them
+			clip1 = UTIL_EnsureAddition(pWeapon->Clip1(), clip1);
+			pWeapon->SetClip1(Min(clip1, pWeapon->GetMaxClip1()));
+		}
 
-		return;
+		// Check this to prevent HUD from showing fake 0 ammo, if we ended with clip2 != WEAPON_NOCLIP
+		if (pWeapon->UsesClipsForAmmo2())
+		{
+			// NOTE: Since limits for weapon clips are defined, we don't want to exceed them
+			clip2 = UTIL_EnsureAddition(pWeapon->Clip2(), clip2);
+			pWeapon->SetClip2(Min(clip2, pWeapon->GetMaxClip2()));
+		}
 	}
 
-	// Check this to prevent HUD from showing 0 ammo, if we ended with clip1 != WEAPON_NOCLIP
-	if (pWeapon->UsesClipsForAmmo1())
-	{
-		// NOTE: Since limits for weapon clips are defined, we don't want to exceed them
-		clip1 = UTIL_EnsureAddition(pWeapon->Clip1(), clip1);
-		pWeapon->SetClip1(Min(clip1, pWeapon->GetMaxClip1()));
-	}
+	return pWeapon;
+}
 
-	// Check this to prevent HUD from showing fake 0 ammo, if we ended with clip2 != WEAPON_NOCLIP
-	if (pWeapon->UsesClipsForAmmo2())
+// Input: propSelectionMask - A mask from EDALMainPropSelection values
+void CHL2RP_Player::TrySyncMainData(int propSelectionMask)
+{
+	if (m_DALSyncCaps.IsFlagSet(EDALSyncCap::SaveData))
 	{
-		// NOTE: Since limits for weapon clips are defined, we don't want to exceed them
-		clip2 = UTIL_EnsureAddition(pWeapon->Clip2(), clip2);
-		pWeapon->SetClip2(Min(clip2, pWeapon->GetMaxClip2()));
+		TryCreateAsyncDAO<CPlayerUpdateDAO>(this, propSelectionMask);
 	}
 }
 

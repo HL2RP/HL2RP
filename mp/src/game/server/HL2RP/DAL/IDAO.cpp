@@ -1,35 +1,59 @@
 #include <cbase.h>
 #include "IDAO.h"
 #include <HL2RPRules.h>
+#include "IDALEngine.h"
 
-bool IDAO::ShouldBeReplacedBy(IDAO* pDAO)
+CDAOThread::EDAOCollisionResolution IDAO::Collide(IDAO* pDAO)
 {
-	return false;
+	return CDAOThread::EDAOCollisionResolution::None;
 }
 
-bool IDAO::ShouldRemoveBoth(IDAO* pDAO)
+CDAOThread::EDAOCollisionResolution IDAO::Collide(CKeyValuesEngine* pKVEngine, IDAO* pDAO)
 {
-	return false;
+	return Collide(pDAO);
 }
 
-void IDAO::ExecuteSQLite(CSQLEngine* pSQL)
+CDAOThread::EDAOCollisionResolution IDAO::Collide(CSQLEngine* pSQite, IDAO* pDAO)
 {
-	// If derived DAO didn't implement this, it may define common SQL Engine execution
-	ExecuteSQL(pSQL);
+	return Collide(pDAO);
 }
 
-void IDAO::ExecuteMySQL(CSQLEngine* pSQL)
+void IDAO::Execute(CSQLiteEngine* pSQLite)
 {
-	// If derived DAO didn't implement this, it may define common SQL Engine execution
-	ExecuteSQL(pSQL);
+	Execute(static_cast<CSQLEngine*>(pSQLite));
 }
 
-void IDAO::HandleKeyValuesResults(KeyValues* pResults)
+void IDAO::Execute(CMySQLEngine* pMySQL)
+{
+	Execute(static_cast<CSQLEngine*>(pMySQL));
+}
+
+void IDAO::HandleResults(CKeyValuesEngine* pKVEngine, KeyValues* pResults)
 {
 	HandleResults(pResults);
 }
 
-void IDAO::HandleSQLResults(KeyValues* pResults)
+void IDAO::HandleResults(CSQLEngine* pKVEngine, KeyValues* pResults)
 {
 	HandleResults(pResults);
+}
+
+CDAOThread::EDAOCollisionResolution IDAO::TryResolveReplacement(bool condition)
+{
+	if (condition)
+	{
+		return CDAOThread::EDAOCollisionResolution::ReplaceQueued;
+	}
+
+	return CDAOThread::EDAOCollisionResolution::None;
+}
+
+CDAOThread::EDAOCollisionResolution TryResolveRemoval(bool condition)
+{
+	if (condition)
+	{
+		return CDAOThread::EDAOCollisionResolution::RemoveBothAndStop;
+	}
+
+	return CDAOThread::EDAOCollisionResolution::None;
 }

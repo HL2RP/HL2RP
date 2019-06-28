@@ -81,27 +81,22 @@ class CMenuAwareItem : public CMenuItem
 {
 public:
 	// Used to delay the containing menu linkage for saving constructors, but you must remember to call it
-	CMenuItem* Link(T* pMenu);
+	CMenuItem* Link(T* pMenu)
+	{
+		m_pMenu = pMenu;
+		return this;
+	}
 
 protected:
 	CMenuAwareItem() { }
-	CMenuAwareItem(T* pMenu);
+
+	CMenuAwareItem(T* pMenu) : m_pMenu(pMenu)
+	{
+
+	}
 
 	T* m_pMenu;
 };
-
-template<class T>
-FORCEINLINE CMenuAwareItem<T>::CMenuAwareItem(T* pMenu) : m_pMenu(pMenu)
-{
-
-}
-
-template<class T>
-FORCEINLINE CMenuItem* CMenuAwareItem<T>::Link(T* pMenu)
-{
-	m_pMenu = pMenu;
-	return this;
-}
 
 // The 'Next' menu item
 class CPageAdvanceMenuItem : public CMenuItem

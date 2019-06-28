@@ -22,6 +22,9 @@ class CUtlFlags
 public:
 	CUtlFlags( int nInitialFlags = 0 );
 
+	// Flags getting
+	operator T();
+
 	// Flag setting
 	void SetFlag( int nFlagMask );
 	void SetFlag( int nFlagMask, bool bEnable );
@@ -51,6 +54,11 @@ CUtlFlags<T>::CUtlFlags( int nInitialFlags )
 	m_nFlags = (T)nInitialFlags;
 }
 
+template<class T>
+CUtlFlags<T>::operator T()
+{
+	return m_nFlags;
+}
 
 //-----------------------------------------------------------------------------
 // Set flags

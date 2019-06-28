@@ -2,48 +2,48 @@
 #define DALENGINE_H
 #pragma once
 
-#include "IDAO.h"
 #include <KeyValues.h>
+#include "IDAO.h"
 
-#define DALENGINE_KEYVALUES_SAVE_PATH_ID	"KEYVALUES_SAVE"
-#define HL2RP_DAL_SQL_ENGINE_QUERY_SIZE	2048
-#define DALENGINE_MYSQL_IMPL_VERSION_STRING	"MySQLStorage001"
-#define DALENGINE_SQLITE_IMPL_VERSION_STRING	"SQLiteStorage001"
+#define DAL_ENGINE_KEYVALUES_SAVE_PATH_ID	"KEYVALUES_SAVE"
+#define DAL_ENGINE_SQL_QUERY_SIZE	2048
+#define DAL_ENGINE_MYSQL_IMPL_VERSION_STRING	"MySQLStorage001"
+#define DAL_ENGINE_SQLITE_IMPL_VERSION_STRING	"SQLiteStorage001"
 
-class CDALEngine
+abstract_class IDALEngine
 {
 public:
-	virtual ~CDALEngine() { }
+	virtual ~IDALEngine() { }
 
-	virtual CSysModule* GetModule();
+	virtual CSysModule * GetModule()
+	{
+		return NULL;
+	}
+
+	virtual CDAOThread::EDAOCollisionResolution DispatchCollide(IDAO * pThisDAO, IDAO * pOtherDAO) = 0;
 	virtual void DispatchExecute(IDAO* pDAO) = 0;
 	virtual void DispatchHandleResults(IDAO* pDAO) = 0;
-	virtual void CloseResults();
+
+	virtual void CloseResults()
+	{
+		m_CachedResults->Clear();
+	}
+
+	void Release() { }
 
 protected:
-	CDALEngine();
+	IDALEngine() : m_CachedResults("ResultSet")
+	{
+
+	}
 
 	// Dedicated thread code caches I/O disk results here, main thread reads them later
 	KeyValuesAD m_CachedResults;
 };
 
-FORCEINLINE CDALEngine::CDALEngine() : m_CachedResults("ResultSet")
+class CKeyValuesEngine : public IDALEngine
 {
-
-}
-
-FORCEINLINE CSysModule* CDALEngine::GetModule()
-{
-	return NULL;
-}
-
-FORCEINLINE void CDALEngine::CloseResults()
-{
-	m_CachedResults->Clear();
-}
-
-class CKeyValuesEngine : public CDALEngine
-{
+	CDAOThread::EDAOCollisionResolution DispatchCollide(IDAO* pThisDAO, IDAO* pOtherDAO) OVERRIDE;
 	void DispatchExecute(IDAO* pDAO) OVERRIDE;
 	void DispatchHandleResults(IDAO* pDAO) OVERRIDE;
 
@@ -61,15 +61,30 @@ public:
 	void SaveToFile(KeyValues* pResult, const char* pFileName);
 };
 
-class CSQLEngine : public CDALEngine
+class CSQLEngine : public IDALEngine
 {
-	CSysModule* GetModule() OVERRIDE;
-	void DispatchHandleResults(IDAO* pDAO) OVERRIDE;
+	CSysModule* CSQLEngine::GetModule() OVERRIDE
+	{
+		return m_pModule;
+	}
+
+	CDAOThread::EDAOCollisionResolution DispatchCollide(IDAO* pThisDAO, IDAO* pOtherDAO) OVERRIDE
+	{
+		return pThisDAO->Collide(this, pOtherDAO);
+	}
+
+	void DispatchHandleResults(IDAO* pDAO) OVERRIDE
+	{
+		pDAO->HandleResults(this, m_CachedResults);
+	}
 
 	CSysModule* m_pModule;
 
 public:
-	CSQLEngine();
+	CSQLEngine::CSQLEngine() : m_pModule(NULL)
+	{
+
+	}
 
 	virtual bool Connect(const char* pHostName, const char* pUserName,
 		const char* pPassText, const char* pSchemaName, int port) = 0;
@@ -97,46 +112,33 @@ public:
 	virtual void ExecutePreparedStatement(void* pStmt, const char* pResultName = NULL) = 0;
 
 	// Executes a query. Throws CDAOException on failure.
-	// Input: pResultName - Name of result key. MUST be valid when fetching results.
+	// Input: pResultName - Name of result key. Must be valid when fetching results.
 	virtual void ExecuteQuery(const char* pQueryText, const char* pResultName = NULL) = 0;
 
-	// Executes a formatted query. Throws CDAOException on failure.
-	// Input: pResultName - Name of result key. MUST be valid when fetching results.
-	void ExecuteFormatQuery(const char* pQueryText, const char* pResultName = NULL, ...);
+	// Formats a select query and executes it. Throws CDAOException on failure.
+	void FormatAndExecuteQuery(const char* pQueryText, ...);
 
-	void SetModule(CSysModule* pModule);
+	void FormatAndExecuteSelectQuery(const char* pQueryText, const char* pResultName, ...);
+
+	// Formats a query and prepares a stament with it. Throws CDAOException on failure.
+	void* FormatAndPrepareStatement(const char* pResultName = NULL, ...);
+
+	void SetModule(CSysModule* pModule)
+	{
+		m_pModule = pModule;
+	}
 };
 
-FORCEINLINE CSQLEngine::CSQLEngine() : m_pModule(NULL)
+// Stubs to enable automatic conversions to base class.
+// Real implementation is located at decoupled driver.
+class CSQLiteEngine : public CSQLEngine
 {
 
-}
+};
 
-FORCEINLINE CSysModule* CSQLEngine::GetModule()
+class CMySQLEngine : public CSQLEngine
 {
-	return m_pModule;
-}
 
-FORCEINLINE void CSQLEngine::DispatchHandleResults(IDAO* pDAO)
-{
-	pDAO->HandleSQLResults(m_CachedResults);
-}
-
-FORCEINLINE void CSQLEngine::SetModule(CSysModule* pModule)
-{
-	m_pModule = pModule;
-}
-
-// Executes a formatted query. Throws CDAOException on failure.
-// Input: pResultName - Name of result key. MUST be valid when fetching results.
-inline void CSQLEngine::ExecuteFormatQuery(const char* pQueryText, const char* pResultName, ...)
-{
-	va_list args;
-	va_start(args, pResultName);
-	char formattedQuery[HL2RP_DAL_SQL_ENGINE_QUERY_SIZE];
-	Q_vsnprintf(formattedQuery, sizeof(formattedQuery), pQueryText, args);
-	ExecuteQuery(formattedQuery, pResultName);
-	va_end(args);
-}
+};
 
 #endif // !DALENGINE_H
