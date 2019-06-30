@@ -25,7 +25,7 @@ class CSuitcase : public CBaseHLCombatWeapon
 	void SecondaryAttack() OVERRIDE;
 	void ItemPostFrame() OVERRIDE;
 	void OnActiveStateChanged(int oldState) OVERRIDE;
-	bool CanBeSelected() OVERRIDE;
+	bool VisibleInWeaponSelection() OVERRIDE;
 
 	// Prevents base class from switching viewmodel's activity to ACT_VM_IDLE
 	void WeaponIdle() OVERRIDE { }

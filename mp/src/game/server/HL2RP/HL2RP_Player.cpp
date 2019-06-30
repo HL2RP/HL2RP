@@ -618,7 +618,7 @@ void CHL2RP_Player::Event_Killed(const CTakeDamageInfo& info)
 void CHL2RP_Player::SetWeapon(int i, CBaseCombatWeapon* pWeapon)
 {
 	// HACK: On HL2DM, the special weapons can't be assigned a proper slot. Check if it's one of them.
-	if (pWeapon != NULL && !pWeapon->CanBeSelected())
+	if (pWeapon != NULL && !pWeapon->VisibleInWeaponSelection())
 	{
 		// Re-point the index to the highest as possible, so that client can select original weapons
 		for (i = m_hMyWeapons.Count() - 1; i >= 0 && GetWeapon(i) != NULL; i--);

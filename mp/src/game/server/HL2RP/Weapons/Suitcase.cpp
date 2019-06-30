@@ -88,12 +88,12 @@ void CSuitcase::OnActiveStateChanged(int oldState)
 	}
 }
 
-bool CSuitcase::CanBeSelected()
+bool CSuitcase::VisibleInWeaponSelection()
 {
 #ifdef HL2DM_RP
 	// HACK: On HL2DM, the special weapons can't be assigned a proper slot
 	return false;
 #endif // HL2DM
 
-	return BaseClass::CanBeSelected();
+	return BaseClass::VisibleInWeaponSelection();
 }

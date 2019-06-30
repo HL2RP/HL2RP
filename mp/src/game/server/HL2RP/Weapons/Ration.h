@@ -41,7 +41,7 @@ class CRation : public CBaseHLCombatWeapon
 	void OnActiveStateChanged(int oldState) OVERRIDE;
 	void OnPickedUp(CBaseCombatCharacter* pNewOwner);
 	bool FVisible(CBaseEntity* pEntity, int traceMask, CBaseEntity** ppBlocker) OVERRIDE;
-	bool CanBeSelected() OVERRIDE;
+	bool VisibleInWeaponSelection() OVERRIDE;
 
 	// Prevents base class from switching viewmodel's activity to ACT_VM_IDLE
 	void WeaponIdle() OVERRIDE { }

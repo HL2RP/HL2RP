@@ -296,14 +296,14 @@ bool CRation::FVisible(CBaseEntity* pEntity, int traceMask, CBaseEntity** ppCall
 	return isVisible;
 }
 
-bool CRation::CanBeSelected()
+bool CRation::VisibleInWeaponSelection()
 {
 #ifdef HL2DM_RP
 	// HACK: On HL2DM, the special weapons can't be assigned a proper slot
 	return false;
 #endif // HL2DM
 
-	return BaseClass::CanBeSelected();
+	return BaseClass::VisibleInWeaponSelection();
 }
 
 // Workarounds dropped Ration from showing invisible randomly for non listen clients.

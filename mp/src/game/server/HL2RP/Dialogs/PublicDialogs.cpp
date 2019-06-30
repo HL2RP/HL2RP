@@ -15,7 +15,7 @@ CSpecialWeaponsMenu::CSpecialWeaponsMenu(CHL2RP_Player* pPlayer) : CDialogRewind
 
 	for (int i = MAX_WEAPONS - 1; i >= 0 && pPlayer->GetWeapon(i) != NULL; i--)
 	{
-		if (!pPlayer->GetWeapon(i)->CanBeSelected())
+		if (!pPlayer->GetWeapon(i)->VisibleInWeaponSelection())
 		{
 			AddItem(pPlayer, (new CSpecialWeaponPickItem(this, pPlayer->GetWeapon(i)))->
 				SetLocalizedDisplay(pPlayer, pPlayer->GetWeapon(i)->GetPrintName()));
