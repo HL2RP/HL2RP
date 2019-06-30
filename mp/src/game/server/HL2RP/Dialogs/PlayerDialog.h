@@ -34,8 +34,6 @@ protected:
 class CEntryBox : public CPlayerDialog
 {
 	void HandleTextInput(CHL2RP_Player* pPlayer, char* pText) OVERRIDE;
-	void HandleItemSelectionInput(CHL2RP_Player* pPlayer, const char* pSecretTokenText,
-		const char* pIndexText) OVERRIDE;
 	virtual void HandleFilledTextInput(CHL2RP_Player* pPlayer, const char* pText) = 0;
 
 public:
@@ -140,7 +138,6 @@ public:
 
 class CMenu : public CPlayerDialog
 {
-	void HandleTextInput(CHL2RP_Player* pPlayer, char* pText) OVERRIDE;
 	void HandleItemSelectionInput(CHL2RP_Player* pPlayer, const char* pSecretTokenText,
 		const char* pIndexText) OVERRIDE;
 

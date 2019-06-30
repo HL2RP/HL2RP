@@ -77,13 +77,6 @@ void CEntryBox::HandleTextInput(CHL2RP_Player* pPlayer, char* pText)
 	RewindDialog(pPlayer);
 }
 
-void CEntryBox::HandleItemSelectionInput(CHL2RP_Player* pPlayer, const char* pSecretTokenText,
-	const char* pIndexText)
-{
-	ClientPrint(pPlayer, HUD_PRINTTALK, GetHL2RPAutoLocalizer().
-		Localize(pPlayer, "#HL2RP_EntryBox_Item_Selection_Deny"));
-}
-
 CMenuItem::CMenuItem(const char* pDisplay)
 {
 	SetDisplay(pDisplay);
@@ -236,17 +229,6 @@ void CMenu::Display(CHL2RP_Player* pPlayer)
 	}
 
 	UTIL_SendDialog(pPlayer, m_NetKeyValues, DIALOG_MENU);
-}
-
-void CMenu::HandleTextInput(CHL2RP_Player* pPlayer, char* pText)
-{
-	// Compensate a client bug which commands twice when pressing enter on entryboxes,
-	// and thus calling this function right after an active entrybox rewinded to a new menu
-	if (pText[0] != '\0')
-	{
-		ClientPrint(pPlayer, HUD_PRINTTALK, GetHL2RPAutoLocalizer().
-			Localize(pPlayer, "#HL2RP_Menu_Text_Input_Deny"));
-	}
 }
 
 void CMenu::HandleItemSelectionInput(CHL2RP_Player* pPlayer, const char* pSecretTokenText,
