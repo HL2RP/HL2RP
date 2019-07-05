@@ -18,6 +18,7 @@ ipch
 *.opensdf
 *.idb
 *.vcxproj
+*.vcxproj.FileListAbsolute.txt
 *.vcxproj.filters
 *.vcxproj.vpc_crc
 .vs
