@@ -126,6 +126,7 @@ $Project
 			$File	"HL2RP\HL2RP_Util.h"
 			$File	"HL2RP\PropRationDispenser.cpp"
 			$File	"HL2RP\PropRationDispenser.h"
+			$File	"HL2RP\SuicidalJailSystem.cpp"
 		}
 	}
 }
