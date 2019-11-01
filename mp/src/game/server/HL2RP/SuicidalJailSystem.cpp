@@ -43,9 +43,11 @@ CON_COMMAND(cuffing, "cuffing")
 		Msg(" ----------------- \n");
 		Msg(" player color: r:%i g:%i b:%i a:%i ", clr.r, clr.g, clr.b, clr.a);
 		pPlayer->RemoveAllWeapons();
+		pPlayer->SetArmorValue(0); // Use this if you want to reset the armor value to 0
 		pPlayer->RemoveSuit();
 		pPlayer->SetMaxSpeed(80.0f);
-		pPlayer->SetRenderColor(0, 75, 255, 255);
+		pPlayer->SetRenderMode(RenderMode_t::kRenderTransColor);
+		pPlayer->SetRenderColor(0, 75, 255, 220);
 	}
 }
 
@@ -60,6 +62,7 @@ CON_COMMAND(uncuffing, "uncuffing")
 		pPlayer->SetMaxSpeed(120);
 		pPlayer->StopWalking();
 		pPlayer->GiveNamedItem("weapon_physcannon");
+		pPlayer->SetRenderMode(RenderMode_t::kRenderNormal);
 		pPlayer->SetRenderColor(255, 255, 255, 255);
 	}
 }
