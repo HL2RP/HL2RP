@@ -714,17 +714,7 @@ void CNPC_Ichthyosaur::DoMovement( float flInterval, const Vector &MoveTarget, i
 	if ( WalkMove( workVelocity * flInterval, MASK_NPCSOLID ) == false )
 	{
 		//Attempt a half-step
-		if ( WalkMove( (workVelocity*0.5f) * flInterval,  MASK_NPCSOLID) == false )
-		{
-			//Restart the velocity
-			//VectorNormalize( m_vecVelocity );
-			vecNewVelocity *= 0.5f;
-		}
-		else
-		{
-			//Cut our velocity in half
-			vecNewVelocity *= 0.5f;
-		}
+		vecNewVelocity *= 0.5f;
 	}
 
 	SetAbsVelocity( vecNewVelocity );

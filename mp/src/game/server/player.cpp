@@ -82,6 +82,8 @@
 #include "weapon_physcannon.h"
 #endif
 
+const char VALVE_BOT_NETWORK_ID[] = "BOT";
+
 ConVar autoaim_max_dist( "autoaim_max_dist", "2160" ); // 2160 = 180 feet
 ConVar autoaim_max_deflect( "autoaim_max_deflect", "0.99" );
 
@@ -1541,7 +1543,15 @@ void CBasePlayer::PackDeadPlayerItems( void )
 		}
 	}
 
+#ifdef ROLEPLAY
+	int rations = GetAmmoCount("citizenpackage");
+#endif
+
 	RemoveAllItems( true );// now strip off everything that wasn't handled by the code above.
+
+#ifdef ROLEPLAY
+	GiveAmmo(rations, "citizenpackage");
+#endif
 }
 
 void CBasePlayer::RemoveAllItems( bool removeSuit )
@@ -4576,21 +4586,11 @@ void CBasePlayer::PostThink()
 
 			// select the proper animation for the player character	
 			VPROF( "CBasePlayer::PostThink-Animation" );
-
-			const Vector &vecAbsVel = GetAbsVelocity();
-
 			// If he's in a vehicle, sit down
 			if ( IsInAVehicle() )
 				SetAnimation( PLAYER_IN_VEHICLE );
-			else if ((vecAbsVel.x != 0.0f || vecAbsVel.y != 0.0f)
-				&& (( GetFlags() & FL_ONGROUND ) || GetWaterLevel() > WL_Feet))
-			{
-				SetAnimation( PLAYER_WALK );
-			}	
 			else
-			{
-				SetAnimation( PLAYER_IDLE );
-			}
+				SetAnimation( PLAYER_WALK );
 		}
 
 		// Don't allow bogus sequence on player
@@ -4854,16 +4854,9 @@ CBaseEntity *CBasePlayer::EntSelectSpawnPoint()
 			pSpot = gEntList.FindEntityByClassname( pSpot, "info_player_deathmatch" );
 		} while ( pSpot != pFirstSpot ); // loop if we're not back to the start
 
-		// we haven't found a place to spawn yet,  so kill any guy at the first spawn point and spawn there
+		// We haven't found a place to spawn yet, so spawn at the first spawn point
 		if ( pSpot )
 		{
-			CBaseEntity *ent = NULL;
-			for ( CEntitySphereQuery sphere( pSpot->GetAbsOrigin(), 128 ); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity() )
-			{
-				// if ent is a client, kill em (unless they are ourselves)
-				if ( ent->IsPlayer() && !(ent->edict() == player) )
-					ent->TakeDamage( CTakeDamageInfo( GetContainingEntity(INDEXENT(0)), GetContainingEntity(INDEXENT(0)), 300, DMG_GENERIC ) );
-			}
 			goto ReturnSpot;
 		}
 	}
@@ -8622,12 +8615,12 @@ CBaseEntity *CBasePlayer::DoubleCheckUseNPC( CBaseEntity *pNPC, const Vector &ve
 
 bool CBasePlayer::IsBot() const
 {
-	return (GetFlags() & FL_FAKECLIENT) != 0;
+	return IsFakeClient();
 }
 
 bool CBasePlayer::IsFakeClient() const
 {
-	return (GetFlags() & FL_FAKECLIENT) != 0;
+	return ((GetFlags() & FL_FAKECLIENT) != 0 || !Q_strcmp(m_szNetworkIDString, VALVE_BOT_NETWORK_ID));
 }
 
 void CBasePlayer::EquipSuit( bool bPlayEffects )
@@ -8863,9 +8856,19 @@ bool CBasePlayer::HandleVoteCommands( const CCommand &args )
 //-----------------------------------------------------------------------------
 const char *CBasePlayer::GetNetworkIDString()
 {
-	const char *pStr = engine->GetPlayerNetworkIDString( edict() );
-	Q_strncpy( m_szNetworkIDString, pStr ? pStr : "", sizeof(m_szNetworkIDString) );
 	return m_szNetworkIDString; 
+}
+
+// Purpose: Assign the local ID copy (should be done once when authorized)
+void CBasePlayer::SetNetworkIDString(const char *pszNetworkIDString)
+{
+	// Assume max lengths are same
+	Q_strcpy(m_szNetworkIDString, pszNetworkIDString);
+}
+
+bool CBasePlayer::HasNetworkIDString()
+{
+	return (m_szNetworkIDString[0] != '\0');
 }
 
 //-----------------------------------------------------------------------------

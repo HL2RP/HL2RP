@@ -34,6 +34,7 @@
 #include "ndebugoverlay.h"
 #include "tier0/vcrmode.h"
 #include "env_debughistory.h"
+#include "npcevent.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1751,6 +1752,9 @@ void CAI_BaseNPC::StartTask( const Task_t *pTask )
 
 	case TASK_RELOAD:
 		ResetIdealActivity( ACT_RELOAD );
+		animevent_t animevent;
+		animevent.event = EVENT_WEAPON_RELOAD;
+		HandleAnimEvent(&animevent);
 		break;
 
 	case TASK_SPECIAL_ATTACK1:
@@ -3178,6 +3182,15 @@ void CAI_BaseNPC::RunAttackTask( int task )
 		if ( task == TASK_RELOAD && GetShotRegulator() )
 		{
 			GetShotRegulator()->Reset( false );
+		}
+
+		// Complete task only if not playing any gesture. Start searching for any valid active one...
+		for (int i = 0; i < GetNumAnimOverlays(); i++)
+		{
+			if (GetAnimOverlay(i)->IsActive() && !GetAnimOverlay(i)->IsKillMe() && GetAnimOverlay(i)->m_nActivity != ACT_INVALID)
+			{
+				return;
+			}
 		}
 
 		TaskComplete();

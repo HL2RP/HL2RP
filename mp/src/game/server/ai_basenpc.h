@@ -1345,12 +1345,12 @@ public:
 										 float distClear, 
 										 AIMoveResult_t *pResult );
 
-	virtual bool 		OnUpcomingPropDoor( AILocalMoveGoal_t *pMoveGoal,
- 											CBasePropDoor *pDoor,
+	virtual bool 		CheckUpcomingDoor( AILocalMoveGoal_t *pMoveGoal,
+ 											CBaseEntity *pObstructingEntity,
 											float distClear,
 											AIMoveResult_t *pResult );
 
-	void	OpenPropDoorBegin( CBasePropDoor *pDoor );
+	bool	TryOpenDoorNow(CBaseEntity *pEntity);
 	void	OpenPropDoorNow( CBasePropDoor *pDoor );
 
 	//---------------------------------
@@ -1365,7 +1365,7 @@ public:
 	//	
 	void OnDoorFullyOpen(CBasePropDoor *pDoor);
 	void OnDoorBlocked(CBasePropDoor *pDoor);
-	CHandle<CBasePropDoor> m_hOpeningDoor;	// The CBasePropDoor that we are in the midst of opening for navigation.
+	CHandle<CBaseEntity> m_hOpeningDoor;	// The CBaseDoor or CBasePropDoor that we are in the midst of opening for navigation.
 
 protected:
 	// BRJ 4/11
@@ -2122,6 +2122,9 @@ public:
 	void				GetPlayerAvoidBounds( Vector *pMins, Vector *pMaxs );
 
 	void				StartPingEffect( void ) { m_flTimePingEffect = gpGlobals->curtime + 2.0f; DispatchUpdateTransmitState(); }
+
+private:
+	int	BuildActivityChain_SelectWeightedSequence(Activity &baseActivity, Activity &weaponTranslation, bool &bRequired);
 };
 
 

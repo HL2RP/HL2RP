@@ -24,6 +24,10 @@
 #include "econ_item_view.h"
 #endif
 
+#ifdef ROLEPLAY
+#include "CNetworkVarEx.h"
+#endif
+
 // For queuing and processing usercmds
 class CCommandContext
 {
@@ -372,7 +376,9 @@ public:
 	void					SetPlayerName( const char *name );
 
 	int						GetUserID() { return engine->GetPlayerUserId( edict() ); }
-	const char *			GetNetworkIDString(); 
+	const char *			GetNetworkIDString();
+	void					SetNetworkIDString(const char *pszNetworkIDString);
+	bool					HasNetworkIDString();
 	virtual const Vector	GetPlayerMins( void ) const; // uses local player
 	virtual const Vector	GetPlayerMaxs( void ) const; // uses local player
 
@@ -854,12 +860,16 @@ public:
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_vecViewOffset );
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_flFriction );
+#ifndef ROLEPLAY
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_iAmmo );
+#endif
 	
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_hGroundEntity );
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_lifeState );
+#ifndef ROLEPLAY
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_iHealth );
+#endif
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_vecBaseVelocity );
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_nNextThinkTick );
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_vecVelocity );
@@ -1046,7 +1056,9 @@ private:
 
 	// from edict_t
 	// CBasePlayer doesn't send this but CCSPlayer does.
+#ifndef ROLEPLAY
 	CNetworkVarForDerived( int, m_ArmorValue );
+#endif
 	float					m_AirFinished;
 	float					m_PainFinished;
 
@@ -1054,6 +1066,10 @@ private:
 	int						m_iPlayerLocked;
 		
 protected:
+#ifdef ROLEPLAY
+	CNetworkVarForDerivedEx(int, m_ArmorValue);
+#endif
+
 	// the player's personal view model
 	typedef CHandle<CBaseViewModel> CBaseViewModelHandle;
 	CNetworkArray( CBaseViewModelHandle, m_hViewModel, MAX_VIEWMODELS );

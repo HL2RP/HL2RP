@@ -270,6 +270,20 @@ void SharedVehicleViewSmoothing(CBasePlayer *pPlayer,
 
 		//Msg("Frac: %f\n", frac );
 
+		Vector localEyeOrigin;
+		QAngle localEyeAngles;
+
+#ifdef HL2DM_RP
+		if (frac == 0.0f)
+		{
+			if (!bExitAnimOn)
+			{
+				pData->pVehicle->GetAttachmentLocal(eyeAttachmentIndex, localEyeOrigin, localEyeAngles);
+				pPlayer->SnapEyeAngles(localEyeAngles);
+			}
+		}
+		else
+#endif
 		if ( frac < 1.0 )
 		{
 			// Blend to the desired vehicle eye origin
@@ -281,18 +295,22 @@ void SharedVehicleViewSmoothing(CBasePlayer *pPlayer,
 		{
 			pData->bRunningEnterExit = false;
 
-#ifdef CLIENT_DLL
 			// Enter animation has finished, align view with the eye attachment point
 			// so they can start mouselooking around.
-			if ( !bExitAnimOn && pPlayer->IsLocalPlayer() )
+			if ( !bExitAnimOn )
 			{
-				Vector localEyeOrigin;
-				QAngle localEyeAngles;
-
 				pData->pVehicle->GetAttachmentLocal( eyeAttachmentIndex, localEyeOrigin, localEyeAngles );
-				engine->SetViewAngles( localEyeAngles );
+
+#ifdef CLIENT_DLL
+				if (pPlayer->IsLocalPlayer())
+				{
+					engine->SetViewAngles( localEyeAngles );
+				}
+
+#elif (defined HL2DM_RP)
+				pPlayer->SnapEyeAngles(localEyeAngles);
+#endif
 			}
-#endif // CLIENT_DLL
 		}
 	}
 

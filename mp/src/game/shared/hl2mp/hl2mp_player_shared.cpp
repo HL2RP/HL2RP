@@ -197,6 +197,18 @@ void CPlayerAnimState::ComputePlaybackRate()
 		// BUG BUG:
 		// This stuff really should be m_flPlaybackRate = speed / m_flGroundSpeed
 	}
+#ifndef CLIENT_DLL
+	else if (GetOuter()->GetActivity() == ACT_MELEE_ATTACK1 && GetOuter()->GetActiveWeapon() != NULL)
+	{
+		// Sync melee attack animation duration with damage rate
+		float flFireRate = GetOuter()->GetActiveWeapon()->GetFireRate();
+
+		if (flFireRate > 0.0f)
+		{
+			GetOuter()->SetPlaybackRate(GetOuter()->SequenceDuration() / flFireRate);
+		}
+	}
+#endif
 	else
 	{
 		GetOuter()->SetPlaybackRate( 1.0f );

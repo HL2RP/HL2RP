@@ -18,7 +18,7 @@
 bool PlayerHasMegaPhysCannon();
 
 // force the physcannon to drop an object (if carried)
-bool PhysCannonForceDrop( CBaseCombatWeapon *pActiveWeapon, CBaseEntity *pOnlyIfHoldingThis );
+void PhysCannonForceDrop( CBaseCombatWeapon *pActiveWeapon, CBaseEntity *pOnlyIfHoldingThis );
 void PhysCannonBeginUpgrade( CBaseAnimating *pAnim );
 
 bool PlayerPickupControllerIsHoldingEntity( CBaseEntity *pPickupController, CBaseEntity *pHeldEntity );

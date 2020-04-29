@@ -61,6 +61,10 @@ private:
 	void			Swing( int bIsSecondary );
 	void			Hit( trace_t &traceHit, Activity nHitActivity );
 	Activity		ChooseIntersectionPointAndActivity( trace_t &hitTrace, const Vector &mins, const Vector &maxs, CBasePlayer *pOwner );
+
+#ifndef CLIENT_DLL
+	int CapabilitiesGet(void) OVERRIDE { return bits_CAP_WEAPON_MELEE_ATTACK1 | bits_CAP_WEAPON_RANGE_ATTACK1; }
+#endif
 };
 
 #endif

@@ -31,6 +31,7 @@
 #include "BasePropDoor.h"
 #include "props.h"
 #include "physics_npc_solver.h"
+#include "doors.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -2156,19 +2157,14 @@ bool CAI_Navigator::OnMoveExecuteFailed( const AILocalMoveGoal_t &move, const AI
 
 bool CAI_Navigator::OnMoveBlocked( AIMoveResult_t *pResult )
 {
-	if ( *pResult == AIMR_BLOCKED_NPC && 
-		 GetPath()->GetCurWaypoint() &&
-		 ( GetPath()->GetCurWaypoint()->Flags() & bits_WP_TO_DOOR ) )
+	if ( *pResult == AIMR_BLOCKED_NPC
+	&& GetPath()->GetCurWaypoint()
+	&& ( GetPath()->GetCurWaypoint()->Flags() & bits_WP_TO_DOOR )
+	&& GetOuter()->TryOpenDoorNow(GetPath()->GetCurWaypoint()->GetEHandleData()))
 	{
-		CBasePropDoor *pDoor = (CBasePropDoor *)(CBaseEntity *)GetPath()->GetCurWaypoint()->GetEHandleData();
-		if (pDoor != NULL)
-		{
-			GetOuter()->OpenPropDoorBegin( pDoor );
-			*pResult = AIMR_OK;
-			return true;
-		}
+		*pResult = AIMR_OK;
+		return true;
 	}
-
 
 	// Allow the NPC to override this behavior
 	if ( GetOuter()->OnMoveBlocked( pResult ))
@@ -2691,12 +2687,7 @@ void CAI_Navigator::AdvancePath()
 
 	if ( pCurWaypoint->Flags() & bits_WP_TO_DOOR )
 	{
-		CBasePropDoor *pDoor = (CBasePropDoor *)(CBaseEntity *)pCurWaypoint->GetEHandleData();
-		if (pDoor != NULL)
-		{
-			GetOuter()->OpenPropDoorBegin(pDoor);
-		}
-		else
+		if (!GetOuter()->TryOpenDoorNow(pCurWaypoint->GetEHandleData()))
 		{
 			DevMsg("%s trying to open a door that has been deleted!\n", GetOuter()->GetDebugName());
 		}

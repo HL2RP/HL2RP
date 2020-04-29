@@ -26,18 +26,25 @@
 
 #include "ilagcompensationmanager.h"
 
+#ifdef HL2DM_RP
+#include "CHL2RP.h"
+#endif
+
 int g_iLastCitizenModel = 0;
 int g_iLastCombineModel = 0;
 
 CBaseEntity	 *g_pLastCombineSpawn = NULL;
 CBaseEntity	 *g_pLastRebelSpawn = NULL;
 extern CBaseEntity				*g_pLastSpawn;
+const float LOWER_WEAPON_WAIT_SECONDS = 10.0f;
 
 #define HL2MP_COMMAND_MAX_RATE 0.3
 
 void DropPrimedFragGrenade( CHL2MP_Player *pPlayer, CBaseCombatWeapon *pGrenade );
 
+#ifndef ROLEPLAY
 LINK_ENTITY_TO_CLASS( player, CHL2MP_Player );
+#endif
 
 LINK_ENTITY_TO_CLASS( info_player_combine, CPointEntity );
 LINK_ENTITY_TO_CLASS( info_player_rebel, CPointEntity );
@@ -77,6 +84,71 @@ const char *g_ppszRandomCitizenModels[] =
 	"models/humans/group03/female_07.mdl",
 	"models/humans/group03/male_08.mdl",
 	"models/humans/group03/male_09.mdl",
+#ifdef ROLEPLAY
+	"models/humans/group01/female_01.mdl",
+	"models/humans/group01/female_02.mdl",
+	"models/humans/group01/female_03.mdl",
+	"models/humans/group01/female_04.mdl",
+	"models/humans/group01/female_06.mdl",
+	"models/humans/group01/female_07.mdl",
+	"models/humans/group01/male_01.mdl",
+	"models/humans/group01/male_02.mdl",
+	"models/humans/group01/male_03.mdl",
+	"models/humans/group01/male_04.mdl",
+	"models/humans/group01/male_05.mdl",
+	"models/humans/group01/male_06.mdl",
+	"models/humans/group01/male_07.mdl",
+	"models/humans/group01/male_08.mdl",
+	"models/humans/group01/male_09.mdl",
+
+	"models/humans/group02/female_01.mdl",
+	"models/humans/group02/female_02.mdl",
+	"models/humans/group02/female_03.mdl",
+	"models/humans/group02/female_04.mdl",
+	"models/humans/group02/female_06.mdl",
+	"models/humans/group02/female_07.mdl",
+	"models/humans/group02/male_01.mdl",
+	"models/humans/group02/male_02.mdl",
+	"models/humans/group02/male_03.mdl",
+	"models/humans/group02/male_04.mdl",
+	"models/humans/group02/male_05.mdl",
+	"models/humans/group02/male_06.mdl",
+	"models/humans/group02/male_07.mdl",
+	"models/humans/group02/male_08.mdl",
+	"models/humans/group02/male_09.mdl",
+
+	"models/humans/group03/female_01_bloody.mdl",
+	"models/humans/group03/female_02_bloody.mdl",
+	"models/humans/group03/female_03_bloody.mdl",
+	"models/humans/group03/female_04_bloody.mdl",
+	"models/humans/group03/female_06_bloody.mdl",
+	"models/humans/group03/female_07_bloody.mdl",
+	"models/humans/group03/male_01_bloody.mdl",
+	"models/humans/group03/male_02_bloody.mdl",
+	"models/humans/group03/male_03_bloody.mdl",
+	"models/humans/group03/male_04_bloody.mdl",
+	"models/humans/group03/male_05_bloody.mdl",
+	"models/humans/group03/male_06_bloody.mdl",
+	"models/humans/group03/male_07_bloody.mdl",
+	"models/humans/group03/male_08_bloody.mdl",
+	"models/humans/group03/male_09_bloody.mdl",
+
+	"models/humans/group03m/female_01.mdl",
+	"models/humans/group03m/female_02.mdl",
+	"models/humans/group03m/female_03.mdl",
+	"models/humans/group03m/female_04.mdl",
+	"models/humans/group03m/female_06.mdl",
+	"models/humans/group03m/female_07.mdl",
+	"models/humans/group03m/male_01.mdl",
+	"models/humans/group03m/male_02.mdl",
+	"models/humans/group03m/male_03.mdl",
+	"models/humans/group03m/male_04.mdl",
+	"models/humans/group03m/male_05.mdl",
+	"models/humans/group03m/male_06.mdl",
+	"models/humans/group03m/male_07.mdl",
+	"models/humans/group03m/male_08.mdl",
+	"models/humans/group03m/male_09.mdl",
+#endif
 };
 
 const char *g_ppszRandomCombineModels[] =
@@ -107,7 +179,7 @@ CHL2MP_Player::CHL2MP_Player() : m_PlayerAnimState( this )
 
 	m_iSpawnInterpCounter = 0;
 
-    m_bEnterObserver = false;
+	m_bEnterObserver = false;
 	m_bReady = false;
 
 	BaseClass::ChangeTeam( 0 );
@@ -198,6 +270,7 @@ void CHL2MP_Player::GiveDefaultItems( void )
 {
 	EquipSuit();
 
+#ifndef ROLEPLAY
 	CBasePlayer::GiveAmmo( 255,	"Pistol");
 	CBasePlayer::GiveAmmo( 45,	"SMG1");
 	CBasePlayer::GiveAmmo( 1,	"grenade" );
@@ -216,6 +289,7 @@ void CHL2MP_Player::GiveDefaultItems( void )
 	GiveNamedItem( "weapon_pistol" );
 	GiveNamedItem( "weapon_smg1" );
 	GiveNamedItem( "weapon_frag" );
+#endif
 	GiveNamedItem( "weapon_physcannon" );
 
 	const char *szDefaultWeaponName = engine->GetClientConVarValue( engine->IndexOfEdict( edict() ), "cl_defaultweapon" );
@@ -361,7 +435,11 @@ bool CHL2MP_Player::ValidatePlayerModel( const char *pModel )
 		}
 	}
 
+#ifdef HL2DM_RP
+	return (CHL2RP::GetCompatModelTypeIndex(pModel) != INVALID_COMPAT_ANIM_INDEX);
+#else
 	return false;
+#endif
 }
 
 void CHL2MP_Player::SetPlayerTeamModel( void )
@@ -382,9 +460,18 @@ void CHL2MP_Player::SetPlayerTeamModel( void )
 		engine->ClientCommand ( edict(), szReturnString );
 	}
 
+#ifdef HL2DM_RP
+	int compatModelTypeIndex = CHL2RP::GetCompatModelTypeIndex(szModelName);
+#endif
+
 	if ( GetTeamNumber() == TEAM_COMBINE )
 	{
+#ifdef HL2DM_RP
+		if (compatModelTypeIndex == COMPAT_ANIM_REBEL_MODEL_INDEX
+		|| (compatModelTypeIndex != COMPAT_ANIM_COMBINE_MODEL_INDEX && Q_stristr(szModelName, "models/human")))
+#else
 		if ( Q_stristr( szModelName, "models/human") )
+#endif
 		{
 			int nHeads = ARRAYSIZE( g_ppszRandomCombineModels );
 		
@@ -396,7 +483,12 @@ void CHL2MP_Player::SetPlayerTeamModel( void )
 	}
 	else if ( GetTeamNumber() == TEAM_REBELS )
 	{
+#ifdef HL2DM_RP
+		if (compatModelTypeIndex == COMPAT_ANIM_COMBINE_MODEL_INDEX
+		|| (compatModelTypeIndex != COMPAT_ANIM_REBEL_MODEL_INDEX && !Q_stristr(szModelName, "models/human")))
+#else
 		if ( !Q_stristr( szModelName, "models/human") )
+#endif
 		{
 			int nHeads = ARRAYSIZE( g_ppszRandomCitizenModels );
 
@@ -460,7 +552,14 @@ void CHL2MP_Player::SetPlayerModel( void )
 			szModelName = g_ppszRandomCitizenModels[0];
 		}
 
+#ifdef HL2DM_RP
+		int compatModelTypeIndex = CHL2RP::GetCompatModelTypeIndex(szModelName);
+
+		if (compatModelTypeIndex == COMPAT_ANIM_REBEL_MODEL_INDEX
+		|| (compatModelTypeIndex != COMPAT_ANIM_COMBINE_MODEL_INDEX && Q_stristr(szModelName, "models/human")))
+#else
 		if ( Q_stristr( szModelName, "models/human") )
+#endif
 		{
 			m_iModelType = TEAM_REBELS;
 		}
@@ -491,6 +590,23 @@ void CHL2MP_Player::SetPlayerModel( void )
 
 void CHL2MP_Player::SetupPlayerSoundsByModel( const char *pModelName )
 {
+#ifdef HL2DM_RP
+	int compatModelTypeIndex = CHL2RP::GetCompatModelTypeIndex(pModelName);
+
+	if (compatModelTypeIndex == COMPAT_ANIM_REBEL_MODEL_INDEX
+	|| (compatModelTypeIndex != COMPAT_ANIM_COMBINE_MODEL_INDEX && Q_stristr(pModelName, "models/human")))
+	{
+		m_iPlayerSoundType = (int)PLAYER_SOUNDS_CITIZEN;
+	}
+	else if ( Q_stristr(pModelName, "police" ) )
+	{
+		m_iPlayerSoundType = (int)PLAYER_SOUNDS_METROPOLICE;
+	}
+	else
+	{
+		m_iPlayerSoundType = (int)PLAYER_SOUNDS_COMBINESOLDIER;
+	}
+#else
 	if ( Q_stristr( pModelName, "models/human") )
 	{
 		m_iPlayerSoundType = (int)PLAYER_SOUNDS_CITIZEN;
@@ -503,6 +619,7 @@ void CHL2MP_Player::SetupPlayerSoundsByModel( const char *pModelName )
 	{
 		m_iPlayerSoundType = (int)PLAYER_SOUNDS_COMBINESOLDIER;
 	}
+#endif
 }
 
 void CHL2MP_Player::ResetAnimation( void )
@@ -511,21 +628,9 @@ void CHL2MP_Player::ResetAnimation( void )
 	{
 		SetSequence ( -1 );
 		SetActivity( ACT_INVALID );
-
-		const Vector &vecAbsVel = GetAbsVelocity();
-
-		if ((vecAbsVel.x != 0.0f || vecAbsVel.y != 0.0f)
-			&& (( GetFlags() & FL_ONGROUND ) || GetWaterLevel() > WL_Feet))
-		{
-			SetAnimation( PLAYER_WALK );
-		}	
-		else
-		{
-			SetAnimation( PLAYER_IDLE );
-		}
+		SetAnimation(PLAYER_WALK);
 	}
 }
-
 
 bool CHL2MP_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex )
 {
@@ -657,186 +762,215 @@ bool CHL2MP_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, co
 	return true;
 }
 
-Activity CHL2MP_Player::TranslateTeamActivity( Activity ActToTranslate )
-{
-	if ( m_iModelType == TEAM_COMBINE )
-		 return ActToTranslate;
-	
-	if ( ActToTranslate == ACT_RUN )
-		 return ACT_RUN_AIM_AGITATED;
-
-	if ( ActToTranslate == ACT_IDLE )
-		 return ACT_IDLE_AIM_AGITATED;
-
-	if ( ActToTranslate == ACT_WALK )
-		 return ACT_WALK_AIM_AGITATED;
-
-	return ActToTranslate;
-}
-
 extern ConVar hl2_normspeed;
 
 // Set the activity based on an event or current state
 void CHL2MP_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
-	int animDesired;
+	float squareSpeed;
 
-	float speed;
-
-	speed = GetAbsVelocity().Length2D();
-
-	
-	// bool bRunning = true;
-
-	//Revisit!
-/*	if ( ( m_nButtons & ( IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) ) )
+	if (GetFlags() & (FL_FROZEN | FL_ATCONTROLS))
 	{
-		if ( speed > 1.0f && speed < hl2_normspeed.GetFloat() - 20.0f )
-		{
-			bRunning = false;
-		}
-	}*/
-
-	if ( GetFlags() & ( FL_FROZEN | FL_ATCONTROLS ) )
-	{
-		speed = 0;
+		squareSpeed = 0.0f;
 		playerAnim = PLAYER_IDLE;
-	}
-
-	Activity idealActivity = ACT_HL2MP_RUN;
-
-	// This could stand to be redone. Why is playerAnim abstracted from activity? (sjb)
-	if ( playerAnim == PLAYER_JUMP )
-	{
-		idealActivity = ACT_HL2MP_JUMP;
-	}
-	else if ( playerAnim == PLAYER_DIE )
-	{
-		if ( m_lifeState == LIFE_ALIVE )
-		{
-			return;
-		}
-	}
-	else if ( playerAnim == PLAYER_ATTACK1 )
-	{
-		if ( GetActivity( ) == ACT_HOVER	|| 
-			 GetActivity( ) == ACT_SWIM		||
-			 GetActivity( ) == ACT_HOP		||
-			 GetActivity( ) == ACT_LEAP		||
-			 GetActivity( ) == ACT_DIESIMPLE )
-		{
-			idealActivity = GetActivity( );
-		}
-		else
-		{
-			idealActivity = ACT_HL2MP_GESTURE_RANGE_ATTACK;
-		}
-	}
-	else if ( playerAnim == PLAYER_RELOAD )
-	{
-		idealActivity = ACT_HL2MP_GESTURE_RELOAD;
-	}
-	else if ( playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK )
-	{
-		if ( !( GetFlags() & FL_ONGROUND ) && GetActivity( ) == ACT_HL2MP_JUMP )	// Still jumping
-		{
-			idealActivity = GetActivity( );
-		}
-		/*
-		else if ( GetWaterLevel() > 1 )
-		{
-			if ( speed == 0 )
-				idealActivity = ACT_HOVER;
-			else
-				idealActivity = ACT_SWIM;
-		}
-		*/
-		else
-		{
-			if ( GetFlags() & FL_ANIMDUCKING )
-			{
-				if ( speed > 0 )
-				{
-					idealActivity = ACT_HL2MP_WALK_CROUCH;
-				}
-				else
-				{
-					idealActivity = ACT_HL2MP_IDLE_CROUCH;
-				}
-			}
-			else
-			{
-				if ( speed > 0 )
-				{
-					/*
-					if ( bRunning == false )
-					{
-						idealActivity = ACT_WALK;
-					}
-					else
-					*/
-					{
-						idealActivity = ACT_HL2MP_RUN;
-					}
-				}
-				else
-				{
-					idealActivity = ACT_HL2MP_IDLE;
-				}
-			}
-		}
-
-		idealActivity = TranslateTeamActivity( idealActivity );
-	}
-	
-	if ( idealActivity == ACT_HL2MP_GESTURE_RANGE_ATTACK )
-	{
-		RestartGesture( Weapon_TranslateActivity( idealActivity ) );
-
-		// FIXME: this seems a bit wacked
-		Weapon_SetActivity( Weapon_TranslateActivity( ACT_RANGE_ATTACK1 ), 0 );
-
-		return;
-	}
-	else if ( idealActivity == ACT_HL2MP_GESTURE_RELOAD )
-	{
-		RestartGesture( Weapon_TranslateActivity( idealActivity ) );
-		return;
 	}
 	else
 	{
-		SetActivity( idealActivity );
+		squareSpeed = GetAbsVelocity().Length2DSqr();
+	}
 
-		animDesired = SelectWeightedSequence( Weapon_TranslateActivity ( idealActivity ) );
+	// Gives priority to certain animations initially
+	CUtlVector<Activity> priorityActivityList;
 
-		if (animDesired == -1)
+	// Note: SLAM activites are used to prevent being put into ACT_DIERAGDOLL activity on HL2:DM, when missing weapon
+	switch (playerAnim)
+	{
+	case PLAYER_JUMP:
+	{
+		priorityActivityList.AddToTail(ACT_JUMP);
+
+		if (GetActiveWeapon() != NULL)
 		{
-			animDesired = SelectWeightedSequence( idealActivity );
+			priorityActivityList.AddToTail(ACT_HL2MP_JUMP);
+		}
+		else
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_JUMP_SLAM);
+		}
 
-			if ( animDesired == -1 )
+		break;
+	}
+	case PLAYER_DIE:
+	{
+		if (m_lifeState == LIFE_ALIVE)
+		{
+			return;
+		}
+
+		break;
+	}
+	case PLAYER_ATTACK1:
+	{
+		priorityActivityList.AddToTail(ACT_GESTURE_RANGE_ATTACK1);
+		priorityActivityList.AddToTail(ACT_HL2MP_GESTURE_RANGE_ATTACK);
+		Weapon_SetActivity(Weapon_TranslateActivity(ACT_RANGE_ATTACK1), 0);
+		goto ApplyGesture;
+	}
+	case PLAYER_RELOAD:
+	{
+		priorityActivityList.AddToTail(ACT_GESTURE_RELOAD);
+		priorityActivityList.AddToTail(ACT_HL2MP_GESTURE_RELOAD);
+		goto ApplyGesture;
+	}
+	case PLAYER_IDLE:
+	case PLAYER_WALK:
+	{
+		if (!(GetFlags() & FL_ONGROUND) && (GetActivity() == ACT_JUMP || GetActivity() == ACT_HL2MP_JUMP))
+		{
+			return;
+		}
+
+		// Adrian: On ground, switch to IDLE when speed is zero and no movement keys are pressed, for a smooth transition.
+		// While flying, it does not make that much sense to play WALK/RUN even with speed, so rely on movement keys
+		if (GetFlags() & FL_DUCKING)
+		{
+			if (((GetFlags() & FL_ONGROUND) && squareSpeed > 0.0f) || GetMoveTime() != 0.0f)
 			{
-				animDesired = 0;
+				if (GetActiveWeapon() != NULL)
+				{
+					priorityActivityList.AddToTail(ACT_WALK_CROUCH_AIM);
+					priorityActivityList.AddToTail(ACT_HL2MP_WALK_CROUCH);
+				}
+				else
+				{
+					priorityActivityList.AddToTail(ACT_WALK_CROUCH);
+					priorityActivityList.AddToTail(ACT_HL2MP_WALK_CROUCH_SLAM);
+				}
+			}
+			else
+			{
+				if (GetActiveWeapon() != NULL)
+				{
+					if (GetActiveWeapon()->m_flNextPrimaryAttack > gpGlobals->curtime)
+					{
+						priorityActivityList.AddToTail(ACT_RANGE_ATTACK1_LOW);
+					}
+					else if (GetActiveWeapon()->m_flNextSecondaryAttack > gpGlobals->curtime)
+					{
+						priorityActivityList.AddToTail(ACT_RANGE_ATTACK2_LOW);
+					}
+					else if (GetActiveWeapon()->m_bInReload)
+					{
+						priorityActivityList.AddToTail(ACT_RELOAD_LOW);
+					}
+
+					priorityActivityList.AddToTail(ACT_RANGE_AIM_LOW);
+					priorityActivityList.AddToTail(ACT_HL2MP_IDLE_CROUCH);
+				}
+				else
+				{
+					priorityActivityList.AddToTail(ACT_COVER_LOW);
+					priorityActivityList.AddToTail(ACT_HL2MP_IDLE_CROUCH_SLAM);
+				}
 			}
 		}
-	
-		// Already using the desired animation?
-		if ( GetSequence() == animDesired )
-			return;
+		else if (((GetFlags() & FL_ONGROUND) && squareSpeed > 0.0f) || GetMoveTime() != 0.0f)
+		{
+			if (IsWalking())
+			{
+				if (GetActiveWeapon() != NULL)
+				{
+					priorityActivityList.AddToTail(ACT_WALK_AIM_AGITATED);
+					priorityActivityList.AddToTail(ACT_WALK_AIM);
+					priorityActivityList.AddToTail(ACT_HL2MP_RUN);
+				}
+				else
+				{
+					// Singleplayer combine animations may have this one
+					priorityActivityList.AddToTail(ACT_WALK_UNARMED);
 
-		m_flPlaybackRate = 1.0;
-		ResetSequence( animDesired );
-		SetCycle( 0 );
+					priorityActivityList.AddToTail(ACT_WALK);
+					priorityActivityList.AddToTail(ACT_HL2MP_RUN_SLAM);
+				}
+			}
+			else
+			{
+				if (GetActiveWeapon() != NULL)
+				{
+					priorityActivityList.AddToTail(ACT_RUN_AIM_AGITATED);
+					priorityActivityList.AddToTail(ACT_RUN_AIM);
+					priorityActivityList.AddToTail(ACT_HL2MP_RUN);
+				}
+				else
+				{
+					// Singleplayer combine animations may have this one
+					priorityActivityList.AddToTail(ACT_WALK_UNARMED);
+
+					priorityActivityList.AddToTail(ACT_RUN);
+					priorityActivityList.AddToTail(ACT_HL2MP_RUN_SLAM);
+				}
+			}
+		}
+		else
+		{
+			if (GetActiveWeapon() != NULL)
+			{
+				if (GetActiveWeapon()->m_flNextPrimaryAttack > gpGlobals->curtime)
+				{
+					priorityActivityList.AddToTail(ACT_RANGE_ATTACK1);
+					priorityActivityList.AddToTail(ACT_MELEE_ATTACK1); // Player may have a melee
+				}
+				else if (GetActiveWeapon()->m_flNextSecondaryAttack > gpGlobals->curtime)
+				{
+					priorityActivityList.AddToTail(ACT_RANGE_ATTACK2);
+				}
+				else if (GetActiveWeapon()->m_bInReload)
+				{
+					priorityActivityList.AddToTail(ACT_RELOAD);
+				}
+
+				// Adrian: ACT_IDLE_ANGRY exists itself on models as of date, and it doesn't aim.
+				// Parameter bRequired should be true in all acttable entries in order to block it from being set
+				priorityActivityList.AddToTail(ACT_IDLE_AIM_AGITATED);
+				priorityActivityList.AddToTail(ACT_IDLE_ANGRY);
+				priorityActivityList.AddToTail(ACT_HL2MP_IDLE);
+			}
+			else
+			{
+				// Singleplayer combine animations may have this one
+				priorityActivityList.AddToTail(ACT_IDLE_UNARMED);
+
+				priorityActivityList.AddToTail(ACT_IDLE);
+				priorityActivityList.AddToTail(ACT_HL2MP_IDLE_SLAM);
+			}
+		}
+
+		break;
+	}
+	}
+
+	// Start applying activity...
+	{
+		Activity idealActivity = ACT_HL2MP_IDLE;
+		int iDesiredSequence = FindWeightedSequenceFromList(priorityActivityList, &idealActivity);
+
+		// Check if the activity has changed. Don't compare sequences, otherwise player might
+		// be now playing another sequence belonging to same activity, entering incorrectly
+		if (GetActivity() != idealActivity)
+		{
+			m_flPlaybackRate = 1.0f;
+			ResetSequence((iDesiredSequence == ACTIVITY_NOT_AVAILABLE) ? 0 : iDesiredSequence);
+			SetCycle(0.0f);
+		}
+
+		SetActivity(idealActivity);
 		return;
 	}
 
-	// Already using the desired animation?
-	if ( GetSequence() == animDesired )
-		return;
-
-	//Msg( "Set animation to %d\n", animDesired );
-	// Reset to first frame of desired animation
-	ResetSequence( animDesired );
-	SetCycle( 0 );
+ApplyGesture:
+	Activity weaponTranslation = priorityActivityList[0];
+	FindWeightedSequenceFromList(priorityActivityList, NULL, &weaponTranslation);
+	RestartGesture(weaponTranslation);
 }
 
 
@@ -1206,7 +1340,7 @@ void CHL2MP_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecT
 	BaseClass::Weapon_Drop( pWeapon, pvecTarget, pVelocity );
 }
 
-
+#ifndef ROLEPLAY
 void CHL2MP_Player::DetonateTripmines( void )
 {
 	CBaseEntity *pEntity = NULL;
@@ -1223,6 +1357,7 @@ void CHL2MP_Player::DetonateTripmines( void )
 	// Play sound for pressing the detonator
 	EmitSound( "Weapon_SLAM.SatchelDetonate" );
 }
+#endif
 
 void CHL2MP_Player::Event_Killed( const CTakeDamageInfo &info )
 {
@@ -1236,7 +1371,9 @@ void CHL2MP_Player::Event_Killed( const CTakeDamageInfo &info )
 	// because we still want to transmit to the clients in our PVS.
 	CreateRagdollEntity();
 
+#ifndef ROLEPLAY
 	DetonateTripmines();
+#endif
 
 	BaseClass::Event_Killed( subinfo );
 
@@ -1319,7 +1456,6 @@ CBaseEntity* CHL2MP_Player::EntSelectSpawnPoint( void )
 {
 	CBaseEntity *pSpot = NULL;
 	CBaseEntity *pLastSpawnPoint = g_pLastSpawn;
-	edict_t		*player = edict();
 	const char *pSpawnpointName = "info_player_deathmatch";
 
 	if ( HL2MPRules()->IsTeamplay() == true )
@@ -1340,8 +1476,19 @@ CBaseEntity* CHL2MP_Player::EntSelectSpawnPoint( void )
 			pSpawnpointName = "info_player_deathmatch";
 			pLastSpawnPoint = g_pLastSpawn;
 		}
+		else
+		{
+			goto RandomizeSpawn;
+		}
 	}
 
+	if (gEntList.FindEntityByClassname(NULL, pSpawnpointName) == NULL)
+	{
+		// Fallback to singleplayer spawn type, independently of teamplay value
+		pSpawnpointName = "info_player_start";
+	}
+
+RandomizeSpawn:
 	pSpot = pLastSpawnPoint;
 	// Randomize the start spot
 	for ( int i = random->RandomInt(1,5); i > 0; i-- )
@@ -1371,27 +1518,6 @@ CBaseEntity* CHL2MP_Player::EntSelectSpawnPoint( void )
 		// increment pSpot
 		pSpot = gEntList.FindEntityByClassname( pSpot, pSpawnpointName );
 	} while ( pSpot != pFirstSpot ); // loop if we're not back to the start
-
-	// we haven't found a place to spawn yet,  so kill any guy at the first spawn point and spawn there
-	if ( pSpot )
-	{
-		CBaseEntity *ent = NULL;
-		for ( CEntitySphereQuery sphere( pSpot->GetAbsOrigin(), 128 ); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity() )
-		{
-			// if ent is a client, kill em (unless they are ourselves)
-			if ( ent->IsPlayer() && !(ent->edict() == player) )
-				ent->TakeDamage( CTakeDamageInfo( GetContainingEntity(INDEXENT(0)), GetContainingEntity(INDEXENT(0)), 300, DMG_GENERIC ) );
-		}
-		goto ReturnSpot;
-	}
-
-	if ( !pSpot  )
-	{
-		pSpot = gEntList.FindEntityByClassname( pSpot, "info_player_start" );
-
-		if ( pSpot )
-			goto ReturnSpot;
-	}
 
 ReturnSpot:
 
@@ -1631,4 +1757,39 @@ bool CHL2MP_Player::CanHearAndReadChatFrom( CBasePlayer *pPlayer )
 		return false;
 
 	return true;
+}
+
+void CHL2MP_Player::UpdateWeaponPosture()
+{
+	if ((GetMoveTime() != 0.0f) || m_nButtons || m_LastCmd.mousedx || m_LastCmd.mousedx || m_LastCmd.weaponselect)
+	{
+		// Player is active, raise the weapon.
+		// Also, delay m_LowerWeaponTimer to indicate weapon should be raised (and lowered once it expires)
+		Weapon_Ready();
+		m_LowerWeaponTimer.Set(LOWER_WEAPON_WAIT_SECONDS);
+
+		// Let the base class decide about lowering the weapon
+		BaseClass::UpdateWeaponPosture();
+	}
+	else if (m_LowerWeaponTimer.Expired())
+	{
+		Weapon_Lower();
+	}
+}
+
+bool CHL2MP_Player::ShouldCollide(int collisionGroup, int contentsMask, const CBaseEntity *pCollideEnt) const
+{
+	if ((pCollideEnt != NULL) && pCollideEnt->IsPlayer())
+	{
+		// Proceed to search the other player in my penetrating list, and cancel collision if he belongs to it
+		CUtlVector<CBaseEntity *> thisEntPenetratingList;
+		PhysGetListOfPenetratingEntities(const_cast<ThisClass *>(this), thisEntPenetratingList);
+
+		if (thisEntPenetratingList.HasElement(const_cast<CBaseEntity *>(pCollideEnt)))
+		{
+			return false;
+		}
+	}
+
+	return BaseClass::ShouldCollide(collisionGroup, contentsMask, pCollideEnt);
 }

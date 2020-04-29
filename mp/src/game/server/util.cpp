@@ -36,6 +36,8 @@
 #include "datacache/imdlcache.h"
 #include "util.h"
 #include "cdll_int.h"
+#include "utlbuffer.h"
+#include "inetchannel.h"
 
 #ifdef PORTAL
 #include "PortalSimulation.h"
@@ -44,6 +46,10 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+const int VALVE_NET_MAXMESSAGE = 8192;
+const int VALVE_SVC_MENU = 29;
+const int VALVE_NETMSG_TYPE_BITS = 6;
 
 extern short		g_sModelIndexSmoke;			// (in combatweapon.cpp) holds the index for the smoke cloud
 extern short		g_sModelIndexBloodDrop;		// (in combatweapon.cpp) holds the sprite index for the initial blood
@@ -2614,6 +2620,102 @@ byte *UTIL_LoadFileForMe( const char *filename, int *pLength )
 void UTIL_FreeFile( byte *buffer )
 {
 	filesystem->FreeOptimalReadBuffer( buffer );
+}
+
+void UTIL_SendDialog(CBasePlayer *pPlayer, KeyValues *pDialogKV, DIALOG_TYPE dialogType, INetChannel *pNetChan)
+{
+	char data[VALVE_NET_MAXMESSAGE];
+	CUtlBuffer buf;
+	pDialogKV->WriteAsBinary(buf);
+	bf_write buffer(data, sizeof data);
+	buffer.WriteUBitLong(VALVE_SVC_MENU, VALVE_NETMSG_TYPE_BITS);
+	buffer.WriteShort(dialogType);
+	buffer.WriteWord(buf.TellPut());
+	buffer.WriteBytes(buf.Base(), buf.TellPut());
+	pNetChan->SendData(buffer);
+}
+
+void UTIL_SendConVarValue(CBasePlayer *pPlayer, const char *pCVar, const char *pszValue)
+{
+	// Netchannel only works in dedicated server. Send command on listen server
+	if (engine->IsDedicatedServer())
+	{
+		if (!pPlayer->IsFakeClient()) // Use engine->SetFakeClientConVarValue for fake client
+		{
+			INetChannel *netchan = static_cast<INetChannel *>(engine->GetPlayerNetInfo(pPlayer->entindex()));
+
+			if (netchan != NULL) // NULL for console at least
+			{
+				char data[256];
+				bf_write buffer(data, sizeof(data));
+				buffer.WriteUBitLong(5, 6);
+				buffer.WriteByte(1);
+				buffer.WriteString(pCVar);
+				buffer.WriteString(pszValue);
+				netchan->SendData(buffer);
+			}
+		}
+	}
+	else
+	{
+		engine->ClientCommand(pPlayer->edict(), "%s %s", pCVar, pszValue);
+	}
+}
+
+// Purpose: Mark a relative file or directory tree as downloadable for clients
+// Input: downloadables - engine string table which holds the downloadable content info
+// pPathID - the search path, which is the root of relative requested file
+// pFileName - the requested file/directory, must be relative to the search path
+// Function assumes any file input is either NULL or pointing to an existing file
+// findHandle - current file find result. It mustn't be filled on user call
+// szRelDirPath - current sub path relative to search path. It mustn't be filled on user call
+void UTIL_AddDownloadablesRecursive(INetworkStringTable &downloadables, const char *pPathID,
+const char *pFileName, FileFindHandle_t findHandle, char szRelDirPath[MAX_PATH])
+{
+	if (pFileName == NULL)
+	{
+		// End of directory files at same depth, close the handle
+		filesystem->FindClose(findHandle);
+	}
+	else
+	{
+		// It may be a special navigation directory or not (client ignores it anyways). Skip it
+		if (pFileName[0] == '.')
+		{
+			UTIL_AddDownloadablesRecursive(downloadables, pPathID, filesystem->FindNext(findHandle), findHandle, szRelDirPath);
+		}
+		else if (filesystem->FindIsDirectory(findHandle))
+		{
+			// Begin preparing sub path traverse context...
+			char szSubDirPath[MAX_PATH];
+			int iSubDirPathLen = Q_snprintf(szSubDirPath, sizeof szSubDirPath, "%s%s/*", szRelDirPath, pFileName);
+			FileFindHandle_t subFindHandle;
+			pFileName = filesystem->FindFirstEx(szSubDirPath, pPathID, &subFindHandle);
+
+			// Remove added wildcard to continue passing on the correct sub path needed by function
+			szSubDirPath[iSubDirPathLen - 1] = '\0';
+			UTIL_AddDownloadablesRecursive(downloadables, pPathID, pFileName, subFindHandle, szSubDirPath);
+
+			// Continue looking for remaining files at same directory depth
+			UTIL_AddDownloadablesRecursive(downloadables, pPathID, filesystem->FindNext(findHandle), findHandle, szRelDirPath);
+		}
+		else
+		{
+			// Build the effective downloadable file path and try adding it to the string table
+			char szDownloadablePath[MAX_PATH];
+			Q_snprintf(szDownloadablePath, sizeof szDownloadablePath, "%s%s", szRelDirPath, pFileName);
+
+			if (downloadables.AddString(true, szDownloadablePath) == INVALID_STRING_INDEX)
+			{
+				// Downloadable file could not be added, close the handle
+				filesystem->FindClose(findHandle);
+			}
+			else
+			{
+				UTIL_AddDownloadablesRecursive(downloadables, pPathID, filesystem->FindNext(findHandle), findHandle, szRelDirPath);
+			}
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------

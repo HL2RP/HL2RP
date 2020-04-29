@@ -114,6 +114,15 @@ BEGIN_SIMPLE_DATADESC( CBaseServerVehicle )
 
 END_DATADESC()
 
+#ifdef HL2DM_RP
+// Purpose: Prevent that vehicle driver transitions affects the camera of all local players,
+// at a HL2DM client-side SetLocalAngles inside SharedVehicleViewSmoothing()
+void CBaseServerVehicle::SendProxy_DisableVehicleTransitionAnim(const SendProp *pProp, const void *pStructBase, const void *pData, DVariant *pOut, int iElement, int objectID)
+{
+	pOut->m_Int = 0;
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Base class for drivable vehicle handling. Contain it in your 
 //			drivable vehicle.

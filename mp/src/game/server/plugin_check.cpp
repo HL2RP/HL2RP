@@ -9,6 +9,9 @@
 
 #include "cbase.h"
 #include "eiface.h"
+#ifdef ROLEPLAY
+#include "CHL2RP_Player.h"
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: An implementation 
@@ -22,9 +25,20 @@ public:
 CPluginHelpersCheck s_PluginCheck;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CPluginHelpersCheck, IPluginHelpersCheck, INTERFACEVERSION_PLUGINHELPERSCHECK, s_PluginCheck);
 
-bool CPluginHelpersCheck::CreateMessage( const char *plugin, edict_t *pEntity, DIALOG_TYPE type, KeyValues *data )
+bool CPluginHelpersCheck::CreateMessage(const char *plugin, edict_t *pEntity, DIALOG_TYPE type, KeyValues *data)
 {
+#ifdef ROLEPLAY
+	// For now, assume target is either a player or NULL
+	CHL2RP_Player *pPlayer = CHL2RP_Player::ToThisClassFast(CBaseEntity::Instance(pEntity));
+
+	if (pPlayer != NULL)
+	{
+		// Enforce level to be set decremented from SDK, which should start from INT_MAX.
+		// This way no values are skipped accross messages and usages are maximized.
+		data->SetInt("level", --pPlayer->m_iLastDialogLevel);
+	}
+#endif
+
 	// return false here to disallow a plugin from running this command on this client
 	return true;
 }
-

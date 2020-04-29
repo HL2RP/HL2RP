@@ -62,7 +62,9 @@ public:
 	CWeaponCrowbar( const CWeaponCrowbar & );
 
 private:
-		
+#ifndef CLIENT_DLL
+	void Operator_ForceNPCFire(CBaseCombatCharacter *pOperator, bool bSecondary) OVERRIDE;
+#endif
 };
 
 

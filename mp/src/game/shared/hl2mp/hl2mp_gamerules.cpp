@@ -914,6 +914,10 @@ bool CHL2MPRules::ClientCommand( CBaseEntity *pEdict, const CCommand &args )
 // convert a velocity in ft/sec and a mass in grains to an impulse in kg in/s
 #define BULLET_IMPULSE(grains, ftpersec)	((ftpersec)*12*BULLET_MASS_GRAINS_TO_KG(grains)*BULLET_IMPULSE_EXAGGERATION)
 
+#ifdef ROLEPLAY
+// HACK: Allow CHL2RPRules to implement real GetAmmoDef!
+#define GetAmmoDef HL2MP_GetAmmoDef
+#endif
 
 CAmmoDef *GetAmmoDef()
 {

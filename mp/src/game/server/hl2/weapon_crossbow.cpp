@@ -531,15 +531,7 @@ void CWeaponCrossbow::Precache( void )
 //-----------------------------------------------------------------------------
 void CWeaponCrossbow::PrimaryAttack( void )
 {
-	if ( m_bInZoom && g_pGameRules->IsMultiplayer() )
-	{
-//		FireSniperBolt();
-		FireBolt();
-	}
-	else
-	{
-		FireBolt();
-	}
+	FireBolt();
 
 	// Signal a reload
 	m_bMustReload = true;

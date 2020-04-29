@@ -21,6 +21,10 @@
 #include "shareddefs.h"
 #include "engine/ivmodelinfo.h"
 
+#ifdef ROLEPLAY
+#include "CNetworkVarEx.h"
+#endif
+
 class CDamageModifier;
 class CDmgAccumulator;
 
@@ -450,6 +454,7 @@ public:
 
 	// Called by physics to see if we should avoid a collision test....
 	virtual	bool			ShouldCollide( int collisionGroup, int contentsMask ) const;
+	virtual	bool			ShouldCollide(int collisionGroup, int contentsMask, const CBaseEntity *pCollideEnt) const;
 
 	// Move type / move collide
 	MoveType_t				GetMoveType() const;
@@ -1146,7 +1151,11 @@ public:
 	// variables promoted from edict_t
 	string_t	m_target;
 	CNetworkVarForDerived( int, m_iMaxHealth ); // CBaseEntity doesn't care about changes to this variable, but there are derived classes that do.
+#ifdef ROLEPLAY
+	CNetworkVarForDerivedEx(int, m_iHealth);
+#else
 	CNetworkVarForDerived( int, m_iHealth );
+#endif
 
 	CNetworkVarForDerived( char, m_lifeState );
 	CNetworkVarForDerived( char , m_takedamage );

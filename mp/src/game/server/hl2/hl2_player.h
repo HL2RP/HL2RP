@@ -184,8 +184,8 @@ public:
 	bool IsWalking( void ) { return m_fIsWalking; }
 
 	// Aiming heuristics accessors
-	virtual float		GetIdleTime( void ) const { return ( m_flIdleTime - m_flMoveTime ); }
-	virtual float		GetMoveTime( void ) const { return ( m_flMoveTime - m_flIdleTime ); }
+	virtual float		GetIdleTime( void ) const { return ( m_flIdleTime ); }
+	virtual float		GetMoveTime( void ) const { return ( m_flMoveTime ); }
 	virtual float		GetLastDamageTime( void ) const { return m_flLastDamageTime; }
 	virtual bool		IsDucking( void ) const { return !!( GetFlags() & FL_DUCKING ); }
 
@@ -316,6 +316,8 @@ private:
 protected:	// Jeep: Portal_Player needs access to this variable to overload PlayerUse for picking up objects through portals
 	bool				m_bPlayUseDenySound;		// Signaled by PlayerUse, but can be unset by HL2 ladder code...
 
+	CSimpleSimTimer		m_LowerWeaponTimer;
+
 private:
 
 	CAI_Squad *			m_pPlayerAISquad;
@@ -352,7 +354,6 @@ private:
 
 	float				m_flTimeUseSuspended;
 
-	CSimpleSimTimer		m_LowerWeaponTimer;
 	CSimpleSimTimer		m_AutoaimTimer;
 
 	EHANDLE				m_hLockedAutoAimEntity;

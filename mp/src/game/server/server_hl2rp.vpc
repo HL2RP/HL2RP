@@ -1,0 +1,26 @@
+//-----------------------------------------------------------------------------
+//	SERVER_HL2RP.VPC
+//
+//	Project Script. Represents the Standalone (sourcemod) HL2RP flavour
+//-----------------------------------------------------------------------------
+
+$Macro GAMENAME	"hl2rp"
+
+$Include "server_hl2rp_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$PreprocessorDefinitions "$BASE;HL2RP"
+	}
+}
+
+$Project "Server (HL2RP)"
+{
+	$Folder "Link Libraries"
+	{
+		$ImpLib		mysqlcppconn
+		$Lib		sqlite3
+	}
+}

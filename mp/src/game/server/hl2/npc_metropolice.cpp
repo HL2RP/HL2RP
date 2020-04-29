@@ -19,6 +19,11 @@
 #include "iservervehicle.h"
 #include "items.h"
 #include "hl2_gamerules.h"
+#ifdef ROLEPLAY
+#include "CHL2RP.h"
+#include "CHL2RP_Player.h"
+#include "CHL2RP_Util.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -536,6 +541,25 @@ void CNPC_MetroPolice::PrescheduleThink( void )
 		m_nRecentDamage = 0;
 		m_flRecentDamageTime = 0;
 	}
+
+#ifdef ROLEPLAY
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CHL2RP_Player *pPlayer = CHL2RP_Player::ToThisClassFast(CBaseEntity::Instance(i));
+
+		if (pPlayer != NULL)
+		{
+			if (pPlayer->m_iCrime > 0)
+			{
+				AddEntityRelationship(pPlayer, D_HT, pPlayer->m_iCrime);
+			}
+			else
+			{
+				RemoveEntityRelationship(pPlayer);
+			}
+		}
+	}
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -675,23 +699,18 @@ void CNPC_MetroPolice::Spawn( void )
 
 	m_hManhack = NULL;
 
-	if ( GetActiveWeapon() )
+	if (GetActiveWeapon() != NULL)
 	{
-		CBaseCombatWeapon *pWeapon;
-
-		pWeapon = GetActiveWeapon();
-
-		if( !FClassnameIs( pWeapon, "weapon_pistol" ) )
+		if (!FClassnameIs(GetActiveWeapon(), "weapon_pistol")
+		|| !HasAnimEvent(SelectWeightedSequence((Activity)ACT_METROPOLICE_DRAW_PISTOL), AE_METROPOLICE_DRAW_PISTOL))
 		{
 			m_fWeaponDrawn = true;
 		}
-		
-		if( !m_fWeaponDrawn ) 
+		else
 		{
-			GetActiveWeapon()->AddEffects( EF_NODRAW );
+			GetActiveWeapon()->AddEffects(EF_NODRAW);
 		}
 	}
-
 
 	m_TimeYieldShootSlot.Set( 2, 6 );
 
@@ -3199,9 +3218,6 @@ int CNPC_MetroPolice::SelectScheduleArrestEnemy()
 	if ( !HasCondition( COND_SEE_ENEMY ) )
 		return SCHED_NONE;
 
-	if ( !m_fWeaponDrawn )
-		return SCHED_METROPOLICE_DRAW_PISTOL;
-
 	// First guy that sees the enemy will tell him to freeze
 	if ( OccupyStrategySlot( SQUAD_SLOT_POLICE_ARREST_ENEMY ) )
 		return SCHED_METROPOLICE_WARN_AND_ARREST_ENEMY;
@@ -3227,9 +3243,6 @@ int CNPC_MetroPolice::SelectScheduleNewEnemy()
 		if( CanDeployManhack() && OccupyStrategySlot( SQUAD_SLOT_POLICE_DEPLOY_MANHACK ) )
 			return SCHED_METROPOLICE_DEPLOY_MANHACK;
 	}
-
-	if ( !m_fWeaponDrawn )
-		return SCHED_METROPOLICE_DRAW_PISTOL;
 
 	// Switch our baton on, if it's not already
 	if ( HasBaton() && BatonActive() == false && IsCurSchedule( SCHED_METROPOLICE_ACTIVATE_BATON ) == false )
@@ -3323,11 +3336,6 @@ int CNPC_MetroPolice::SelectCombatSchedule()
 	int nResult = SelectScheduleNewEnemy();
 	if ( nResult != SCHED_NONE )
 		return nResult;
-
-	if( !m_fWeaponDrawn )
-	{
-		return SCHED_METROPOLICE_DRAW_PISTOL;
-	}
 
 	if (!HasBaton() && ((float)m_nRecentDamage / (float)GetMaxHealth()) > RECENT_DAMAGE_THRESHOLD)
 	{
@@ -4006,6 +4014,12 @@ void CNPC_MetroPolice::AdministerJustice( void )
 //-----------------------------------------------------------------------------
 int CNPC_MetroPolice::SelectSchedule( void )
 {
+	if (!m_fWeaponDrawn && GetActiveWeapon() != NULL)
+	{
+		// This schedule should be runnable at this point
+		return SCHED_METROPOLICE_DRAW_PISTOL;
+	}
+
 	if ( !GetEnemy() && HasCondition( COND_IN_PVS ) && AI_GetSinglePlayer() && !AI_GetSinglePlayer()->IsAlive() )
 	{
 		return SCHED_PATROL_WALK;
@@ -4184,12 +4198,15 @@ int CNPC_MetroPolice::SelectSchedule( void )
 		}
 	}
 
-	// If we're not in combat, and we've got a pre-chase origin, move back to it
-	if ( ( m_NPCState != NPC_STATE_COMBAT ) && 
-		 ( m_vecPreChaseOrigin != vec3_origin ) && 
-		 ( m_flChasePlayerTime < gpGlobals->curtime ) )
+	if (m_NPCState != NPC_STATE_COMBAT)
 	{
-		return SCHED_METROPOLICE_RETURN_TO_PRECHASE;
+		// If we're not in combat, and we've got a pre-chase origin, move back to it
+		if ((m_vecPreChaseOrigin != vec3_origin) && (m_flChasePlayerTime < gpGlobals->curtime))
+		{
+			return SCHED_METROPOLICE_RETURN_TO_PRECHASE;
+		}
+
+		return SCHED_METROPOLICE_WANDER;
 	}
 
 	return BaseClass::SelectSchedule();
@@ -4264,11 +4281,6 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 
 	case SCHED_RANGE_ATTACK1:
 		Assert( !HasCondition( COND_NO_PRIMARY_AMMO ) );
-
-		if( !m_fWeaponDrawn )
-		{
-			return SCHED_METROPOLICE_DRAW_PISTOL;
-		}
 
 		if( Weapon_OwnsThisType( "weapon_smg1" ) )
 		{
@@ -4860,6 +4872,16 @@ int CNPC_MetroPolice::OnTakeDamage_Alive( const CTakeDamageInfo &inputInfo )
 		info.SetDamage( m_iHealth );
 	}
 #endif //0
+
+#ifdef ROLEPLAY
+	CHL2RP_Player *pPlayer = CHL2RP_Player::ToThisClass(info.GetAttacker());
+
+	if (pPlayer != NULL)
+	{
+		pPlayer->m_iCrime = CHL2RP_Util::EnsureAddition(pPlayer->m_iCrime, (int)info.GetDamage() * 10);
+		pPlayer->TrySyncMainData();
+	}
+#endif
 
 	if (info.GetAttacker() == GetEnemy())
 	{
@@ -5841,6 +5863,19 @@ DEFINE_SCHEDULE
 	"		COND_NEW_ENEMY"
 	"		COND_ENEMY_DEAD"
 );
+
+DEFINE_SCHEDULE
+(
+SCHED_METROPOLICE_WANDER,
+
+"	Tasks"
+"	TASK_WANDER						901024" // 90 to 1024 units
+"	TASK_WALK_PATH					0"
+"	TASK_WAIT_FOR_MOVEMENT			0"
+""
+"	Interrupts"
+"	COND_SEE_ENEMY"
+)
 
 AI_END_CUSTOM_NPC()
 

@@ -33,24 +33,21 @@
 #include "nav_mesh.h"
 #include "team.h"
 #include "datacache/imdlcache.h"
+#ifndef ROLEPLAY
 #include "basemultiplayerplayer.h"
 #include "voice_gamemgr.h"
+#else
+#include "CHL2RP_Talk.h"
+#endif
 
 #ifdef TF_DLL
 #include "tf_player.h"
 #include "tf_gamerules.h"
 #endif
 
-#ifdef HL2MP
-#include <hl2mp_player.h>
-#include <hl2mp/weapon_physcannon.h>
-#elif (defined HL2_DLL)
+#ifdef HL2_DLL
 #include "weapon_physcannon.h"
-#endif // HL2MP
-
-#ifdef HL2MP
-#include <hl2mp_player.h>
-#endif // HL2MP
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -159,7 +156,9 @@ char * CheckChatText( CBasePlayer *pPlayer, char *text )
 //
 void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 {
+#ifndef ROLEPLAY
 	CBasePlayer *client;
+#endif
 	int		j;
 	char	*p;
 	char	text[256];
@@ -262,76 +261,73 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 	if ( (int)strlen(p) > j )
 		p[j] = 0;
 
-	Q_strncat( text, p, sizeof( text ), COPY_ALL_CHARACTERS );
-	Q_strncat( text, "\n", sizeof( text ), COPY_ALL_CHARACTERS );
- 
+#ifndef ROLEPLAY
+	Q_strncat(text, p, sizeof(text), COPY_ALL_CHARACTERS);
+	Q_strncat(text, "\n", sizeof(text), COPY_ALL_CHARACTERS);
+
 	// loop through all players
 	// Start with the first player.
 	// This may return the world in single player if the client types something between levels or during spawn
 	// so check it, or it will infinite loop
 
 	client = NULL;
-	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		client = UTIL_PlayerByIndex( i );
-
-#ifdef HL2MP
-		client = ToHL2MPPlayer( client );
-#else
-		client = ToBaseMultiplayerPlayer( client );
-#endif // HL2MP
-
-		if ( !client || !client->edict() )
-			continue;
-		
-		if ( client->edict() == pEdict )
+		client = ToBaseMultiplayerPlayer(UTIL_PlayerByIndex(i));
+		if (!client || !client->edict())
 			continue;
 
-		if ( !(client->IsNetClient()) )	// Not a client ? (should never be true)
+		if (client->edict() == pEdict)
 			continue;
 
-		if ( teamonly && g_pGameRules->PlayerCanHearChat( client, pPlayer ) != GR_TEAMMATE )
+		if (!(client->IsNetClient()))	// Not a client ? (should never be true)
 			continue;
 
-		if ( pPlayer && !client->CanHearAndReadChatFrom( pPlayer ) )
+		if (teamonly && g_pGameRules->PlayerCanHearChat(client, pPlayer) != GR_TEAMMATE)
 			continue;
 
-		if ( pPlayer && GetVoiceGameMgr() && GetVoiceGameMgr()->IsPlayerIgnoringPlayer( pPlayer->entindex(), i ) )
+		if (pPlayer && !client->CanHearAndReadChatFrom(pPlayer))
 			continue;
 
-		CSingleUserRecipientFilter user( client );
+		if (pPlayer && GetVoiceGameMgr() && GetVoiceGameMgr()->IsPlayerIgnoringPlayer(pPlayer->entindex(), i))
+			continue;
+
+		CSingleUserRecipientFilter user(client);
 		user.MakeReliable();
 
-		if ( pszFormat )
+		if (pszFormat)
 		{
-			UTIL_SayText2Filter( user, pPlayer, true, pszFormat, pszPlayerName, p, pszLocation );
+			UTIL_SayText2Filter(user, pPlayer, true, pszFormat, pszPlayerName, p, pszLocation);
 		}
 		else
 		{
-			UTIL_SayTextFilter( user, text, pPlayer, true );
+			UTIL_SayTextFilter(user, text, pPlayer, true);
 		}
 	}
 
-	if ( pPlayer )
+	if (pPlayer)
 	{
 		// print to the sending client
-		CSingleUserRecipientFilter user( pPlayer );
+		CSingleUserRecipientFilter user(pPlayer);
 		user.MakeReliable();
 
-		if ( pszFormat )
+		if (pszFormat)
 		{
-			UTIL_SayText2Filter( user, pPlayer, true, pszFormat, pszPlayerName, p, pszLocation );
+			UTIL_SayText2Filter(user, pPlayer, true, pszFormat, pszPlayerName, p, pszLocation);
 		}
 		else
 		{
-			UTIL_SayTextFilter( user, text, pPlayer, true );
+			UTIL_SayTextFilter(user, text, pPlayer, true);
 		}
 	}
 
 	// echo to server console
 	// Adrian: Only do this if we're running a dedicated server since we already print to console on the client.
-	if ( engine->IsDedicatedServer() )
-		 Msg( "%s", text );
+	if (engine->IsDedicatedServer())
+		Msg("%s", text);
+#else
+	CHL2RP_Talk::ClientHandleSay(pEdict, pPlayer, pszPlayerName, p, teamonly);
+#endif
 
 	Assert( p );
 

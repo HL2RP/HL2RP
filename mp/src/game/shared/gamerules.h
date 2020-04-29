@@ -304,6 +304,9 @@ public:
 	virtual void DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &info )=  0;// Call this from within a GameRules class to report an obituary.
 	virtual const char *GetDamageCustomString( const CTakeDamageInfo &info ) { return NULL; }
 
+	// HL2RP DeathNotice - uses CBaseCombatCharacter victim parameter
+	virtual void DeathNotice(CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info) {};
+
 // Weapon Damage
 	// Determines how much damage Player's attacks inflict, based on skill level.
 	virtual float AdjustPlayerDamageInflicted( float damage ) { return damage; }

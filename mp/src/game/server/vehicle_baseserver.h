@@ -209,6 +209,10 @@ public:
 
 	Vector	GetSavedViewOffset( void ) { return m_savedViewOffset; }
 
+#ifdef HL2DM_RP
+	static void SendProxy_DisableVehicleTransitionAnim(const SendProp *pProp, const void *pStructBase, const void *pData, DVariant *pOut, int iElement, int objectID);
+#endif
+
 private:
 
 	// Vehicle entering/exiting

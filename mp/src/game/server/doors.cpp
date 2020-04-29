@@ -12,6 +12,7 @@
 #include "ndebugoverlay.h"
 #include "engine/IEngineSound.h"
 #include "physics_npc_solver.h"
+#include "ai_basenpc.h"
 
 #ifdef HL1_DLL
 #include "filters.h"
@@ -1053,6 +1054,12 @@ void CBaseDoor::DoorHitTop( void )
 	else
 	{
 		m_OnFullyOpen.FireOutput(this, this);
+	}
+
+	if (m_hActivator != NULL && m_hActivator->IsNPC())
+	{
+		// We're done with the door
+		m_hActivator->MyNPCPointer()->m_hOpeningDoor = NULL;
 	}
 }
 

@@ -36,6 +36,11 @@
 	#include "hl2mp_gamerules.h"
 #endif
 
+#ifdef ROLEPLAY
+#include "CHL2RP.h"
+#include "CHL2RP_Player.h"
+#endif
+
 #endif
 
 #include "vprof.h"
@@ -2494,6 +2499,49 @@ void CBaseCombatWeapon::PoseParameterOverride( bool bReset )
 	}
 }
 
+#ifdef ROLEPLAY
+void CBaseCombatWeapon::NetworkStateChangedEx_m_iClip1(const int &oldValue)
+{
+#ifndef CLIENT_DLL
+	if (UsesClipsForAmmo1())
+	{
+		// Prevent negative clip1
+		if (m_iClip1 < 0)
+		{
+			m_iClip1.m_Value = 0;
+		}
+	}
+	else if (m_iClip1 != WEAPON_NOCLIP)
+	{
+		// Prevent HUD from displaying wrong player's reserve ammo
+		m_iClip1.m_Value = WEAPON_NOCLIP;
+	}
+
+	CHL2RP_Player::TrySyncWeaponFromBaseCombatCharacter(*this, GetOwner());
+#endif
+}
+
+void CBaseCombatWeapon::NetworkStateChangedEx_m_iClip2(const int &oldValue)
+{
+#ifndef CLIENT_DLL
+	if (UsesClipsForAmmo2())
+	{
+		// Prevent negative clip2
+		if (m_iClip2 < 0)
+		{
+			m_iClip2.m_Value = 0;
+		}
+	}
+	else if (m_iClip2 != WEAPON_NOCLIP)
+	{
+		// Prevent HUD from displaying wrong player's reserve ammo
+		m_iClip2.m_Value = WEAPON_NOCLIP;
+	}
+
+	CHL2RP_Player::TrySyncWeaponFromBaseCombatCharacter(*this, GetOwner());
+#endif
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose:

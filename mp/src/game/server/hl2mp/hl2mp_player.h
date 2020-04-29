@@ -96,8 +96,7 @@ public:
 	void ResetAnimation( void );
 	void SetPlayerModel( void );
 	void SetPlayerTeamModel( void );
-	Activity TranslateTeamActivity( Activity ActToTranslate );
-	
+
 	float GetNextModelChangeTime( void ) { return m_flNextModelChangeTime; }
 	float GetNextTeamChangeTime( void ) { return m_flNextTeamChangeTime; }
 	void  PickDefaultSpawnTeam( void );
@@ -105,7 +104,9 @@ public:
 	const char *GetPlayerModelSoundPrefix( void );
 	int	  GetPlayerModelType( void ) { return m_iPlayerSoundType;	}
 	
+#ifndef ROLEPLAY
 	void  DetonateTripmines( void );
+#endif
 
 	void Reset();
 
@@ -137,8 +138,9 @@ public:
 
 	virtual bool	CanHearAndReadChatFrom( CBasePlayer *pPlayer );
 
-		
 private:
+	void UpdateWeaponPosture() OVERRIDE;
+	bool ShouldCollide(int collisionGroup, int contentsMask, const CBaseEntity *pCollideEnt) const OVERRIDE;
 
 	CNetworkQAngle( m_angEyeAngles );
 	CPlayerAnimState   m_PlayerAnimState;
@@ -161,7 +163,7 @@ private:
 	// This lets us rate limit the commands the players can execute so they don't overflow things like reliable buffers.
 	CUtlDict<float,int>	m_RateLimitLastCommandTimes;
 
-    bool m_bEnterObserver;
+	bool m_bEnterObserver;
 	bool m_bReady;
 };
 

@@ -25,6 +25,10 @@
 #include "engine/IEngineSound.h"
 #include "team.h"
 #include "viewport_panel_names.h"
+#ifdef ROLEPLAY
+#include "CHL2RP.h"
+#include "CHL2RP_Player.h"
+#endif
 
 #include "tier0/vprof.h"
 
@@ -40,9 +44,18 @@ extern bool			g_fGameOver;
 
 void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 {
+#ifdef ROLEPLAY
+	// Make sure the id was validated before loading.
+	// Saved network ID should already exist since function
+	// ClientPutInServer, if it was validated by that time.
+	if (pPlayer->HasNetworkIDString() && CHL2RP::s_pSQL != NULL && !pPlayer->IsFakeClient())
+	{
+		CHL2RP::s_pSQL->AddAsyncTxn(new CLoadPlayerTxn(*CHL2RP_Player::ToThisClassFast(pPlayer)));
+	}
+#endif
+
 	pPlayer->InitialSpawn();
 	pPlayer->Spawn();
-
 
 	char sName[128];
 	Q_strncpy( sName, pPlayer->GetPlayerName(), sizeof( sName ) );
@@ -63,6 +76,7 @@ void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 		ClientPrint( pPlayer, HUD_PRINTTALK, "You are on team %s1\n", pPlayer->GetTeam()->GetName() );
 	}
 
+#ifndef ROLEPLAY
 	const ConVar *hostname = cvar->FindVar( "hostname" );
 	const char *title = (hostname) ? hostname->GetString() : "MESSAGE OF THE DAY";
 
@@ -73,8 +87,9 @@ void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 	data->SetBool( "unload", sv_motd_unload_on_dismissal.GetBool() );
 
 	pPlayer->ShowViewPortPanel( PANEL_INFO, true, data );
-
+	
 	data->deleteThis();
+#endif
 }
 
 /*
@@ -89,6 +104,12 @@ void ClientPutInServer( edict_t *pEdict, const char *playername )
 	// Allocate a CBaseTFPlayer for pev, and call spawn
 	CHL2MP_Player *pPlayer = CHL2MP_Player::CreatePlayer( "player", pEdict );
 	pPlayer->SetPlayerName( playername );
+
+	if (!pPlayer->HasNetworkIDString() && engine->IsClientFullyAuthenticated(pPlayer->edict()))
+	{
+		// The ID was authenticated, but player's local copy was not saved since its entity did not exist until now
+		pPlayer->SetNetworkIDString(engine->GetPlayerNetworkIDString(pPlayer->edict()));
+	}
 }
 
 
@@ -111,10 +132,14 @@ Returns the descriptive name of this .dll.  E.g., Half-Life, or Team Fortress 2
 */
 const char *GetGameDescription()
 {
-	if ( g_pGameRules ) // this function may be called before the world has spawned, and the game rules initialized
+	if (g_pGameRules) // this function may be called before the world has spawned, and the game rules initialized
 		return g_pGameRules->GetGameDescription();
 	else
+#ifdef ROLEPLAY
+		return "Half-Life 2 Roleplay";
+#else
 		return "Half-Life 2 Deathmatch";
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -195,7 +220,10 @@ void GameStartFrame( void )
 //=========================================================
 void InstallGameRules()
 {
+#ifdef HL2RP
+	CreateGameRulesObject("CHL2RPRules");
+#else
 	// vanilla deathmatch
 	CreateGameRulesObject( "CHL2MPRules" );
+#endif
 }
-

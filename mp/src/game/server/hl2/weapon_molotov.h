@@ -23,7 +23,9 @@ class CWeaponMolotov : public CBaseHLCombatWeapon
 public:
 	DECLARE_CLASS( CWeaponMolotov, CBaseHLCombatWeapon );
 
+#ifdef HL2RP
 	DECLARE_SERVERCLASS();
+#endif
 
 private:
 	int					m_nNumAmmoTypes;
@@ -31,6 +33,7 @@ private:
 	int					m_iThrowBits;				// Save the current throw bits state
 	float				m_fNextThrowCheck;			// When to check throw ability next
 	Vector				m_vecTossVelocity;
+	bool				m_bPauseAttack;
 
 public:
 

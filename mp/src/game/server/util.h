@@ -35,6 +35,9 @@
 struct levellist_t;
 class IServerNetworkable;
 class IEntityFactory;
+class INetChannel;
+
+typedef int FileFindHandle_t;
 
 #ifdef _WIN32
 	#define SETUP_EXTERNC(mapClassName)\
@@ -415,6 +418,12 @@ void		UTIL_SayText2Filter( IRecipientFilter& filter, CBasePlayer *pEntity, bool 
 
 byte		*UTIL_LoadFileForMe( const char *filename, int *pLength );
 void        UTIL_FreeFile( byte *buffer );
+
+void UTIL_SendDialog(CBasePlayer *pPlayer, KeyValues *pDialogKV, DIALOG_TYPE dialogType, INetChannel *pNetChan);
+void UTIL_SendConVarValue(CBasePlayer *pPlayer, const char *pCVar, const char *pszValue);
+
+void UTIL_AddDownloadablesRecursive(INetworkStringTable &downloadables, const char *pPathID,
+	const char *pFileName, FileFindHandle_t findHandle = 0, char szRelDirPath[MAX_PATH] = "");
 
 class CGameTrace;
 typedef CGameTrace trace_t;

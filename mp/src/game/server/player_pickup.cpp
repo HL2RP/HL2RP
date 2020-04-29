@@ -24,18 +24,8 @@ void Pickup_ForcePlayerToDropThisObject( CBaseEntity *pTarget )
 
 	if ( pPhysics->GetGameFlags() & FVPHYSICS_PLAYER_HELD )
 	{
-		CUtlVector<CBasePlayer*> players;
-		CollectPlayers(&players, TEAM_ANY, true, APPEND_PLAYERS);
-
-		FOR_EACH_VEC(players, i)
-		{
-			players[i]->ForceDropOfCarriedPhysObjects(pTarget);
-
-			if (!(pPhysics->GetGameFlags() & FVPHYSICS_PLAYER_HELD))
-			{
-				return;
-			}
-		}
+		CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
+		pPlayer->ForceDropOfCarriedPhysObjects( pTarget );
 	}
 }
 

@@ -60,7 +60,7 @@ void CBaseHL2MPCombatWeapon::ItemHolsterFrame( void )
 	BaseClass::ItemHolsterFrame();
 
 	// Must be player held
-	if ( GetOwner() && GetOwner()->IsPlayer() == false )
+	if (GetOwner() == NULL || !GetOwner()->IsPlayer())
 		return;
 
 	// We can't be active

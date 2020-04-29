@@ -260,8 +260,13 @@ protected:
 #endif
 
 private:
-	
 	CWeaponRPG( const CWeaponRPG & );
+
+#ifndef CLIENT_DLL
+	void Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCharacter *pOperator) OVERRIDE;
+	void Operator_ForceNPCFire(CBaseCombatCharacter *pOperator, bool bSecondary) OVERRIDE;
+	int CapabilitiesGet(void) OVERRIDE { return bits_CAP_WEAPON_RANGE_ATTACK1; }
+#endif
 };
 
 #endif // WEAPON_RPG_H

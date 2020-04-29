@@ -30,6 +30,10 @@
 #include "ai_utils.h"
 #include "physics_impact_damage.h"
 
+#ifdef ROLEPLAY
+#include "CNetworkVarEx.h"
+#endif
+
 class CNavArea;
 class CScriptedTarget;
 typedef CHandle<CBaseCombatWeapon> CBaseCombatWeaponHandle;
@@ -484,6 +488,10 @@ public:
 protected:
 	// Visibility-related stuff
 	bool ComputeLOS( const Vector &vecEyePosition, const Vector &vecTarget ) const;
+
+	int FindWeightedSequenceFromList(const CUtlVector<Activity> &activityList, Activity *baseActivity = NULL,
+		Activity *weaponTranslation = NULL, bool *pbRequired = NULL);
+
 private:
 	// For weapon strip
 	void ThrowDirForWeaponStrip( CBaseCombatWeapon *pWeapon, const Vector &vecForward, Vector *pVecThrowDir );
@@ -509,11 +517,19 @@ private:
 	CUtlVector<Relationship_t>		m_Relationship;						// Array of relationships
 
 protected:
+#ifdef ROLEPLAY
+	// shared ammo slots
+	CNetworkArrayForDerivedEx(int, m_iAmmo, MAX_AMMO_SLOTS);
+
+	// Usable character items
+	CNetworkArrayForDerivedOnlyEx(CBaseCombatWeaponHandle, m_hMyWeapons, MAX_WEAPONS);
+#else
 	// shared ammo slots
 	CNetworkArrayForDerived( int, m_iAmmo, MAX_AMMO_SLOTS );
 
-	// Usable character items 
+	// Usable character items
 	CNetworkArray( CBaseCombatWeaponHandle, m_hMyWeapons, MAX_WEAPONS );
+#endif
 
 	CNetworkHandle( CBaseCombatWeapon, m_hActiveWeapon );
 

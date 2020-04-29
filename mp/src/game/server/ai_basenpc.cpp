@@ -5970,48 +5970,38 @@ Activity CAI_BaseNPC::NPC_TranslateActivity( Activity eNewActivity )
 	return eNewActivity;
 }
 
-
 //-----------------------------------------------------------------------------
 
 Activity CAI_BaseNPC::TranslateActivity( Activity idealActivity, Activity *pIdealWeaponActivity )
 {
 	const int MAX_TRIES = 5;
-	int count = 0;
+	int count;
 
-	bool bIdealWeaponRequired = false;
-	Activity idealWeaponActivity;
-	Activity baseTranslation;
-	bool bWeaponRequired = false;
-	Activity weaponTranslation;
-	Activity last;
-	Activity current;
+	bool bIdealWeaponRequired = false, bWeaponRequired = false;
+	Activity idealWeaponActivity, baseTranslation, weaponTranslation, last;
+	baseTranslation = weaponTranslation = last = idealActivity;
+	int iDesiredSequence = ACTIVITY_NOT_AVAILABLE;
 
-	idealWeaponActivity = Weapon_TranslateActivity( idealActivity, &bIdealWeaponRequired );
-	if ( pIdealWeaponActivity )
-		*pIdealWeaponActivity = idealWeaponActivity;
-
-	baseTranslation	  = idealActivity;
-	weaponTranslation = idealActivity;
-	last			  = idealActivity;
-	while ( count++ < MAX_TRIES )
+	for (count = 0; count < MAX_TRIES; count++)
 	{
-		current = NPC_TranslateActivity( last );
-		if ( current != last )
-			baseTranslation = current;
+		baseTranslation = NPC_TranslateActivity(last);
+		int iAuxSequence = BuildActivityChain_SelectWeightedSequence(baseTranslation, weaponTranslation, bWeaponRequired);
 
-		weaponTranslation = Weapon_TranslateActivity( current, &bWeaponRequired );
+		if (iAuxSequence != ACTIVITY_NOT_AVAILABLE)
+			iDesiredSequence = iAuxSequence;
 
 		if ( weaponTranslation == last )
 			break;
 
 		last = weaponTranslation;
 	}
+
 	AssertMsg( count < MAX_TRIES, "Circular activity translation!" );
 
 	if ( last == ACT_SCRIPT_CUSTOM_MOVE )
 		return ACT_SCRIPT_CUSTOM_MOVE;
-	
-	if ( HaveSequenceForActivity( weaponTranslation ) )
+
+	if (iDesiredSequence != ACTIVITY_NOT_AVAILABLE)
 		return weaponTranslation;
 	
 	if ( bWeaponRequired )
@@ -6032,7 +6022,12 @@ Activity CAI_BaseNPC::TranslateActivity( Activity idealActivity, Activity *pIdea
 	if ( baseTranslation != weaponTranslation && HaveSequenceForActivity( baseTranslation ) )
 		return baseTranslation;
 
-	if ( idealWeaponActivity != baseTranslation && HaveSequenceForActivity( idealWeaponActivity ) )
+	iDesiredSequence = BuildActivityChain_SelectWeightedSequence(idealActivity, idealWeaponActivity, bIdealWeaponRequired);
+
+	if ( pIdealWeaponActivity )
+		*pIdealWeaponActivity = idealWeaponActivity;
+
+	if ( idealWeaponActivity != baseTranslation && iDesiredSequence != ACTIVITY_NOT_AVAILABLE)
 		return idealActivity;
 
 	if ( idealActivity != idealWeaponActivity && HaveSequenceForActivity( idealActivity ) )
@@ -7137,6 +7132,8 @@ void CAI_BaseNPC::OnRangeAttack1()
 		OnUpdateShotRegulator();
 	}
 
+	RestartGesture(Weapon_TranslateActivity(ACT_HL2MP_GESTURE_RANGE_ATTACK));
+	GetActiveWeapon()->Operator_ForceNPCFire(this, false);
 	SetNextAttack( m_ShotRegulator.NextShotTime() );
 }
 
@@ -8394,6 +8391,7 @@ void CAI_BaseNPC::HandleAnimEvent( animevent_t *pEvent )
 		{
   			if ( GetActiveWeapon() )
   			{
+				RestartGesture(Weapon_TranslateActivity(ACT_HL2MP_GESTURE_RELOAD));
   				GetActiveWeapon()->WeaponSound( RELOAD_NPC );
   				GetActiveWeapon()->m_iClip1 = GetActiveWeapon()->GetMaxClip1(); 
   				ClearCondition(COND_LOW_PRIMARY_AMMO);
@@ -8431,12 +8429,7 @@ void CAI_BaseNPC::HandleAnimEvent( animevent_t *pEvent )
 
 	case NPC_EVENT_OPEN_DOOR:
 		{
-			CBasePropDoor *pDoor = (CBasePropDoor *)(CBaseEntity *)GetNavigator()->GetPath()->GetCurWaypoint()->GetEHandleData();
-			if (pDoor != NULL)
-			{
-				OpenPropDoorNow( pDoor );
-			}
-	
+			TryOpenDoorNow(GetNavigator()->GetPath()->GetCurWaypoint()->GetEHandleData());
 			break;
 		}
 
@@ -12141,11 +12134,7 @@ bool CAI_BaseNPC::OnCalcBaseMove( AILocalMoveGoal_t *pMoveGoal,
 {
 	if ( pMoveGoal->directTrace.pObstruction )
 	{
-		CBasePropDoor *pPropDoor = dynamic_cast<CBasePropDoor *>( pMoveGoal->directTrace.pObstruction );
-		if ( pPropDoor && OnUpcomingPropDoor( pMoveGoal, pPropDoor, distClear, pResult ) )
-		{
-			return true;
-		}
+		return CheckUpcomingDoor(pMoveGoal, pMoveGoal->directTrace.pObstruction, distClear, pResult);
 	}
 
 	return false;
@@ -12210,10 +12199,7 @@ bool CAI_BaseNPC::OnObstructingDoor( AILocalMoveGoal_t *pMoveGoal,
 // Output : Returns true if movement is solved, false otherwise.
 //-----------------------------------------------------------------------------
 
-bool CAI_BaseNPC::OnUpcomingPropDoor( AILocalMoveGoal_t *pMoveGoal,
- 										CBasePropDoor *pDoor,
-										float distClear,
-										AIMoveResult_t *pResult )
+bool CAI_BaseNPC::CheckUpcomingDoor(AILocalMoveGoal_t *pMoveGoal, CBaseEntity *pObstructingEntity, float distClear, AIMoveResult_t *pResult )
 {
 	if ( (pMoveGoal->flags & AILMG_TARGET_IS_GOAL) && pMoveGoal->maxDist < distClear )
 		return false;
@@ -12221,54 +12207,72 @@ bool CAI_BaseNPC::OnUpcomingPropDoor( AILocalMoveGoal_t *pMoveGoal,
 	if ( pMoveGoal->maxDist + GetHullWidth() * .25 < distClear )
 		return false;
 
-	if (pDoor == m_hOpeningDoor)
+	// Check a rotating door
+	CBasePropDoor *pBasePropDoor = dynamic_cast<CBasePropDoor *>(pObstructingEntity);
+	CBaseDoor *pBaseDoor;
+	bool bActivatedDoorMyself, bDoorNeedsOpen;
+	const Vector *vecStandPos;
+
+	if (pBasePropDoor != NULL)
 	{
-		if ( pDoor->IsNPCOpening( this ) )
+		bActivatedDoorMyself = (pBasePropDoor->IsNPCOpening(this));
+		bDoorNeedsOpen = (!pBasePropDoor->IsDoorLocked() && (pBasePropDoor->IsDoorClosed() || pBasePropDoor->IsDoorClosing()));
+		opendata_t opendata;
+		pBasePropDoor->GetNPCOpenData(this, opendata);
+		vecStandPos = &opendata.vecStandPos;
+	}
+	// Rotating door failed. Try with a sliding door
+	else if ((pBaseDoor = dynamic_cast<CBaseDoor *>(pObstructingEntity)) != NULL)
+	{
+		bActivatedDoorMyself = (pBaseDoor->m_hActivator == this);
+		bDoorNeedsOpen = (!pBaseDoor->m_bLocked &&
+			(pBaseDoor->m_toggle_state == TS_AT_BOTTOM || pBaseDoor->m_toggle_state == TS_GOING_DOWN));
+		vecStandPos = &GetAbsOrigin();
+	}
+	else
+	{
+		return false;
+	}
+
+	if (pObstructingEntity == m_hOpeningDoor)
+	{
+		if (bActivatedDoorMyself)
 		{
 			// We're in the process of opening the door, don't be blocked by it.
 			pMoveGoal->maxDist = distClear;
 			*pResult = AIMR_OK;
 			return true;
 		}
+
 		m_hOpeningDoor = NULL;
 	}
 
-	if ((CapabilitiesGet() & bits_CAP_DOORS_GROUP) && !pDoor->IsDoorLocked() && (pDoor->IsDoorClosed() || pDoor->IsDoorClosing()))
+	if ((CapabilitiesGet() & bits_CAP_DOORS_GROUP) && bDoorNeedsOpen)
 	{
 		AI_Waypoint_t *pOpenDoorRoute = NULL;
 
-		opendata_t opendata;
-		pDoor->GetNPCOpenData(this, opendata);
-		
 		// dvs: FIXME: local route might not be sufficient
-		pOpenDoorRoute = GetPathfinder()->BuildLocalRoute(
-			GetLocalOrigin(), 
-			opendata.vecStandPos,
-			NULL, 
-			bits_WP_TO_DOOR | bits_WP_DONT_SIMPLIFY, 
-			NO_NODE,
-			bits_BUILD_GROUND | bits_BUILD_IGNORE_NPCS,
-			0.0);
-		
-		if ( pOpenDoorRoute )
+		pOpenDoorRoute = GetPathfinder()->BuildLocalRoute(GetLocalOrigin(), *vecStandPos, NULL,
+			bits_WP_TO_DOOR | bits_WP_DONT_SIMPLIFY, NO_NODE, bits_BUILD_GROUND | bits_BUILD_IGNORE_NPCS, 0.0);
+
+		if (pOpenDoorRoute)
 		{
 			if ( AIIsDebuggingDoors(this) )
 			{
-				NDebugOverlay::Cross3D(opendata.vecStandPos + Vector(0,0,1), 32, 255, 255, 255, false, 1.0 );
+				NDebugOverlay::Cross3D(*vecStandPos + Vector(0, 0, 1), 32, 255, 255, 255, false, 1.0);
 				Msg( "Opening door!\n" );
 			}
 
 			// Attach the door to the waypoint so we open it when we get there.
 			// dvs: FIXME: this is kind of bullshit, I need to find the exact waypoint to open the door
 			//		should I just walk the path until I find it?
-			pOpenDoorRoute->m_hData = pDoor;
+			pOpenDoorRoute->m_hData = pObstructingEntity;
 
 			GetNavigator()->GetPath()->PrependWaypoints( pOpenDoorRoute );
 
-			m_hOpeningDoor = pDoor;
+			m_hOpeningDoor = pObstructingEntity;
 			pMoveGoal->maxDist = distClear;
 			*pResult = AIMR_CHANGE_TYPE;
-				
 			return true;
 		}
 		else
@@ -12278,28 +12282,32 @@ bool CAI_BaseNPC::OnUpcomingPropDoor( AILocalMoveGoal_t *pMoveGoal,
 	return false;
 }
 
-
-//-----------------------------------------------------------------------------
-// Purpose: Called by the navigator to initiate the opening of a prop_door
-//			that is in our way.
-//-----------------------------------------------------------------------------
-void CAI_BaseNPC::OpenPropDoorBegin( CBasePropDoor *pDoor )
+bool CAI_BaseNPC::TryOpenDoorNow(CBaseEntity *pEntity)
 {
-	// dvs: not quite working, disabled for now.
-	//opendata_t opendata;
-	//pDoor->GetNPCOpenData(this, opendata);
-	//
-	//if (HaveSequenceForActivity(opendata.eActivity))
-	//{
-	//	SetIdealActivity(opendata.eActivity);
-	//}
-	//else
-	{
-		// We don't have an appropriate sequence, just open the door magically.
-		OpenPropDoorNow( pDoor );
-	}
-}
+	CBasePropDoor *pBasePropDoor = dynamic_cast<CBasePropDoor *>(pEntity);
+	CBaseDoor *pBaseDoor;
 
+	if (pBasePropDoor != NULL)
+	{
+		OpenPropDoorNow(pBasePropDoor);
+		return true;
+	}
+	else if ((pBaseDoor = dynamic_cast<CBaseDoor *>(pEntity)) != NULL)
+	{
+		CBaseDoor *pBaseDoor = dynamic_cast<CBaseDoor *>(pEntity);
+		inputdata_t input;
+		pBaseDoor->InputOpen(input);
+
+		if (pBaseDoor->m_flSpeed >= 0.0f)
+		{
+			m_flMoveWaitFinished = gpGlobals->curtime + (pBaseDoor->m_vecPosition2 - pBaseDoor->m_vecPosition1).Length() / pBaseDoor->m_flSpeed;
+		}
+
+		return true;
+	}
+
+	return false;
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Called when we are trying to open a prop_door and it's time to start
@@ -12314,7 +12322,6 @@ void CAI_BaseNPC::OpenPropDoorNow( CBasePropDoor *pDoor )
 	// Wait for the door to finish opening before trying to move through the doorway.
 	m_flMoveWaitFinished = gpGlobals->curtime + pDoor->GetOpenInterval();
 }
-
 
 //-----------------------------------------------------------------------------
 // Purpose: Called when the door we were trying to open becomes fully open.
@@ -14048,7 +14055,9 @@ bool CAI_BaseNPC::IsCrouchedActivity( Activity activity )
 		case ACT_RELOAD_LOW:
 		case ACT_COVER_LOW:
 		case ACT_COVER_PISTOL_LOW:
+		case ACT_HL2MP_IDLE_CROUCH_PISTOL:
 		case ACT_COVER_SMG1_LOW:
+		case ACT_HL2MP_IDLE_CROUCH_SMG1:
 		case ACT_RELOAD_SMG1_LOW:
 			return true;
 	}
@@ -14139,4 +14148,93 @@ void CAI_BaseNPC::DesireCrouch( void )
 bool CAI_BaseNPC::IsInChoreo() const
 {
 	return m_bInChoreo;
+}
+
+// Purpose: First, build a list formed by a base singleplayer activity and a equivalent multiplayer one.
+// Then, find the first existing sequence from a compliant translated activity of that list
+// Input: baseActivity - The first character activity to translate
+// baseActivity, weaponTranslation, bRequired - Value-results to be assigned the data of each list's iteration
+int	CAI_BaseNPC::BuildActivityChain_SelectWeightedSequence(Activity &baseActivity, Activity &weaponTranslation, bool &bRequired)
+{
+	CUtlVector<Activity> priorityActivityList;
+	priorityActivityList.AddToTail(baseActivity);
+
+	// Note: SLAM activites are used to prevent being put into ACT_DIERAGDOLL activity on HL2:DM, when missing weapon
+	switch (baseActivity)
+	{
+	case ACT_COVER_LOW:
+	case ACT_RANGE_ATTACK1_LOW:
+	case ACT_RANGE_AIM_LOW:
+	case ACT_RELOAD_LOW:
+	{
+		if (GetActiveWeapon() != NULL)
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_IDLE_CROUCH);
+		}
+		else
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_IDLE_CROUCH_SLAM);
+		}
+
+		break;
+	}
+	case ACT_WALK_CROUCH:
+	case ACT_WALK_CROUCH_AIM:
+	{
+		if (GetActiveWeapon() != NULL)
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_WALK_CROUCH);
+		}
+		else
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_WALK_CROUCH_SLAM);
+		}
+
+		break;
+	}
+	case ACT_WALK:
+	case ACT_WALK_AIM:
+	case ACT_RUN:
+	case ACT_RUN_AIM:
+	{
+		if (GetActiveWeapon() != NULL)
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_RUN);
+		}
+		else
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_RUN_SLAM);
+		}
+
+		break;
+	}
+	case ACT_JUMP:
+	{
+		if (GetActiveWeapon() != NULL)
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_JUMP);
+		}
+		else
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_JUMP_SLAM);
+		}
+
+		break;
+	}
+	default:
+	{
+		if (GetActiveWeapon() != NULL)
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_IDLE);
+		}
+		else
+		{
+			priorityActivityList.AddToTail(ACT_HL2MP_IDLE_SLAM);
+		}
+
+		break;
+	}
+	}
+
+	return FindWeightedSequenceFromList(priorityActivityList, &baseActivity, &weaponTranslation, &bRequired);
 }

@@ -287,19 +287,27 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 	if ( !StandardFilterRules( pHandleEntity, contentsMask ) )
 		return false;
 
+	const CBaseEntity *pPassBaseEnt;
+
 	if ( m_pPassEnt )
 	{
 		if ( !PassServerEntityFilter( pHandleEntity, m_pPassEnt ) )
 		{
 			return false;
 		}
+
+		pPassBaseEnt = EntityFromEntityHandle(m_pPassEnt);
+	}
+	else
+	{
+		pPassBaseEnt = NULL;
 	}
 
 	// Don't test if the game code tells us we should ignore this collision...
 	CBaseEntity *pEntity = EntityFromEntityHandle( pHandleEntity );
 	if ( !pEntity )
 		return false;
-	if ( !pEntity->ShouldCollide( m_collisionGroup, contentsMask ) )
+	if ( !pEntity->ShouldCollide( m_collisionGroup, contentsMask, pPassBaseEnt ) )
 		return false;
 	if ( pEntity && !g_pGameRules->ShouldCollide( m_collisionGroup, pEntity->GetCollisionGroup() ) )
 		return false;

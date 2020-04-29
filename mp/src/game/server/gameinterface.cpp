@@ -130,6 +130,9 @@ extern ConVar tf_mm_servermode;
 #include "replay/ireplaysystem.h"
 #endif
 
+#define DOWNLOADABLE_FILE_TABLENAME "downloadables"
+#define DOWNLOAD_SEARCH_PATH "download"
+
 extern IToolFrameworkServer *g_pToolFrameworkServer;
 extern IParticleSystemQuery *g_pParticleSystemQuery;
 
@@ -148,6 +151,11 @@ CSteamGameServerAPIContext *steamgameserverapicontext = &s_SteamGameServerAPICon
 #endif
 
 IUploadGameStats *gamestatsuploader = NULL;
+
+#ifdef ROLEPLAY
+#include "CHL2RP.h"
+#include "CHL2RP_Player.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -749,6 +757,10 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 void CServerGameDLL::PostInit()
 {
 	IGameSystem::PostInitAllSystems();
+
+#ifdef ROLEPLAY
+	CHL2RP::PostInit();
+#endif
 }
 
 void CServerGameDLL::DLLShutdown( void )
@@ -949,6 +961,37 @@ bool CServerGameDLL::IsRestoring()
 	return g_InRestore;
 }
 
+// Purpose: Ensure existence of the download search path and call UTIL_AddDownloadablesRecursive over its content
+FORCEINLINE void SetUpAutomaticOtherDownloads()
+{
+	INetworkStringTable *pDownloadables = networkstringtable->FindTable(DOWNLOADABLE_FILE_TABLENAME);
+
+	if (pDownloadables != NULL)
+	{
+		char szDownloadPath[MAX_PATH];
+		filesystem->GetSearchPath_safe(DOWNLOAD_SEARCH_PATH, true, szDownloadPath);
+
+		if (szDownloadPath[0] == '\0')
+		{
+			// Start adding default download directory to the DOWNLOAD path id, and to the GAME one as it should
+			if (!UTIL_GetModDir(szDownloadPath, sizeof(szDownloadPath)))
+			{
+				// The output buffer could not be safely built, exit
+				return;
+			}
+
+			Q_AppendSlash(szDownloadPath, sizeof(szDownloadPath));
+			Q_strncat(szDownloadPath, DOWNLOAD_SEARCH_PATH, sizeof(szDownloadPath));
+			filesystem->AddSearchPath(szDownloadPath, DOWNLOAD_SEARCH_PATH);
+			filesystem->AddSearchPath(szDownloadPath, "GAME");
+		}
+
+		FileFindHandle_t dirHandle;
+		const char *pFileName = filesystem->FindFirstEx("*", DOWNLOAD_SEARCH_PATH, &dirHandle);
+		UTIL_AddDownloadablesRecursive(*pDownloadables, DOWNLOAD_SEARCH_PATH, pFileName);
+	}
+}
+
 // Called any time a new level is started (after GameInit() also on level transitions within a game)
 bool CServerGameDLL::LevelInit( const char *pMapName, char const *pMapEntities, char const *pOldLevel, char const *pLandmarkName, bool loadGame, bool background )
 {
@@ -1066,6 +1109,13 @@ bool CServerGameDLL::LevelInit( const char *pMapName, char const *pMapEntities, 
 	// clear any pending autosavedangerous
 	m_fAutoSaveDangerousTime = 0.0f;
 	m_fAutoSaveDangerousMinHealthToCommit = 0.0f;
+
+	// Set up custom content for download, refreshed on mapchange
+	if ((g_pGameRules != NULL) && g_pGameRules->IsMultiplayer())
+	{
+		SetUpAutomaticOtherDownloads();
+	}
+
 	return true;
 }
 
@@ -1140,6 +1190,10 @@ void CServerGameDLL::ServerActivate( edict_t *pEdictList, int edictCount, int cl
 
 #ifdef NEXT_BOT
 	TheNextBots().OnMapLoaded();
+#endif
+
+#ifdef ROLEPLAY
+	CHL2RP::ServerActivate();
 #endif
 }
 
@@ -1277,6 +1331,10 @@ void CServerGameDLL::GameFrame( bool simulating )
 
 	// Any entities that detect network state changes on a timer do it here.
 	g_NetworkPropertyEventMgr.FireEvents();
+
+#ifdef ROLEPLAY
+	CHL2RP::Think();
+#endif
 
 	gpGlobals->frametime = oldframetime;
 }
@@ -3226,6 +3284,35 @@ void CServerGameClients::GetBugReportInfo( char *buf, int buflen )
 //-----------------------------------------------------------------------------
 void CServerGameClients::NetworkIDValidated( const char *pszUserName, const char *pszNetworkID )
 {
+	// As of date, a call to engine->GetPlayerNetworkIDString() will write on the address pointed by pszNetworkID.
+	// This would screw up the Network ID comparisons on below player instance search. Copy it to a new buffer
+	char szAuxNetworkID[MAX_NETWORKID_LENGTH];
+	Q_strcpy(szAuxNetworkID, pszNetworkID);
+
+	// Perform search for a player instance whose ID matches the validated ID
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CBasePlayer *pPlayer = static_cast<CBasePlayer *>(CBaseEntity::Instance(i));
+
+		// It is important to check if local ID is empty, since it may have been set already
+		if (pPlayer != NULL && !pPlayer->HasNetworkIDString())
+		{
+			if (!Q_strcmp(engine->GetPlayerNetworkIDString(pPlayer->edict()), szAuxNetworkID))
+			{
+				pPlayer->SetNetworkIDString(pszNetworkID);
+
+#ifdef ROLEPLAY
+				// Don't need to check for fake clients (their ID is not validated)
+				if (pPlayer->IsConnected() && CHL2RP::s_pSQL != NULL)
+				{
+					CHL2RP::s_pSQL->AddAsyncTxn(new CLoadPlayerTxn(*CHL2RP_Player::ToThisClassFast(pPlayer)));
+				}
+#endif
+
+				return;
+			}
+		}
+	}
 }
 
 // The client has submitted a keyvalues command

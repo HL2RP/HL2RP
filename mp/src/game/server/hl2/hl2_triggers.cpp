@@ -744,14 +744,7 @@ void CTriggerWateryDeath::StartTouch(CBaseEntity *pOther)
 	{
 		// Always added to the end
 		// Players get warned, everything else gets et quick.
-		if ( pOther->IsPlayer() )
-		{
-			m_flEntityKillTimes.AddToTail( gpGlobals->curtime + WD_KILLTIME_NEXT_BITE );
-		}
-		else
-		{
-			m_flEntityKillTimes.AddToTail( gpGlobals->curtime + WD_KILLTIME_NEXT_BITE );
-		}
+		m_flEntityKillTimes.AddToTail(gpGlobals->curtime + WD_KILLTIME_NEXT_BITE);
 	}
 
 #ifdef HL2_DLL

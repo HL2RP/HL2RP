@@ -12,7 +12,7 @@
 #include	"basehlcombatweapon.h"
 #include	"basecombatcharacter.h"
 #include	"ai_basenpc.h"
-#include	"AI_Memory.h"
+#include	"ai_memory.h"
 #include	"player.h"
 #include	"gamerules.h"		// For g_pGameRules
 #include	"weapon_molotov.h"
@@ -38,23 +38,30 @@ BEGIN_DATADESC( CWeaponMolotov )
 
 END_DATADESC()
 
-
+#ifdef HL2RP
 IMPLEMENT_SERVERCLASS_ST(CWeaponMolotov, DT_WeaponMolotov)
 END_SEND_TABLE()
+#endif
 
 LINK_ENTITY_TO_CLASS( weapon_molotov, CWeaponMolotov );
 PRECACHE_WEAPON_REGISTER(weapon_molotov);
 
-acttable_t	CWeaponMolotov::m_acttable[] = 
+acttable_t	CWeaponMolotov::m_acttable[] =
 {
 	{ ACT_RANGE_ATTACK1, ACT_RANGE_ATTACK_THROW, true },
+	{ ACT_HL2MP_IDLE, ACT_HL2MP_IDLE_GRENADE, false },
+	{ ACT_HL2MP_RUN, ACT_HL2MP_RUN_GRENADE, false },
+	{ ACT_HL2MP_IDLE_CROUCH, ACT_HL2MP_IDLE_CROUCH_GRENADE, false },
+	{ ACT_HL2MP_WALK_CROUCH, ACT_HL2MP_WALK_CROUCH_GRENADE, false },
+	{ ACT_HL2MP_GESTURE_RANGE_ATTACK, ACT_HL2MP_GESTURE_RANGE_ATTACK_GRENADE, false },
+	{ ACT_HL2MP_GESTURE_RELOAD, ACT_HL2MP_GESTURE_RELOAD_GRENADE, false },
+	{ ACT_HL2MP_JUMP, ACT_HL2MP_JUMP_GRENADE, false }
 };
 IMPLEMENT_ACTTABLE(CWeaponMolotov);
 
 
 void CWeaponMolotov::Precache( void )
 {
-	PrecacheModel("models/props_junk/w_garb_beerbottle.mdl");	//<<TEMP>> need real model
 	BaseClass::Precache();
 }
 
@@ -64,6 +71,7 @@ void CWeaponMolotov::Spawn( void )
 	BaseClass::Spawn();
 
 	m_bNeedDraw		= true;
+	m_bPauseAttack = false;
 
 	SetModel( GetWorldModel() );
 	UTIL_SetSize(this, Vector( -6, -6, -2), Vector(6, 6, 2));
@@ -76,7 +84,7 @@ void CWeaponMolotov::Spawn( void )
 //------------------------------------------------------------------------------
 void CWeaponMolotov::SetPickupTouch( void )
 {
-	SetTouch(MolotovTouch);
+	SetTouch(&CWeaponMolotov::MolotovTouch);
 }
 
 //-----------------------------------------------------------------------------
@@ -100,16 +108,8 @@ void CWeaponMolotov::MolotovTouch( CBaseEntity *pOther )
 		//  If already owned weapon of this type remove me
 		// ------------------------------------------------
 		CBaseCombatCharacter* pBCC = ToBaseCombatCharacter( pOther );
-		CWeaponMolotov* oldWeapon = (CWeaponMolotov*)pBCC->Weapon_OwnsThisType( GetClassname() );
-		if (oldWeapon != this)
-		{
-			UTIL_Remove( this );
-		}
-		else
-		{
-			pBCC->GiveAmmo( 1, m_iSecondaryAmmoType );
-			SetThink (NULL);
-		}
+		pBCC->GiveAmmo( 1, m_iSecondaryAmmoType );
+		SetThink (NULL);
 	}
 }
 
@@ -335,18 +335,27 @@ void CWeaponMolotov::PrimaryAttack( void )
 	{
 		return;
 	}
+	
+	Vector vecSrc;
+	int iBoneIndex = pPlayer->LookupBone("ValveBiped.Bip01_R_Hand");
 
-	Vector vecSrc		= pPlayer->WorldSpaceCenter();
-	Vector vecFacing	= pPlayer->BodyDirection3D( );
-	vecSrc				= vecSrc + vecFacing * 18.0;
-	// BUGBUG: is this some hack because it's not at the eye position????
-	vecSrc.z		   += 24.0f;
+	if (iBoneIndex != -1)
+	{
+		QAngle angles;
+		pPlayer->GetBonePosition(iBoneIndex, vecSrc, angles);
+	}
+	else
+	{
+		Vector vecRight;
+		pPlayer->EyePositionAndVectors(&vecSrc, NULL, &vecRight, NULL);
+		vecSrc = pPlayer->EyePosition() + pPlayer->BodyDirection3D() * 18.0f + vecRight * 8.0f;
+	}
 
 	// Player may have turned to face a wall during the throw anim in which case
 	// we don't want to throw the SLAM into the wall
 	if (ObjectInWay())
 	{
-		vecSrc   = pPlayer->WorldSpaceCenter() + vecFacing * 5.0;
+		vecSrc = pPlayer->EyePosition() + pPlayer->BodyDirection3D() * 5.0;
 	}
 
 	Vector vecAiming = pPlayer->GetAutoaimVector( AUTOAIM_5DEGREES );
@@ -393,7 +402,7 @@ void CWeaponMolotov::DrawAmmo( void )
 		UTIL_Remove(this);
 		return;
 	}
-	Msg("Drawing Molotov...\n");
+
 	m_bNeedDraw = false;
 
 	//<<TEMP>> - till real animation is avaible
@@ -407,28 +416,36 @@ void CWeaponMolotov::DrawAmmo( void )
 // Input  :
 // Output :
 //-----------------------------------------------------------------------------
-void CWeaponMolotov::ItemPostFrame( void )
+void CWeaponMolotov::ItemPostFrame(void)
 {
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+
 	if (!pOwner)
 	{
 		return;
 	}
 
-
-	if ((pOwner->m_nButtons & IN_ATTACK2) && (m_flNextSecondaryAttack <= gpGlobals->curtime))
+	if (m_flNextPrimaryAttack <= gpGlobals->curtime)
 	{
-		SecondaryAttack();
-	}
-	else if ((pOwner->m_nButtons & IN_ATTACK) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
-	{
-		// Uses secondary ammo only
-		if (pOwner->GetAmmoCount(m_iSecondaryAmmoType))
+		// Hold and release to attack, in order to simulate arms positioning
+		if (pOwner->m_nButtons & IN_ATTACK)
 		{
-			PrimaryAttack();
+			SendWeaponAnim(ACT_VM_HAULBACK);
+			return;
+		}
+		else if (pOwner->m_afButtonLast & IN_ATTACK)
+		{
+			// Uses secondary ammo only
+			if (pOwner->GetAmmoCount(m_iSecondaryAmmoType))
+			{
+				SendWeaponAnim(ACT_VM_THROW);
+				PrimaryAttack();
+				return;
+			}
 		}
 	}
-	else if (m_bNeedDraw)
+
+	if (m_bNeedDraw)
 	{
 		DrawAmmo();
 	}

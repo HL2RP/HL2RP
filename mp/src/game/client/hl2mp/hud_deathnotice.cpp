@@ -260,23 +260,64 @@ void CHudDeathNotice::RetireExpiredDeathNotices( void )
 //-----------------------------------------------------------------------------
 // Purpose: Server's told us that someone's died
 //-----------------------------------------------------------------------------
-void CHudDeathNotice::FireGameEvent( IGameEvent * event )
+void CHudDeathNotice::FireGameEvent(IGameEvent * event)
 {
 	if (!g_PR)
 		return;
 
-	if ( hud_deathnotice_time.GetFloat() == 0 )
+	if (hud_deathnotice_time.GetFloat() == 0)
 		return;
 
 	// the event should be "player_death"
-	int killer = engine->GetPlayerForUserID( event->GetInt("attacker") );
-	int victim = engine->GetPlayerForUserID( event->GetInt("userid") );
-	const char *killedwith = event->GetString( "weapon" );
+	int killer, victim;
+	const char *killer_name, *victim_name;
 
-	char fullkilledwith[128];
-	if ( killedwith && *killedwith )
+#ifdef HL2RP
+	CBaseEntity *killerEnt = CBaseEntity::Instance(event->GetInt("entindex_attacker"));
+	CBaseEntity *victimEnt = CBaseEntity::Instance(event->GetInt("entindex_killed"));
+
+	// Get the names of the characters and their indexes
+	if (killerEnt != NULL)
 	{
-		Q_snprintf( fullkilledwith, sizeof(fullkilledwith), "death_%s", killedwith );
+		killer = killerEnt->entindex();
+		killer_name = (killerEnt->IsPlayer()) ? g_PR->GetPlayerName(killer) : event->GetString("npc_name");
+	}
+	else
+	{
+		killer = 0;
+		killer_name = "";
+	}
+
+	if (victimEnt != NULL)
+	{
+		victim = victimEnt->entindex();
+		victim_name = (victimEnt->IsPlayer()) ? g_PR->GetPlayerName(victim) : event->GetString("npc_name");
+	}
+	else
+	{
+		victim = 0;
+		victim_name = "";
+	}
+#else
+	killer = engine->GetPlayerForUserID(event->GetInt("attacker"));
+	victim = engine->GetPlayerForUserID(event->GetInt("userid"));
+
+	// Get the names of the players
+	killer_name = g_PR->GetPlayerName(killer);
+	victim_name = g_PR->GetPlayerName(victim);
+
+	if (!killer_name)
+		killer_name = "";
+	if (!victim_name)
+		victim_name = "";
+#endif
+
+	const char *killedwith = event->GetString("weapon");
+	char fullkilledwith[128];
+
+	if (killedwith && *killedwith)
+	{
+		Q_snprintf(fullkilledwith, sizeof(fullkilledwith), "death_%s", killedwith);
 	}
 	else
 	{
@@ -284,30 +325,21 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 	}
 
 	// Do we have too many death messages in the queue?
-	if ( m_DeathNotices.Count() > 0 &&
-		m_DeathNotices.Count() >= (int)m_flMaxDeathNotices )
+	if (m_DeathNotices.Count() > 0 &&
+	m_DeathNotices.Count() >= (int)m_flMaxDeathNotices)
 	{
 		// Remove the oldest one in the queue, which will always be the first
 		m_DeathNotices.Remove(0);
 	}
 
-	// Get the names of the players
-	const char *killer_name = g_PR->GetPlayerName( killer );
-	const char *victim_name = g_PR->GetPlayerName( victim );
-
-	if ( !killer_name )
-		killer_name = "";
-	if ( !victim_name )
-		victim_name = "";
-
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = killer;
 	deathMsg.Victim.iEntIndex = victim;
+	deathMsg.iSuicide = (!killer || killer == victim);
 	Q_strncpy( deathMsg.Killer.szName, killer_name, MAX_PLAYER_NAME_LENGTH );
 	Q_strncpy( deathMsg.Victim.szName, victim_name, MAX_PLAYER_NAME_LENGTH );
 	deathMsg.flDisplayTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
-	deathMsg.iSuicide = ( !killer || killer == victim );
 
 	// Try and find the death identifier in the icon list
 	deathMsg.iconDeath = gHUD.GetIcon( fullkilledwith );

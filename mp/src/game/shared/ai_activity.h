@@ -18,11 +18,13 @@ typedef enum
 	ACT_INVALID = -1,			// So we have something more succint to check for than '-1'
 	ACT_RESET = 0,				// Set m_Activity to this invalid value to force a reset to m_IdealActivity
 	ACT_IDLE,
+	ACT_IDLE_UNARMED,
 	ACT_TRANSITION,
 	ACT_COVER,					// FIXME: obsolete? redundant with ACT_COVER_LOW?
 	ACT_COVER_MED,				// FIXME: unsupported?
 	ACT_COVER_LOW,				// FIXME: rename ACT_IDLE_CROUCH?
 	ACT_WALK,
+	ACT_WALK_UNARMED,
 	ACT_WALK_AIM,
 	ACT_WALK_CROUCH,
 	ACT_WALK_CROUCH_AIM,

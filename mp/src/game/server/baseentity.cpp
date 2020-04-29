@@ -257,6 +257,23 @@ void SendProxy_Angles( const SendProp *pProp, const void *pStruct, const void *p
 	pOut->m_Vector[ 2 ] = anglemod( a->z );
 }
 
+void CollisionGroupProxyFn(const SendProp *pProp, const void *pStructBase, const void *pData, DVariant *pOut, int iElement, int objectID)
+{
+	CBaseEntity *pProxyEntity = (CBaseEntity *)pStructBase;
+	IPhysicsObject *pProxyEntityPhysObj = pProxyEntity->VPhysicsGetObject();
+
+	if ((pProxyEntityPhysObj != NULL) && (pProxyEntityPhysObj->GetGameFlags() & FVPHYSICS_PENETRATING))
+	{
+		// Proxy entity is penetrating with another one.
+		// Only server-side ShouldCollide may have canceled the collision,
+		// thus, network a m_CollisionGroup value that smooths client prediction.
+		pOut->m_Int = COLLISION_GROUP_DEBRIS_TRIGGER;
+
+		// Finally force game to think m_CollisionGroup prop changed (reduces warning)
+		pProxyEntity->NetworkStateChanged();
+	}
+}
+
 // This table encodes the CBaseEntity data.
 IMPLEMENT_SERVERCLASS_ST_NOBASE( CBaseEntity, DT_BaseEntity )
 	SendPropDataTable( "AnimTimeMustBeFirst", 0, &REFERENCE_SEND_TABLE(DT_AnimTimeMustBeFirst), SendProxy_ClientSideAnimation ),
@@ -276,7 +293,7 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE( CBaseEntity, DT_BaseEntity )
 	SendPropInt		(SENDINFO(m_fEffects),		EF_MAX_BITS, SPROP_UNSIGNED),
 	SendPropInt		(SENDINFO(m_clrRender),	32, SPROP_UNSIGNED),
 	SendPropInt		(SENDINFO(m_iTeamNum),		TEAMNUM_NUM_BITS, 0),
-	SendPropInt		(SENDINFO(m_CollisionGroup), 5, SPROP_UNSIGNED),
+	SendPropInt		(SENDINFO(m_CollisionGroup), 5, SPROP_UNSIGNED, CollisionGroupProxyFn),
 	SendPropFloat	(SENDINFO(m_flElasticity), 0, SPROP_COORD),
 	SendPropFloat	(SENDINFO(m_flShadowCastDistance), 12, SPROP_UNSIGNED ),
 	SendPropEHandle (SENDINFO(m_hOwnerEntity)),

@@ -320,8 +320,13 @@ IMPLEMENT_SERVERCLASS_ST(CPropVehicleDriveable, DT_PropVehicleDriveable)
 	SendPropInt(SENDINFO(m_nHasBoost), 1, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_nScannerDisabledWeapons), 1, SPROP_UNSIGNED),
 	SendPropInt(SENDINFO(m_nScannerDisabledVehicle), 1, SPROP_UNSIGNED),
+#ifdef HL2DM_RP
+	SendPropInt(SENDINFO(m_bEnterAnimOn), 1, SPROP_UNSIGNED, &CBaseServerVehicle::SendProxy_DisableVehicleTransitionAnim),
+	SendPropInt(SENDINFO(m_bExitAnimOn), 1, SPROP_UNSIGNED, &CBaseServerVehicle::SendProxy_DisableVehicleTransitionAnim),
+#else
 	SendPropInt(SENDINFO(m_bEnterAnimOn), 1, SPROP_UNSIGNED ),
 	SendPropInt(SENDINFO(m_bExitAnimOn), 1, SPROP_UNSIGNED ),
+#endif
 	SendPropInt(SENDINFO(m_bUnableToFire), 1, SPROP_UNSIGNED ),
 	SendPropVector(SENDINFO(m_vecEyeExitEndpoint), -1, SPROP_COORD),
 	SendPropBool(SENDINFO(m_bHasGun)),
@@ -593,7 +598,7 @@ void CPropVehicleDriveable::EnterVehicle( CBaseCombatCharacter *pPassenger )
 
 		// Don't start the engine if the player's using an entry animation,
 		// because we want to start the engine once the animation is done.
-		if ( !m_bEnterAnimOn )
+		if (!m_bEnterAnimOn)
 		{
 			StartEngine();
 		}
@@ -607,6 +612,18 @@ void CPropVehicleDriveable::EnterVehicle( CBaseCombatCharacter *pPassenger )
 		m_pServerVehicle->InitViewSmoothing( pPlayer->GetAbsOrigin() + vecViewOffset, pPlayer->EyeAngles() );
 
 		m_VehiclePhysics.GetVehicle()->OnVehicleEnter();
+
+#ifdef ROLEPLAY
+		// Force smooth camera view on vehicle
+		if (engine->IsDedicatedServer())
+		{
+			UTIL_SendConVarValue(pPlayer, "sv_client_predict", "0");
+		}
+		else
+		{
+			engine->ServerCommand("sv_client_predict 0\n");
+		}
+#endif
 	}
 	else
 	{
@@ -642,6 +659,18 @@ void CPropVehicleDriveable::ExitVehicle( int nRole )
 
 	// Clear our state
 	m_pServerVehicle->InitViewSmoothing( vec3_origin, vec3_angle );
+
+#ifdef ROLEPLAY
+	// Force smooth camera view outside vehicle
+	if (engine->IsDedicatedServer())
+	{
+		UTIL_SendConVarValue(pPlayer, "sv_client_predict", "1");
+	}
+	else
+	{
+		engine->ServerCommand("sv_client_predict 1\n");
+	}
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -773,7 +802,7 @@ void CPropVehicleDriveable::SetupMove( CBasePlayer *player, CUserCmd *ucmd, IMov
 		return;
 
 	// If the player's entering/exiting the vehicle, prevent movement
-	if ( m_bEnterAnimOn || m_bExitAnimOn )
+	if (m_bEnterAnimOn || m_bExitAnimOn)
 		return;
 
 	DriveVehicle( player, ucmd );
@@ -821,7 +850,7 @@ bool CPropVehicleDriveable::CanEnterVehicle( CBaseEntity *pEntity )
 bool CPropVehicleDriveable::CanExitVehicle( CBaseEntity *pEntity )
 {
 	// Prevent exiting if the vehicle's locked, or if it's moving too fast.
-	return ( !m_bEnterAnimOn && !m_bExitAnimOn && !m_bLocked && (m_nSpeed <= m_flMinimumSpeedToEnterExit) );
+	return (!m_bEnterAnimOn && !m_bExitAnimOn && !m_bLocked && (m_nSpeed <= m_flMinimumSpeedToEnterExit));
 }
 
 //-----------------------------------------------------------------------------

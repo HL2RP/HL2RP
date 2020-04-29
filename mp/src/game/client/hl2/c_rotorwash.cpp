@@ -248,6 +248,7 @@ void C_RotorWashEmitter::ClientThink( void )
 	float	yaw = random->RandomFloat( 0, 2*M_PI ); // Randomly placed on the unit circle
 	float	yawIncr = (2*M_PI) / numRingSprites;
 	Vector	vecForward;
+	vecForward.z = 0.0f;
 	Vector	offset;
 	SimpleParticle	*pParticle;
 

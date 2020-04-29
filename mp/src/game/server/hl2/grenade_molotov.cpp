@@ -37,8 +37,8 @@ BEGIN_DATADESC( CGrenade_Molotov )
 	DEFINE_FIELD( m_pFireTrail, FIELD_CLASSPTR ),
 
 	// Function Pointers
-	DEFINE_FUNCTION( MolotovTouch ),
-	DEFINE_FUNCTION( MolotovThink ),
+	DEFINE_THINKFUNC(MolotovThink),
+	DEFINE_ENTITYFUNC(MolotovTouch)
 
 END_DATADESC()
 
@@ -54,8 +54,8 @@ void CGrenade_Molotov::Spawn( void )
 
 	UTIL_SetSize(this, Vector( -6, -6, -2), Vector(6, 6, 2));
 
-	SetTouch( MolotovTouch );
-	SetThink( MolotovThink );
+	SetTouch(&CGrenade_Molotov::MolotovTouch);
+	SetThink(&CGrenade_Molotov::MolotovThink);
 	SetNextThink( gpGlobals->curtime + 0.1f );
 
 	m_flDamage		= sk_plr_dmg_molotov.GetFloat();
@@ -234,8 +234,6 @@ void CGrenade_Molotov::MolotovThink( void )
 void CGrenade_Molotov::Precache( void )
 {
 	BaseClass::Precache();
-
-	PrecacheModel("models/weapons/w_bb_bottle.mdl");
 
 	UTIL_PrecacheOther("_firesmoke");
 

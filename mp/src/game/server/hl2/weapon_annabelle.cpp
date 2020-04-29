@@ -305,7 +305,7 @@ void CWeaponAnnabelle::DryFire( void )
 void CWeaponAnnabelle::ItemHolsterFrame( void )
 {
 	// Must be player held
-	if ( GetOwner() && GetOwner()->IsPlayer() == false )
+	if (GetOwner() == NULL || !GetOwner()->IsPlayer())
 		return;
 
 	// We can't be active

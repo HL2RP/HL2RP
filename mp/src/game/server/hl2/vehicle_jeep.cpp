@@ -139,9 +139,11 @@ BEGIN_DATADESC( CPropJeep )
 	DEFINE_THINKFUNC( JeepSeagullThink ),
 END_DATADESC()
 
+#ifdef HL2RP
 IMPLEMENT_SERVERCLASS_ST( CPropJeep, DT_PropJeep )
 	SendPropBool( SENDINFO( m_bHeadlightIsOn ) ),
 END_SEND_TABLE();
+#endif
 
 // This is overriden for the episodic jeep
 #ifndef HL2_EPISODIC
@@ -733,7 +735,7 @@ void CPropJeep::Think( void )
 	}
 
 	// Aim gun based on the player view direction.
-	if ( m_bHasGun && m_hPlayer && !m_bExitAnimOn && !m_bEnterAnimOn )
+	if (m_bHasGun && m_hPlayer && !m_bExitAnimOn && !m_bEnterAnimOn)
 	{
 		Vector vecEyeDir, vecEyePos;
 		m_hPlayer->EyePositionAndVectors( &vecEyePos, &vecEyeDir, NULL, NULL );
@@ -768,9 +770,9 @@ void CPropJeep::Think( void )
 	StudioFrameAdvance();
 
 	// If the enter or exit animation has finished, tell the server vehicle
-	if ( IsSequenceFinished() && (m_bExitAnimOn || m_bEnterAnimOn) )
+	if (IsSequenceFinished() && (m_bExitAnimOn || m_bEnterAnimOn))
 	{
-		if ( m_bEnterAnimOn )
+		if (m_bEnterAnimOn)
 		{
 			m_VehiclePhysics.ReleaseHandbrake();
 			StartEngine();
@@ -795,7 +797,7 @@ void CPropJeep::Think( void )
 		if ( hl2_episodic.GetBool() )
 		{
 			// Set its running animation idle
-			if ( m_bEnterAnimOn )
+			if (m_bEnterAnimOn)
 			{
 				// Idle running
 				int nSequence = SelectWeightedSequence( ACT_IDLE_STIMULATED );
@@ -1180,7 +1182,7 @@ void CPropJeep::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE use
 //-----------------------------------------------------------------------------
 bool CPropJeep::CanExitVehicle( CBaseEntity *pEntity )
 {
-	return ( !m_bEnterAnimOn && !m_bExitAnimOn && !m_bLocked && (m_nSpeed <= g_jeepexitspeed.GetFloat() ) );
+	return (!m_bEnterAnimOn && !m_bExitAnimOn && !m_bLocked && (m_nSpeed <= g_jeepexitspeed.GetFloat()));
 }
 
 //-----------------------------------------------------------------------------

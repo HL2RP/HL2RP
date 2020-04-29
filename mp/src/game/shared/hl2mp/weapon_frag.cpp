@@ -99,6 +99,7 @@ acttable_t	CWeaponFrag::m_acttable[] =
 	{ ACT_HL2MP_GESTURE_RANGE_ATTACK,	ACT_HL2MP_GESTURE_RANGE_ATTACK_GRENADE,	false },
 	{ ACT_HL2MP_GESTURE_RELOAD,			ACT_HL2MP_GESTURE_RELOAD_GRENADE,		false },
 	{ ACT_HL2MP_JUMP,					ACT_HL2MP_JUMP_GRENADE,					false },
+	{ ACT_RANGE_ATTACK1, ACT_RANGE_ATTACK_SLAM, true },
 };
 
 IMPLEMENT_ACTTABLE(CWeaponFrag);
@@ -522,7 +523,7 @@ void CWeaponFrag::RollGrenade( CBasePlayer *pPlayer )
 		CrossProduct( vecFacing, tr.plane.normal, tangent );
 		CrossProduct( tr.plane.normal, tangent, vecFacing );
 	}
-	vecSrc += (vecFacing * 18.0);
+	vecSrc += vecFacing;
 	CheckThrowPosition( pPlayer, pPlayer->WorldSpaceCenter(), vecSrc );
 
 	Vector vecThrow;

@@ -1,0 +1,22 @@
+//-----------------------------------------------------------------------------
+//	SERVER_HL2RP.VPC
+//
+//	Project Script. Represents the HL2RP port to HL2DM server-only
+//-----------------------------------------------------------------------------
+
+$Macro GAMENAME	"hl2dm_rp"
+
+$Include "server_hl2rp_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$PreprocessorDefinitions "$BASE;HL2DM_RP"
+	}
+}
+
+$Project "Server (HL2DM_RP)"
+{
+
+}

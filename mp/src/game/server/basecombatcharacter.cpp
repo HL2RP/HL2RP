@@ -1680,6 +1680,10 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 #ifdef GLOWS_ENABLE
 	RemoveGlowEffect();
 #endif // GLOWS_ENABLE
+
+#ifdef ROLEPLAY
+	GameRules()->DeathNotice(this, info);
+#endif
 }
 
 void CBaseCombatCharacter::Event_Dying( const CTakeDamageInfo &info )
@@ -2336,6 +2340,7 @@ void CBaseCombatCharacter::Weapon_HandleAnimEvent( animevent_t *pEvent )
 void CBaseCombatCharacter::RemoveAllWeapons()
 {
 	ClearActiveWeapon();
+
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
 		if ( m_hMyWeapons[i] )
@@ -3590,3 +3595,50 @@ float CBaseCombatCharacter::GetTimeSinceLastInjury( int team /*= TEAM_ANY */ ) c
 	return never;
 }
 
+
+// Purpose: Return first existing sequence from a compliant translated activity of a list of base activities
+// Input: activityList - The list of base activities to evaluate
+// baseActivity, weaponTranslation, pbRequired - Optional value-results to be assigned the data of each list's iteration
+int CBaseCombatCharacter::FindWeightedSequenceFromList
+(const CUtlVector<Activity> &activityList, Activity *baseActivity, Activity *weaponTranslation, bool *pbRequired)
+{
+	for (int i = 0, iAuxSequence; i < activityList.Count(); i++)
+	{
+		// Weapon acttables should override bRequired to control whether only translated activity is allowed.
+		// This normally depends on aiming requirements for a base activity
+		Activity auxWeaponTranslation = Weapon_TranslateActivity(activityList[i], pbRequired);
+		iAuxSequence = SelectWeightedSequence(auxWeaponTranslation);
+
+		// Set remaining value-results with current iteration info
+		if (baseActivity != NULL)
+		{
+			*baseActivity = activityList[i];
+		}
+
+		if (weaponTranslation != NULL)
+		{
+			*weaponTranslation = auxWeaponTranslation;
+		}
+
+		if (pbRequired != NULL && *pbRequired)
+		{
+			if (auxWeaponTranslation == activityList[i])
+			{
+				// Disallow base activity (it might not aim)
+				continue;
+			}
+		}
+		else if (iAuxSequence == ACTIVITY_NOT_AVAILABLE && auxWeaponTranslation != activityList[i])
+		{
+			// Try with base activity, it doesn't have to aim here
+			iAuxSequence = SelectWeightedSequence(activityList[i]);
+		}
+
+		if (iAuxSequence != ACTIVITY_NOT_AVAILABLE)
+		{
+			return iAuxSequence;
+		}
+	}
+
+	return ACTIVITY_NOT_AVAILABLE;
+}

@@ -1032,6 +1032,7 @@ public:
 
 	// Called by physics to see if we should avoid a collision test....
 	virtual bool		ShouldCollide( int collisionGroup, int contentsMask ) const;
+	virtual	bool		ShouldCollide(int collisionGroup, int contentsMask, const CBaseEntity *pCollideEnt) const;
 
 	// Sets physics parameters
 	void				SetFriction( float flFriction );

@@ -29,6 +29,10 @@
 
 #ifdef HL2MP
 	#include "hl2mp_gamerules.h"
+
+#ifdef ROLEPLAY
+#include "CHL2RP.h"
+#endif
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -149,6 +153,12 @@ void CBaseCombatWeapon::Operator_FrameUpdate( CBaseCombatCharacter *pOperator )
 		vm->StudioFrameAdvance();
 		vm->DispatchAnimEvents( this );
 	}
+
+#ifdef ROLEPLAY
+	// Check if clips changed externally to ensure calling their NetworkStateChangedEx (now that pOwner is valid)
+	CHL2RP::CheckEntityNetworkVarExChanged(*this, m_iClip1);
+	CHL2RP::CheckEntityNetworkVarExChanged(*this, m_iClip2);
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -661,6 +671,13 @@ void OnBaseCombatWeaponCreated( CBaseCombatWeapon *pWeapon )
 void OnBaseCombatWeaponDestroyed( CBaseCombatWeapon *pWeapon )
 {
 	g_WeaponList.RemoveWeapon( pWeapon );
+
+#ifdef ROLEPLAY
+	if (pWeapon->GetOwner() != NULL)
+	{
+		pWeapon->GetOwner()->Weapon_Detach(pWeapon);
+	}
+#endif
 }
 
 int CBaseCombatWeapon::GetAvailableWeaponsInBox( CBaseCombatWeapon **pList, int listMax, const Vector &mins, const Vector &maxs )
@@ -731,4 +748,3 @@ void CBaseCombatWeapon::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_
 		}
 	}
 }
-

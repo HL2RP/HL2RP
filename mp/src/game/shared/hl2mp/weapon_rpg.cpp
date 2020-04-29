@@ -32,6 +32,7 @@
 	#include "smoke_trail.h"
 	#include "collisionutils.h"
 	#include "hl2_shareddefs.h"
+	#include "ai_basenpc.h"
 #endif
 
 #include "debugoverlay_shared.h"
@@ -1306,16 +1307,26 @@ END_PREDICTION_DATA()
 #endif
 
 #ifndef CLIENT_DLL
-acttable_t	CWeaponRPG::m_acttable[] = 
+acttable_t	CWeaponRPG::m_acttable[] =
 {
-	{ ACT_HL2MP_IDLE,					ACT_HL2MP_IDLE_RPG,					false },
-	{ ACT_HL2MP_RUN,					ACT_HL2MP_RUN_RPG,					false },
-	{ ACT_HL2MP_IDLE_CROUCH,			ACT_HL2MP_IDLE_CROUCH_RPG,			false },
-	{ ACT_HL2MP_WALK_CROUCH,			ACT_HL2MP_WALK_CROUCH_RPG,			false },
-	{ ACT_HL2MP_GESTURE_RANGE_ATTACK,	ACT_HL2MP_GESTURE_RANGE_ATTACK_RPG,	false },
-	{ ACT_HL2MP_GESTURE_RELOAD,			ACT_HL2MP_GESTURE_RELOAD_RPG,		false },
-	{ ACT_HL2MP_JUMP,					ACT_HL2MP_JUMP_RPG,					false },
-	{ ACT_RANGE_ATTACK1,				ACT_RANGE_ATTACK_RPG,				false },
+	{ ACT_HL2MP_IDLE, ACT_HL2MP_IDLE_RPG, false },
+	{ ACT_HL2MP_RUN, ACT_HL2MP_RUN_RPG, false },
+	{ ACT_HL2MP_IDLE_CROUCH, ACT_HL2MP_IDLE_CROUCH_RPG, false },
+	{ ACT_HL2MP_WALK_CROUCH, ACT_HL2MP_WALK_CROUCH_RPG, false },
+	{ ACT_HL2MP_GESTURE_RANGE_ATTACK, ACT_HL2MP_GESTURE_RANGE_ATTACK_RPG, false },
+	{ ACT_HL2MP_GESTURE_RELOAD, ACT_HL2MP_GESTURE_RELOAD_RPG, false },
+	{ ACT_HL2MP_JUMP, ACT_HL2MP_JUMP_RPG, false },
+	{ ACT_RANGE_ATTACK1, ACT_RANGE_ATTACK_RPG, false },
+	{ ACT_IDLE_RELAXED, ACT_IDLE_RPG_RELAXED, true },
+	{ ACT_IDLE_STIMULATED, ACT_IDLE_ANGRY_RPG, true },
+	{ ACT_IDLE_AGITATED, ACT_IDLE_ANGRY_RPG, true },
+	{ ACT_IDLE, ACT_IDLE_RPG, true },
+	{ ACT_IDLE_ANGRY, ACT_IDLE_ANGRY_RPG, true },
+	{ ACT_WALK, ACT_WALK_RPG, true },
+	{ ACT_WALK_CROUCH, ACT_WALK_CROUCH_RPG, true },
+	{ ACT_RUN, ACT_RUN_RPG, true },
+	{ ACT_RUN_CROUCH, ACT_RUN_CROUCH_RPG, true },
+	{ ACT_COVER_LOW, ACT_COVER_LOW_RPG, true },
 };
 
 IMPLEMENT_ACTTABLE(CWeaponRPG);
@@ -1371,7 +1382,6 @@ void CWeaponRPG::Precache( void )
 #endif
 
 }
-
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -2070,9 +2080,76 @@ void CWeaponRPG::NotifyShouldTransmit( ShouldTransmitState_t state )
 		}
 	}
 }
+#else
+void CWeaponRPG::Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCharacter *pOperator)
+{
+	switch (pEvent->event)
+	{
+	case EVENT_WEAPON_SMG1:
+	{
+		if (m_hMissile != NULL)
+			return;
+
+		Vector	muzzlePoint;
+		QAngle	vecAngles;
+
+		muzzlePoint = GetOwner()->Weapon_ShootPosition();
+
+		CAI_BaseNPC *npc = pOperator->MyNPCPointer();
+		ASSERT(npc != NULL);
+
+		Vector vecShootDir = npc->GetActualShootTrajectory(muzzlePoint);
+
+		// look for a better launch location
+		Vector altLaunchPoint;
+		if (GetAttachment("missile", altLaunchPoint))
+		{
+			// check to see if it's relativly free
+			trace_t tr;
+			AI_TraceHull(altLaunchPoint, altLaunchPoint + vecShootDir * (10.0f*12.0f), Vector(-24, -24, -24), Vector(24, 24, 24), MASK_NPCSOLID, NULL, &tr);
+
+			if (tr.fraction == 1.0)
+			{
+				muzzlePoint = altLaunchPoint;
+			}
+		}
+
+		VectorAngles(vecShootDir, vecAngles);
+
+		m_hMissile = CMissile::Create(muzzlePoint, vecAngles, GetOwner()->edict());
+		m_hMissile->SetOwnerEntity(this);
+
+		pOperator->DoMuzzleFlash();
+
+		WeaponSound(SINGLE_NPC);
+
+		// Make sure our laserdot is off
+		m_bGuiding = false;
+
+		if (m_hLaserDot)
+		{
+			m_hLaserDot->TurnOff();
+		}
+	}
+	break;
+
+	default:
+		BaseClass::Operator_HandleAnimEvent(pEvent, pOperator);
+		break;
+	}
+}
+
+void CWeaponRPG::Operator_ForceNPCFire(CBaseCombatCharacter *pOperator, bool bSecondary)
+{
+	if (!HasAnimEvent(GetSequence(), EVENT_WEAPON_SMG1))
+	{
+		animevent_t animevent;
+		animevent.event = EVENT_WEAPON_SMG1;
+		Operator_HandleAnimEvent(&animevent, pOperator);
+	}
+}
 
 #endif	//CLIENT_DLL
-
 
 //=============================================================================
 // Laser Dot

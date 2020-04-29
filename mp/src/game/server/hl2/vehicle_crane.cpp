@@ -104,8 +104,13 @@ END_DATADESC()
 IMPLEMENT_SERVERCLASS_ST(CPropCrane, DT_PropCrane)
 	SendPropEHandle(SENDINFO(m_hPlayer)),
 	SendPropBool(SENDINFO(m_bMagnetOn)),
+#ifdef HL2DM_RP
+	SendPropInt(SENDINFO(m_bEnterAnimOn), 1, SPROP_UNSIGNED, &CBaseServerVehicle::SendProxy_DisableVehicleTransitionAnim),
+	SendPropInt(SENDINFO(m_bExitAnimOn), 1, SPROP_UNSIGNED, &CBaseServerVehicle::SendProxy_DisableVehicleTransitionAnim),
+#else
 	SendPropBool(SENDINFO(m_bEnterAnimOn)),
 	SendPropBool(SENDINFO(m_bExitAnimOn)),
+#endif
 	SendPropVector(SENDINFO(m_vecEyeExitEndpoint), -1, SPROP_COORD),
 END_SEND_TABLE();
 

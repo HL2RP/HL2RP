@@ -30,6 +30,7 @@
 #include "effect_color_tables.h"
 #include "vphysics/player_controller.h"
 #include "player_pickup.h"
+#include "weapon_physcannon.h"
 #include "script_intro.h"
 #include "effect_dispatch_data.h"
 #include "te_effect_dispatch.h" 
@@ -53,12 +54,6 @@
 #ifdef PORTAL
 #include "portal_player.h"
 #endif // PORTAL
-
-#ifdef HL2MP
-#include <hl2mp/weapon_physcannon.h>
-#else
-#include "weapon_physcannon.h"
-#endif // HL2MP
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -91,7 +86,11 @@ ConVar hl2_sprintspeed( "hl2_sprintspeed", "320" );
 ConVar hl2_darkness_flashlight_factor ( "hl2_darkness_flashlight_factor", "1" );
 
 #ifdef HL2MP
+#ifdef ROLEPLAY
+	#define HL2_WALK_SPEED 80
+#else
 	#define	HL2_WALK_SPEED 150
+#endif
 	#define	HL2_NORM_SPEED 190
 	#define	HL2_SPRINT_SPEED 320
 #else
@@ -489,7 +488,11 @@ void CHL2_Player::HandleSpeedChanges( void )
 
 	bool bCanSprint = CanSprint();
 	bool bIsSprinting = IsSprinting();
+#ifdef ROLEPLAY
+	bool bWantSprint = (bCanSprint && (m_nButtons & IN_SPEED));
+#else
 	bool bWantSprint = ( bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) );
+#endif
 	if ( bIsSprinting != bWantSprint && (buttonsChanged & IN_SPEED) )
 	{
 		// If someone wants to sprint, make sure they've pressed the button to do so. We want to prevent the
@@ -518,10 +521,31 @@ void CHL2_Player::HandleSpeedChanges( void )
 	}
 
 	bool bIsWalking = IsWalking();
+
+#ifdef ROLEPLAY
+	if (m_nButtons & IN_DUCK)
+	{
+		if (bIsWalking)
+		{
+			StopWalking();
+		}
+	}
+	else if ((m_afButtonPressed & IN_WALK))
+	{
+		if (bIsWalking)
+		{
+			StopWalking();
+		}
+		else if (!IsSprinting())
+		{
+			StartWalking();
+		}
+	}
+#else
 	// have suit, pressing button, not sprinting or ducking
 	bool bWantWalking;
-	
-	if( IsSuitEquipped() )
+
+	if (IsSuitEquipped())
 	{
 		bWantWalking = (m_nButtons & IN_WALK) && !IsSprinting() && !(m_nButtons & IN_DUCK);
 	}
@@ -541,6 +565,7 @@ void CHL2_Player::HandleSpeedChanges( void )
 			StopWalking();
 		}
 	}
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -1051,7 +1076,6 @@ bool CHL2_Player::HandleInteraction(int interactionType, void *data, CBaseCombat
 	return false;
 }
 
-
 void CHL2_Player::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 {
 	// Handle FL_FROZEN.
@@ -1069,38 +1093,16 @@ void CHL2_Player::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 		ucmd->buttons &= ~IN_USE;
 	}
 
-	//Update our movement information
-	if ( ( ucmd->forwardmove != 0 ) || ( ucmd->sidemove != 0 ) || ( ucmd->upmove != 0 ) )
+	// Update our movement information
+	if ((ucmd->forwardmove != 0) || (ucmd->sidemove != 0) || (ucmd->upmove != 0))
 	{
-		m_flIdleTime -= TICK_INTERVAL * 2.0f;
-		
-		if ( m_flIdleTime < 0.0f )
-		{
-			m_flIdleTime = 0.0f;
-		}
-
 		m_flMoveTime += TICK_INTERVAL;
-
-		if ( m_flMoveTime > 4.0f )
-		{
-			m_flMoveTime = 4.0f;
-		}
+		m_flIdleTime = 0.0f;
 	}
 	else
 	{
 		m_flIdleTime += TICK_INTERVAL;
-		
-		if ( m_flIdleTime > 4.0f )
-		{
-			m_flIdleTime = 4.0f;
-		}
-
-		m_flMoveTime -= TICK_INTERVAL * 2.0f;
-		
-		if ( m_flMoveTime < 0.0f )
-		{
-			m_flMoveTime = 0.0f;
-		}
+		m_flMoveTime = 0.0f;
 	}
 
 	//Msg("Player time: [ACTIVE: %f]\t[IDLE: %f]\n", m_flMoveTime, m_flIdleTime );
@@ -1128,8 +1130,12 @@ void CHL2_Player::Spawn(void)
 	//
 	//m_flMaxspeed = 320;
 
+#ifdef ROLEPLAY
+	m_fIsWalking = false;
+#else
 	if ( !IsSuitEquipped() )
 		 StartWalking();
+#endif
 
 	SuitPower_SetCharge( 100 );
 
@@ -1234,6 +1240,9 @@ void CHL2_Player::StopSprinting( void )
 		SuitPower_RemoveDevice( SuitDeviceSprint );
 	}
 
+#ifdef ROLEPLAY
+	SetMaxSpeed(HL2_NORM_SPEED);
+#else
 	if( IsSuitEquipped() )
 	{
 		SetMaxSpeed( HL2_NORM_SPEED );
@@ -1242,6 +1251,7 @@ void CHL2_Player::StopSprinting( void )
 	{
 		SetMaxSpeed( HL2_WALK_SPEED );
 	}
+#endif
 
 	m_fIsSprinting = false;
 
@@ -1717,19 +1727,19 @@ void CHL2_Player::CheatImpulseCommands( int iImpulse )
 
 	case 51:
 	{
-		if ( sv_cheats->GetBool() )
+		if (sv_cheats->GetBool())
 		{
 			// Cheat to create a dynamic resupply item
 			Vector vecForward;
-			AngleVectors( EyeAngles(), &vecForward );
-			CBaseEntity *pItem = (CBaseEntity *)CreateEntityByName( "item_dynamic_resupply" );
-			if ( pItem )
+			AngleVectors(EyeAngles(), &vecForward);
+			CBaseEntity *pItem = (CBaseEntity *)CreateEntityByName("item_dynamic_resupply");
+			if (pItem)
 			{
-				Vector vecOrigin = GetAbsOrigin() + vecForward * 256 + Vector(0,0,64);
-				QAngle vecAngles( 0, GetAbsAngles().y - 90, 0 );
-				pItem->SetAbsOrigin( vecOrigin );
-				pItem->SetAbsAngles( vecAngles );
-				pItem->KeyValue( "targetname", "resupply" );
+				Vector vecOrigin = GetAbsOrigin() + vecForward * 256 + Vector(0, 0, 64);
+				QAngle vecAngles(0, GetAbsAngles().y - 90, 0);
+				pItem->SetAbsOrigin(vecOrigin);
+				pItem->SetAbsAngles(vecAngles);
+				pItem->KeyValue("targetname", "resupply");
 				pItem->Spawn();
 				pItem->Activate();
 			}
@@ -3186,12 +3196,11 @@ void CHL2_Player::ForceDropOfCarriedPhysObjects( CBaseEntity *pOnlyIfHoldingThis
 	}
 #endif
 
-	// Force the physcannon to drop anything it's holding, if it's our active weapon
-	if (PhysCannonForceDrop( GetActiveWeapon(), pOnlyIfHoldingThis ))
-	{
-		// Drop any objects being handheld
-		ClearUseEntity();
-	}
+	// Drop any objects being handheld.
+	ClearUseEntity();
+
+	// Then force the physcannon to drop anything it's holding, if it's our active weapon
+	PhysCannonForceDrop( GetActiveWeapon(), NULL );
 }
 
 void CHL2_Player::InputForceDropPhysObjects( inputdata_t &data )
