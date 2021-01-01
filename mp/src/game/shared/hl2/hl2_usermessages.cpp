@@ -12,6 +12,10 @@
 // NVNT include to register in haptic user messages
 #include "haptics/haptic_msgs.h"
 
+#ifdef HL2RP_FULL
+#include <hl2rp_shareddefs.h>
+#endif // HL2RP_FULL
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -50,4 +54,8 @@ void RegisterUserMessages( void )
 	// NVNT register haptic user messages
 	RegisterHapticMessages();
 #endif
+
+#ifdef HL2RP_FULL
+	usermessages->Register(HL2RP_KEY_HINT_USER_MESSAGE, -1);
+#endif // HL2RP_FULL
 }

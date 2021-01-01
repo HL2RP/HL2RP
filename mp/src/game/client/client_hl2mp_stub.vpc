@@ -1,0 +1,9 @@
+$Macro GAMENAME "hl2mp" [!$SOURCESDK]
+$Macro GAMENAME "mod_hl2mp" [$SOURCESDK]
+
+$Include "client_hl2mp.vpc"
+
+$Project "Client (HL2MP)"
+{
+
+}

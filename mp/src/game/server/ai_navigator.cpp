@@ -32,6 +32,10 @@
 #include "props.h"
 #include "physics_npc_solver.h"
 
+#ifdef HL2RP
+#include "doors.h"
+#endif // HL2RP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -2160,13 +2164,23 @@ bool CAI_Navigator::OnMoveBlocked( AIMoveResult_t *pResult )
 		 GetPath()->GetCurWaypoint() &&
 		 ( GetPath()->GetCurWaypoint()->Flags() & bits_WP_TO_DOOR ) )
 	{
-		CBasePropDoor *pDoor = (CBasePropDoor *)(CBaseEntity *)GetPath()->GetCurWaypoint()->GetEHandleData();
-		if (pDoor != NULL)
+		CBaseEntity* pDoor = GetPath()->GetCurWaypoint()->GetEHandleData();
+		CBasePropDoor* pPropDoor = dynamic_cast<CBasePropDoor*>(pDoor);
+
+		if (pPropDoor != NULL)
 		{
-			GetOuter()->OpenPropDoorBegin( pDoor );
+			GetOuter()->OpenPropDoorBegin(pPropDoor);
 			*pResult = AIMR_OK;
 			return true;
 		}
+#ifdef HL2RP
+		else if (pDoor != NULL)
+		{
+			GetOuter()->OpenDoorNow(pDoor);
+			*pResult = AIMR_OK;
+			return true;
+		}
+#endif // HL2RP
 	}
 
 
@@ -2691,11 +2705,19 @@ void CAI_Navigator::AdvancePath()
 
 	if ( pCurWaypoint->Flags() & bits_WP_TO_DOOR )
 	{
-		CBasePropDoor *pDoor = (CBasePropDoor *)(CBaseEntity *)pCurWaypoint->GetEHandleData();
-		if (pDoor != NULL)
+		CBaseEntity* pDoor = pCurWaypoint->GetEHandleData();
+		CBasePropDoor* pPropDoor = dynamic_cast<CBasePropDoor*>(pDoor);
+
+		if (pPropDoor != NULL)
 		{
-			GetOuter()->OpenPropDoorBegin(pDoor);
+			GetOuter()->OpenPropDoorBegin(pPropDoor);
 		}
+#ifdef HL2RP
+		else if (pDoor != NULL)
+		{
+			GetOuter()->OpenDoorNow(pDoor);
+		}
+#endif // HL2RP
 		else
 		{
 			DevMsg("%s trying to open a door that has been deleted!\n", GetOuter()->GetDebugName());

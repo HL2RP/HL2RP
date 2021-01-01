@@ -1,0 +1,12 @@
+"Lang"
+{
+	"Language" "English"
+
+	"Tokens"
+	{
+		"HL2RP_Menu_HiddenWeapons"	"Hidden weapons"
+		"HL2RP_RationDeployedHint"	"<ATTACK> (HOLD) = PREPARE THROW\n<ATTACK2> = HEAL"
+		"HL2RP_RationThrowingHint"	"<ATTACK> (RELEASE) = THROW\n{+reload} = ADD UNIT (FROM AMMO)\n<ATTACK2> = CANCEL THROW"
+		"HL2RP_StickyWalkHint"		"<WALK> (x2) = STICKY WALKING"
+	}
+}

@@ -1365,7 +1365,15 @@ public:
 	//	
 	void OnDoorFullyOpen(CBasePropDoor *pDoor);
 	void OnDoorBlocked(CBasePropDoor *pDoor);
+
+#ifdef HL2RP
+	bool OnUpcomingDoor(AILocalMoveGoal_t*, CBaseDoor*, float distClear, AIMoveResult_t*);
+	void OpenDoorNow(CBaseEntity*);
+
+	EHANDLE m_hOpeningDoor;	// The door that we are in the midst of opening for navigation
+#else
 	CHandle<CBasePropDoor> m_hOpeningDoor;	// The CBasePropDoor that we are in the midst of opening for navigation.
+#endif // HL2RP
 
 protected:
 	// BRJ 4/11

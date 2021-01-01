@@ -74,7 +74,7 @@ public:
 	virtual bool ShouldAutoAim( CBasePlayer *pPlayer, edict_t *target );
 	virtual int IPointsForKill( CBasePlayer *pAttacker, CBasePlayer *pKilled );
 	virtual void InitHUD( CBasePlayer *pl );
-	virtual void DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &info );
+	virtual void DeathNotice( CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info );
 	virtual const char *GetGameDescription( void ) { return "Teamplay"; }  // this is the game name that gets seen in the server browser
 	virtual void PlayerKilled( CBasePlayer *pVictim, const CTakeDamageInfo &info );
 	virtual void Think ( void );

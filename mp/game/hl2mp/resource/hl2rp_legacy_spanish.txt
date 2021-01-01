@@ -1,0 +1,12 @@
+"Lang"
+{
+	"Language" "Spanish"
+
+	"Tokens"
+	{
+		"HL2RP_Menu_HiddenWeapons"	"Armas ocultas"
+		"HL2RP_RationDeployedHint"	"<ATACAR> (MANTÉN) = PREPARAR LANZAMIENTO\n<ATACAR2> = CURARSE"
+		"HL2RP_RationThrowingHint"	"<ATACAR> (SUELTA) = LANZAR\n{+reload} = AÑADIR UNIDAD (DESDE MUNICIÓN)\n<ATACAR2> = CANCELAR LANZAMIENTO"
+		"HL2RP_StickyWalkHint"		"<CAMINAR> (x2) = CAMINAR ASISTIDO"
+	}
+}

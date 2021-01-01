@@ -485,6 +485,15 @@ int CCollisionEvent::ShouldCollide_2( IPhysicsObject *pObj0, IPhysicsObject *pOb
 
 		return 1;
 	}
+#ifdef HL2RP
+	// Prevent characters getting stuck, when applicable (custom ShouldCollide logic)
+	else if ((pEntity0->IsCombatCharacter() && !pEntity0->ShouldCollide(pEntity1->GetCollisionGroup(),
+		pEntity1->PhysicsSolidMaskForEntity(), pEntity1)) || (pEntity1->IsCombatCharacter()
+			&& !pEntity1->ShouldCollide(pEntity0->GetCollisionGroup(), pEntity0->PhysicsSolidMaskForEntity(), pEntity0)))
+	{
+		return 0;
+	}
+#endif // HL2RP
 
 	// objects that are both constrained to the world don't collide with each other
 	if ( (gameFlags0 & gameFlags1) & FVPHYSICS_CONSTRAINT_STATIC )

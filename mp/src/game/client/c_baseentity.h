@@ -41,6 +41,7 @@ class IPhysicsObject;
 class IClientVehicle;
 class CPredictionCopy;
 class C_BasePlayer;
+class C_HL2Roleplayer;
 struct studiohdr_t;
 class CStudioHdr;
 class CDamageModifier;
@@ -583,6 +584,8 @@ public:
 	virtual bool					IsValidIDTarget( void ) { return false; }
 	virtual const char				*GetIDString( void ) { return ""; };
 
+	virtual void GetHUDInfo(C_HL2Roleplayer*, wchar_t* pDest, int maxLen) {}
+
 	// See CSoundEmitterSystem
 	virtual void ModifyEmitSoundParams( EmitSound_t &params );
 
@@ -1031,7 +1034,7 @@ public:
 	Vector	EarPosition( void ) const;			// position of ears
 
 	// Called by physics to see if we should avoid a collision test....
-	virtual bool		ShouldCollide( int collisionGroup, int contentsMask ) const;
+	virtual bool		ShouldCollide( int collisionGroup, int contentsMask, CBaseEntity* pOther = NULL ) const;
 
 	// Sets physics parameters
 	void				SetFriction( float flFriction );
