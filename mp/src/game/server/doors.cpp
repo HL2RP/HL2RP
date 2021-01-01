@@ -25,6 +25,10 @@
 #include "tf_gamerules.h"
 #endif // TF_DLL
 
+#ifdef HL2RP
+#include "ai_basenpc.h"
+#endif // HL2RP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1054,6 +1058,16 @@ void CBaseDoor::DoorHitTop( void )
 	{
 		m_OnFullyOpen.FireOutput(this, this);
 	}
+
+#ifdef HL2RP
+	CAI_BaseNPC* pNPC = dynamic_cast<CAI_BaseNPC*>(m_hActivator.Get());
+	m_hActivator = NULL;
+
+	if (pNPC != NULL)
+	{
+		pNPC->m_hOpeningDoor = NULL;
+	}
+#endif // HL2RP
 }
 
 
@@ -1128,6 +1142,10 @@ void CBaseDoor::DoorHitBottom( void )
 
 	// Close the area portals just after the door closes, to prevent visual artifacts in multiplayer games
 	SetContextThink( &CBaseDoor::CloseAreaPortalsThink, gpGlobals->curtime + 0.5f, CLOSE_AREAPORTAL_THINK_CONTEXT );
+
+#ifdef HL2RP
+	m_hActivator = NULL;
+#endif // HL2RP
 }
 
 

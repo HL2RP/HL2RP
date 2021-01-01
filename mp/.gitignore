@@ -1,0 +1,16 @@
+# Additional library builds
+mysql_driver.dll
+mysql_driver.lib
+mysql_driver.pdb
+mysql_driver.so
+mysql_driver.so.dbg
+mysql_driver_srv.so
+mysql_driver_srv.so.dbg
+sqlite3.lib
+sqlite3_driver.dll
+sqlite3_driver.lib
+sqlite3_driver.pdb
+sqlite3_driver.so
+sqlite3_driver.so.dbg
+sqlite3_driver_srv.so
+sqlite3_driver_srv.so.dbg

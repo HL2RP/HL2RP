@@ -1,0 +1,47 @@
+$Macro SRCDIR			"..\..\..\..\.."
+$Macro OUTBINDIR		"$SRCDIR\..\game\bin"
+$Macro SQLITE3_SRCDIR	"$SRCDIR\thirdparty\sqlite3"
+
+$Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories "$BASE,$SQLITE3_SRCDIR,.."
+	}
+}
+
+$Project "SQLite3 Driver"
+{
+	$Folder "Header Files"
+	{
+		$File "..\idatabase_driver.h"
+	}
+
+	$Folder "Source Files"
+	{
+		$File "$SQLITE3_SRCDIR\sqlite3.c"
+		{
+			$Configuration
+			{
+				$Compiler [$WIN32]
+				{
+					$CompileAs "Compile as C Code (/TC)"
+					$PreprocessorDefinitions "$BASE;SQLITE_OMIT_LOAD_EXTENSION;SQLITE_DEFAULT_FOREIGN_KEYS=1"
+				}
+
+				// On Linux/Mac, compile SQLite3 manually since current VPC can't correctly configure C files
+				// at solution level. Newer VPC versions fix these when using $CompileAs option with "(/TC)".
+				$CustomBuildStep [$POSIX]
+				{
+					$Description	"Compiling SQLite3 Amalgamation..."
+					$CommandLine	"$(CC) -x c -Os -w -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -o $(OBJ_DIR)\$(InputName).o -c $(InputPath)"
+					$Outputs		"$(OBJ_DIR)\$(InputName).o"
+				}
+			}
+		}
+
+		$File "sqlite3_driver.cpp"
+	}
+}

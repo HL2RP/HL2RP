@@ -1,0 +1,19 @@
+event KeyHintMessageShow
+{
+	StopPanelAnimations HUDHintKeyDisplay 0.0
+	Animate HUDHintKeyDisplay Alpha 255 Linear 0.0 0.5 // Show the hints
+
+	// Flash text
+	Animate HUDHintKeyDisplay FgColor "FgColor"		Linear 0.0 0.01
+	Animate HUDHintKeyDisplay FgColor "BrightFg"	Linear 0.5 0.2
+	Animate HUDHintKeyDisplay FgColor "FgColor"		Linear 0.7 0.2
+	Animate HUDHintKeyDisplay FgColor "BrightFg"	Linear 1.5 0.2
+	Animate HUDHintKeyDisplay FgColor "FgColor"		Linear 1.7 0.2
+
+	Animate HUDHintKeyDisplay Alpha 0 Linear 12.0 1.0 // Hide the panel after a while
+}
+
+event KeyHintMessageHide
+{
+	Animate HUDHintKeyDisplay Alpha 0 Linear 0.0 0.5
+}

@@ -301,7 +301,7 @@ void CTeamplayRules::ClientSettingsChanged( CBasePlayer *pPlayer )
 //=========================================================
 // Deathnotice. 
 //=========================================================
-void CTeamplayRules::DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &info )
+void CTeamplayRules::DeathNotice( CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info )
 {
 	if ( m_DisableDeathMessages )
 		return;
@@ -319,7 +319,7 @@ void CTeamplayRules::DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &i
 				if ( event )
 				{
 					event->SetInt("killer", pk->GetUserID() );
-					event->SetInt("victim", pVictim->GetUserID() );
+					event->SetInt("victim", ToBasePlayer(pVictim)->GetUserID() );
 					event->SetInt("priority", 7 );	// HLTV event priority, not transmitted
 					
 					gameeventmanager->FireEvent( event );

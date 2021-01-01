@@ -1,0 +1,11 @@
+*.csv text
+*.html text
+*.mdl binary
+*.phy binary
+*.ps1 text
+*.qc text
+*.smd text
+*.vtx binary
+*.vvd binary
+
+*/resource/*hl2rp_*.txt -binary working-tree-encoding=UTF-16

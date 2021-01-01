@@ -616,7 +616,7 @@ bool CBaseEntity::GetKeyValue( const char *szKeyName, char *szValue, int iMaxLen
 // Input  : collisionGroup - 
 // Output : Returns true on success, false on failure.
 //-----------------------------------------------------------------------------
-bool CBaseEntity::ShouldCollide( int collisionGroup, int contentsMask ) const
+bool CBaseEntity::ShouldCollide( int collisionGroup, int contentsMask, CBaseEntity* ) const
 {
 	if ( m_CollisionGroup == COLLISION_GROUP_DEBRIS )
 	{

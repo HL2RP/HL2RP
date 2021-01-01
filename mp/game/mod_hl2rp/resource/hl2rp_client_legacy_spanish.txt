@@ -1,0 +1,35 @@
+// Shared localization between client and legacy server, exclusively
+
+"Lang"
+{
+	"Language" "Spanish"
+
+	"Tokens"
+	{
+		"HL2RP_Chat_Region"					"{indianred}(Región) {team}%1 {default}: %2"
+		"HL2RP_Citizen_Equipment_Restored"	"Tu último equipamiento usado como Ciudadano ha sido recuperado"
+		"HL2RP_Dispenser_Available"			"Este Dispensador está disponible para Ciudadanos"
+		"HL2RP_Dispenser_BadSurface"		"Solo puedes colocar Dispensadores en superficies verticales"
+		"HL2RP_Dispenser_Lock"				"Pulsa {+reload} dos veces para bloquearlo"
+		"HL2RP_Dispenser_Locked"			"Este Dispensador está bloqueado"
+		"HL2RP_Dispenser_LockedEx"			"Solo un miembro autorizado puede desbloquearlo"
+		"HL2RP_Dispenser_LockWait"			"Espera %1m %2ss antes de bloquearlo"
+		"HL2RP_Dispenser_Restoring"			"Este Dispensador estará disponible en:\n%1t"
+		"HL2RP_Dispenser_Unlock"			"Pulsa {+reload} dos veces para desbloquearlo"
+		"HL2RP_Dispenser_Unlocked"			"¡Un Dispensador ha sido desbloqueado!\nSigue la línea para encontrarlo"
+		"HL2RP_Dispenser_UseHint"			"Pulsa {+use} para interactuar con él"
+		"HL2RP_HUD_AimingPlayer"			"[Info. del Jugador]\nTrabajo: %1"
+		"HL2RP_HUD_Main"					"Tiempo jugado: %1t\nTrabajo: %5\nCrimen: %6"
+		"HL2RP_HUD_Region"					"Jugadores en Región"
+		"HL2RP_HUDHints_Clear_Warning"		"Esto borrará el registro de tus pistas en HUD aprendidas, para habilitar su visualización de nuevo. ¿Continuar?"
+		"HL2RP_HUDHints_Clear"				"Borrar pistas en HUD..."
+		"HL2RP_Key_Reload"					"<RECARGAR>"
+		"HL2RP_Key_Use"						"<USAR>"
+		"HL2RP_New_Player"					"%1 es un nuevo Ciudadano"
+		"HL2RP_Player_Reloaded"				"Tus datos se han recargado con éxito"
+		"HL2RP_Ration_Heal_Deny"			"[Nota] ¡Ciudadano enfermo! Haz un uso razonable de la Ración Ciudadana, ya estás sano (Firmado: La Alianza)"
+		"HL2RP_Ration_Heal_Success"			"Has recuperado +%1 punto/s de salud usando una Unidad de Ración Ciudadana proporcionada por La Alianza"
+		"HL2RP_Ration_Menu"					"Ración"
+		"HL2RP_Spectator_Deny"				"Solo los Administradores pueden unirse a Espectador"
+	}
+}

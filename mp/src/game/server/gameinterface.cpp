@@ -90,6 +90,9 @@
 #include "serverbenchmark_base.h"
 #include "querycache.h"
 
+#ifdef HL2RP
+#include <language.h>
+#endif // HL2RP
 
 #ifdef TF_DLL
 #include "gc_clientsystem.h"
@@ -2088,6 +2091,26 @@ void CServerGameDLL::LoadSpecificMOTDMsg( const ConVar &convar, const char *pszS
 	}
 
 	g_pStringTableInfoPanel->AddString( CBaseEntity::IsServer(), pszStringName, buf.TellPut(), buf.Base() );
+
+#ifdef HL2RP
+	// Try loading language-specific MOTD file variants as well
+	Q_StripExtension(szResolvedFilename, szPreferredFilename, sizeof(szPreferredFilename));
+	int len = Q_strlen(szPreferredFilename);
+
+	FOR_EACH_LANGUAGE(language)
+	{
+		buf.Clear();
+		const char* pLangShortName = GetLanguageShortName((ELanguage)language);
+		Q_snprintf(szPreferredFilename + len, sizeof(szPreferredFilename) - len,
+			"_%s%s", pLangShortName, szResolvedFilename + len);
+
+		if (filesystem->ReadFile(szPreferredFilename, "GAME", buf))
+		{
+			g_pStringTableInfoPanel->AddString(CBaseEntity::IsServer(),
+				UTIL_VarArgs("%s_%s", pszStringName, pLangShortName), buf.TellPut(), buf.Base());
+		}
+	}
+#endif // HL2RP
 #endif
 }
 
@@ -3221,12 +3244,14 @@ void CServerGameClients::GetBugReportInfo( char *buf, int buflen )
 	}
 }
 
+#ifndef HL2RP
 //-----------------------------------------------------------------------------
 // Purpose: A user has had their network id setup and validated 
 //-----------------------------------------------------------------------------
 void CServerGameClients::NetworkIDValidated( const char *pszUserName, const char *pszNetworkID )
 {
 }
+#endif // !HL2RP
 
 // The client has submitted a keyvalues command
 void CServerGameClients::ClientCommandKeyValues( edict_t *pEntity, KeyValues *pKeyValues )

@@ -57,6 +57,7 @@ class GDclass
 		GDinputvariable *VarForName(const char *pszName, int *piIndex = NULL);
 		BOOL AddVariable(GDinputvariable *pVar, GDclass *pBase, int iBaseIndex, int iVarIndex);
 		void AddBase(GDclass *pBase);
+		bool HasBase(const char* pName);
 
 		//
 		// Interface to input information:

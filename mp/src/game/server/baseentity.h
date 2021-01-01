@@ -70,6 +70,7 @@ class Vector;
 struct gamevcollisionevent_t;
 class CBaseAnimating;
 class CBasePlayer;
+class CHL2Roleplayer;
 class IServerVehicle;
 struct solid_t;
 struct notify_system_event_params_t;
@@ -449,7 +450,7 @@ public:
 	bool					IsFloating();
 
 	// Called by physics to see if we should avoid a collision test....
-	virtual	bool			ShouldCollide( int collisionGroup, int contentsMask ) const;
+	virtual	bool			ShouldCollide( int collisionGroup, int contentsMask, CBaseEntity* pOther = NULL ) const;
 
 	// Move type / move collide
 	MoveType_t				GetMoveType() const;
@@ -1146,7 +1147,16 @@ public:
 	// variables promoted from edict_t
 	string_t	m_target;
 	CNetworkVarForDerived( int, m_iMaxHealth ); // CBaseEntity doesn't care about changes to this variable, but there are derived classes that do.
+
+#ifdef HL2RP
+	virtual void GetHUDInfo(CHL2Roleplayer*, char* pDest, int maxLen) {}
+
+	CBasePlayer* UTIL_GetLocalPlayer();
+
+	CNetworkVarForDerived(int, m_iHealth, virtual);
+#else
 	CNetworkVarForDerived( int, m_iHealth );
+#endif // HL2RP
 
 	CNetworkVarForDerived( char, m_lifeState );
 	CNetworkVarForDerived( char , m_takedamage );

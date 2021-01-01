@@ -519,7 +519,9 @@ typedef enum
 	USE_OFF = 0, 
 	USE_ON = 1, 
 	USE_SET = 2, 
-	USE_TOGGLE = 3
+	USE_TOGGLE = 3,
+	USE_SPECIAL1,
+	USE_SPECIAL2
 } USE_TYPE;
 
 // basic team colors

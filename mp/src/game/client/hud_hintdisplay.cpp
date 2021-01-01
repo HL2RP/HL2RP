@@ -18,6 +18,12 @@
 #include "IGameUIFuncs.h"
 #include "inputsystem/iinputsystem.h"
 
+#ifdef HL2RP
+#include <hl2rp_configuration.h>
+#include <hl2rp_shareddefs.h>
+#include <bitflags.h>
+#endif // HL2RP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -349,11 +355,14 @@ class CHudHintKeyDisplay : public vgui::Panel, public CHudElement
 {
 	DECLARE_CLASS_SIMPLE( CHudHintKeyDisplay, vgui::Panel );
 
+	void StartTextDisplay(const char*);
+
 public:
 	CHudHintKeyDisplay( const char *pElementName );
 	void Init();
 	void Reset();
 	void MsgFunc_KeyHintText( bf_read &msg );
+	void MsgFunc_HL2RPKeyHintText(bf_read& msg);
 	bool ShouldDraw();
 
 	bool SetHintText( const char *text );
@@ -377,6 +386,10 @@ private:
 DECLARE_HUDELEMENT( CHudHintKeyDisplay );
 DECLARE_HUD_MESSAGE( CHudHintKeyDisplay, KeyHintText );
 
+#ifdef HL2RP
+DECLARE_HUD_MESSAGE(CHudHintKeyDisplay, HL2RPKeyHintText);
+#endif // HL2RP
+
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
@@ -394,6 +407,10 @@ CHudHintKeyDisplay::CHudHintKeyDisplay( const char *pElementName ) : BaseClass(N
 void CHudHintKeyDisplay::Init()
 {
 	HOOK_HUD_MESSAGE( CHudHintKeyDisplay, KeyHintText );
+
+#ifdef HL2RP
+	HOOK_HUD_MESSAGE(CHudHintKeyDisplay, HL2RPKeyHintText);
+#endif // HL2RP
 }
 
 //-----------------------------------------------------------------------------
@@ -776,6 +793,11 @@ void CHudHintKeyDisplay::MsgFunc_KeyHintText( bf_read &msg )
 	char szString[2048];
 	msg.ReadString( szString, sizeof(szString) );
 
+	StartTextDisplay(szString);
+}
+
+void CHudHintKeyDisplay::StartTextDisplay(const char* szString)
+{
 	// make it visible
 	if ( SetHintText( szString ) )
 	{
@@ -788,3 +810,20 @@ void CHudHintKeyDisplay::MsgFunc_KeyHintText( bf_read &msg )
 		g_pClientMode->GetViewportAnimationController()->StartAnimationSequence( "KeyHintMessageHide" ); 
 	}
 }
+
+#ifdef HL2RP
+void CHudHintKeyDisplay::MsgFunc_HL2RPKeyHintText(bf_read& msg)
+{
+	long type = msg.ReadLong();
+	char token[64];
+	msg.ReadString(token, sizeof(token));
+	CBitFlags<> learnedHUDHints(gHL2RPConfiguration.mUserData->GetInt(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME));
+
+	if (!learnedHUDHints.IsBitSet(type))
+	{
+		StartTextDisplay(token);
+		learnedHUDHints.SetBit(type);
+		gHL2RPConfiguration.mUserData->SetInt(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME, learnedHUDHints);
+	}
+}
+#endif // HL2RP
