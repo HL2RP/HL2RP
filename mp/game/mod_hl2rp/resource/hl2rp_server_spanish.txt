@@ -1,0 +1,25 @@
+// Server-only networked localization for both full and legacy version
+
+"Lang"
+{
+	"Language" "Spanish"
+
+	"Tokens"
+	{
+		// HUD
+		"HL2RP_GenericZone"      "Zona Genérica"
+		"HL2RP_AutoCrimeZone"    "Zona de Crimen"
+		"HL2RP_NoCrimeZone"      "Zone Anti Crimen"
+		"HL2RP_NoKillZone"       "Zona Anti Matanza"
+		"HL2RP_Jail"             "Cárcel"
+		"HL2RP_VIPJail"          "Cárcel V.I.P."
+		"HL2RP_ExecutionRoom"    "Sala de Ejecución"
+		"HL2RP_HomeZone_Owned"   "Hogar de %s1"
+		"HL2RP_HomeZone_Unowned" "Hogar deshabitado"
+		"HL2RP_CityZone_Notice"  "Estás en '%s1'"
+
+		// Chat
+		"HL2RP_Ration_Heal_Success" "%static%Has recuperado salud usando una Unidad de Ración Ciudadana proporcionada por La Alianza"
+		"HL2RP_Ration_Heal_Deny"    "%static%[Nota] ¡Ciudadano enfermo! Haz un uso razonable de la Ración Ciudadana, ya estás sano (Firmado: La Alianza)"
+	}
+}

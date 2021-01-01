@@ -20,6 +20,7 @@
 #include "ServerNetworkProperty.h"
 #include "shareddefs.h"
 #include "engine/ivmodelinfo.h"
+#include <listenablenetworkvar.h>
 
 class CDamageModifier;
 class CDmgAccumulator;
@@ -1146,7 +1147,7 @@ public:
 	// variables promoted from edict_t
 	string_t	m_target;
 	CNetworkVarForDerived( int, m_iMaxHealth ); // CBaseEntity doesn't care about changes to this variable, but there are derived classes that do.
-	CNetworkVarForDerived( int, m_iHealth );
+	CListenableNetworkVarForDerived( int, m_iHealth );
 
 	CNetworkVarForDerived( char, m_lifeState );
 	CNetworkVarForDerived( char , m_takedamage );
@@ -2469,7 +2470,9 @@ inline int CBaseEntity::GetModelIndex( void ) const
 	return m_nModelIndex;
 }
 
-
+#ifndef HL2RP
+inline void CBaseEntity::OnValueChanged_m_iHealth() {}
+#endif // !HL2RP
 
 //-----------------------------------------------------------------------------
 // Methods relating to bounds

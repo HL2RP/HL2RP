@@ -1,0 +1,61 @@
+$Include "server_hl2mp.vpc"
+$Include "..\shared\hl2rp_shared_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories "$BASE;hl2rp,hl2rp\dal,hl2rp\weapons"
+		$SymbolVisibility             "hidden" 
+	}
+}
+
+$Project
+{
+	$Folder "Source Files"
+	{
+		$Folder	"HL2 DLL"
+		{
+			$File "hl2\vehicle_jeep.cpp"
+			$File "hl2\vehicle_jeep.h"
+		}
+
+		$Folder "HL2RP"
+		{
+			$Folder "DAL"
+			{
+				$File "hl2rp\dal\dal.cpp"
+				$File "hl2rp\dal\dal.h"
+				$File "hl2rp\dal\idao.cpp"
+				$File "hl2rp\dal\idao.h"
+				$File "hl2rp\dal\idatabase_driver.cpp"
+				$File "hl2rp\dal\idatabase_driver.h"
+				$File "hl2rp\dal\isql_driver.h"
+				$File "hl2rp\dal\idto.cpp"
+				$File "hl2rp\dal\idto.h"
+				$File "hl2rp\dal\keyvalues_driver.h"
+				$File "hl2rp\dal\player_dao.cpp"
+				$File "hl2rp\dal\player_dao.h"
+				$File "hl2rp\dal\ration_dispenser_dao.cpp"
+				$File "hl2rp\dal\ration_dispenser_dao.h"
+			}
+
+			$Folder "Weapons"
+			{
+				$File "hl2rp\weapons\variable_ammo_item.cpp"
+				$File "hl2rp\weapons\ration.cpp"
+				$File "hl2rp\weapons\ration.h"
+			}
+
+			$File "hl2rp\trigger_city_zone.cpp"
+			$File "hl2rp\trigger_city_zone.h"
+			$File "hl2rp\hl2_roleplayer.cpp"
+			$File "hl2rp\hl2_roleplayer.h"
+			$File "hl2rp\hl2rp_gameinterface.cpp"
+			$File "hl2rp\hl2rp_gameinterface.h"
+			$File "hl2rp\hl2rp_gamerules.cpp"
+			$File "hl2rp\hl2rp_gamerules.h"
+			$File "hl2rp\prop_ration_dispenser.cpp"
+		}
+	}
+}

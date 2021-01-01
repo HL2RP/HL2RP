@@ -1,0 +1,17 @@
+// Shared localization between full version client and legacy server, exclusively
+
+"Lang"
+{
+	"Language" "Spanish"
+
+	"Tokens"
+	{
+		// Menus
+		"HL2RP_Ration_Menu" "Ración"
+
+		// HUD
+		"HL2RP_Dispenser_Available" "Pulsa la tecla <USAR> para interactuar con este Dispensador"
+		"HL2RP_Dispenser_Restoring" "Este Dispensador estará disponible en: %s1 horas, %s2 minutos, %s3 segundos"
+		"HL2RP_MainHUD"             "Tiempo jugado: %s1 horas, %s2 minutos, %s3 segundos\nCrimen: %s4"
+	}
+}

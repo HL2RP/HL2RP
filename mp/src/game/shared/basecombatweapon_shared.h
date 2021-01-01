@@ -18,6 +18,7 @@
 #include "baseviewmodel_shared.h"
 #include "weapon_proficiency.h"
 #include "utlmap.h"
+#include <listenablenetworkvar.h>
 
 #if defined( CLIENT_DLL )
 #define CBaseCombatWeapon C_BaseCombatWeapon
@@ -610,8 +611,11 @@ public:
 	string_t				m_iszName;				// Classname of this weapon.
 	CNetworkVar( int, m_iPrimaryAmmoType );		// "primary" ammo index into the ammo info array 
 	CNetworkVar( int, m_iSecondaryAmmoType );	// "secondary" ammo index into the ammo info array
-	CNetworkVar( int, m_iClip1 );				// number of shots left in the primary weapon clip, -1 it not used
-	CNetworkVar( int, m_iClip2 );				// number of shots left in the secondary weapon clip, -1 it not used
+	CListenableNetworkVar( int, m_iClip1 );		// number of shots left in the primary weapon clip, -1 it not used
+	CListenableNetworkVar( int, m_iClip2 );		// number of shots left in the secondary weapon clip, -1 it not used
+
+	void OnClipsChanged();
+
 	bool					m_bFiresUnderwater;		// true if this weapon can fire underwater
 	bool					m_bAltFiresUnderwater;		// true if this weapon can fire underwater
 	float					m_fMinRange1;			// What's the closest this weapon can be used?

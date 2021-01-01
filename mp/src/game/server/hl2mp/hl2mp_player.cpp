@@ -37,7 +37,9 @@ extern CBaseEntity				*g_pLastSpawn;
 
 void DropPrimedFragGrenade( CHL2MP_Player *pPlayer, CBaseCombatWeapon *pGrenade );
 
+#ifndef HL2RP
 LINK_ENTITY_TO_CLASS( player, CHL2MP_Player );
+#endif // !HL2RP
 
 LINK_ENTITY_TO_CLASS( info_player_combine, CPointEntity );
 LINK_ENTITY_TO_CLASS( info_player_rebel, CPointEntity );
@@ -198,6 +200,7 @@ void CHL2MP_Player::GiveDefaultItems( void )
 {
 	EquipSuit();
 
+#ifndef HL2RP
 	CBasePlayer::GiveAmmo( 255,	"Pistol");
 	CBasePlayer::GiveAmmo( 45,	"SMG1");
 	CBasePlayer::GiveAmmo( 1,	"grenade" );
@@ -217,6 +220,7 @@ void CHL2MP_Player::GiveDefaultItems( void )
 	GiveNamedItem( "weapon_smg1" );
 	GiveNamedItem( "weapon_frag" );
 	GiveNamedItem( "weapon_physcannon" );
+#endif // !HL2RP
 
 	const char *szDefaultWeaponName = engine->GetClientConVarValue( engine->IndexOfEdict( edict() ), "cl_defaultweapon" );
 
@@ -1408,11 +1412,15 @@ ReturnSpot:
 
 	g_pLastSpawn = pSpot;
 
-	m_flSlamProtectTime = gpGlobals->curtime + 0.5;
+	InitSLAMProtectTime();
 
 	return pSpot;
 } 
 
+void CHL2MP_Player::InitSLAMProtectTime()
+{
+	m_flSlamProtectTime = gpGlobals->curtime + 0.5f;
+}
 
 CON_COMMAND( timeleft, "prints the time remaining in the match" )
 {

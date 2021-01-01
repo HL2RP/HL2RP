@@ -554,6 +554,13 @@ void CBaseCombatWeapon::FallThink ( void )
 		}
 		Materialize(); 
 	}
+
+#ifdef HL2RP_LEGACY
+	// HACK: Change effects for instance, which should trigger an UpdateVisibility() call on client, to fix
+	// weapon's worldmodel possibly becoming invisible when it's spawned during level and stays unequipped.
+	// Hopefully this flag won't cause any other problem. This is the best workaround I could think of.
+	SetEffects(GetEffects() ^ EF_PARENT_ANIMATES);
+#endif // HL2RP_LEGACY
 }
 
 //====================================================================================
@@ -661,6 +668,20 @@ void OnBaseCombatWeaponCreated( CBaseCombatWeapon *pWeapon )
 void OnBaseCombatWeaponDestroyed( CBaseCombatWeapon *pWeapon )
 {
 	g_WeaponList.RemoveWeapon( pWeapon );
+
+#ifdef HL2RP
+	if (GameRules() != NULL)
+	{
+		// Switch to another weapon if available, and clear current from our weapons list
+		CBaseCombatCharacter* pOwner = pWeapon->GetOwner();
+
+		if (pOwner != NULL)
+		{
+			pOwner->SwitchToNextBestWeapon(pWeapon);
+			pOwner->Weapon_Detach(pWeapon);
+		}
+	}
+#endif // HL2RP
 }
 
 int CBaseCombatWeapon::GetAvailableWeaponsInBox( CBaseCombatWeapon **pList, int listMax, const Vector &mins, const Vector &maxs )

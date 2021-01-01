@@ -55,6 +55,10 @@
 #include "portal_player.h"
 #endif // PORTAL
 
+#ifdef HL2RP
+#include <hl2_roleplayer.h>
+#endif // HL2RP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -512,6 +516,9 @@ void CHL2_Player::HandleSpeedChanges( void )
 		}
 	}
 
+#ifdef HL2RP
+	ToHL2Roleplayer(this)->HandleWalkChanges();
+#else
 	bool bIsWalking = IsWalking();
 	// have suit, pressing button, not sprinting or ducking
 	bool bWantWalking;
@@ -536,6 +543,7 @@ void CHL2_Player::HandleSpeedChanges( void )
 			StopWalking();
 		}
 	}
+#endif // HL2RP
 }
 
 //-----------------------------------------------------------------------------

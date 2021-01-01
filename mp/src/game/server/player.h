@@ -18,6 +18,7 @@
 #include "hintsystem.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 #include "util_shared.h"
+#include <listenablenetworkvar.h>
 
 #if defined USES_ECON_ITEMS
 #include "game_item_schema.h"
@@ -1046,7 +1047,7 @@ private:
 
 	// from edict_t
 	// CBasePlayer doesn't send this but CCSPlayer does.
-	CNetworkVarForDerived( int, m_ArmorValue );
+	CListenableNetworkVarForDerived( int, m_ArmorValue );
 	float					m_AirFinished;
 	float					m_PainFinished;
 
@@ -1355,7 +1356,9 @@ inline bool CBasePlayer::IsFiringWeapon( void ) const
 	return m_weaponFiredTimer.HasStarted() && m_weaponFiredTimer.IsLessThen( 1.0f );
 }
 
-
+#ifndef HL2RP
+inline void CBasePlayer::OnValueChanged_m_ArmorValue() {}
+#endif // !HL2RP
 
 //-----------------------------------------------------------------------------
 // Converts an entity to a player

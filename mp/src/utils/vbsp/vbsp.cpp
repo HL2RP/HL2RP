@@ -34,6 +34,7 @@ qboolean	nodetail;
 qboolean	fulldetail;
 qboolean	onlyents;
 bool		onlyprops;
+bool		onlyExportables;
 qboolean	nomerge;
 qboolean	nomergewater = false;
 qboolean	nowater;
@@ -1150,6 +1151,10 @@ int RunVBSP( int argc, char **argv )
 			g_pFullFileSystem->AddSearchPath( g_szEmbedDir, "GAME", PATH_ADD_TO_TAIL );
 			g_pFullFileSystem->AddSearchPath( g_szEmbedDir, "MOD", PATH_ADD_TO_TAIL );
 		}
+		else if (Q_stricmp(argv[i], "-onlyexportables") == 0)
+		{
+			onlyExportables = true;
+		}
 		else if (argv[i][0] == '-')
 		{
 			Warning("VBSP: Unknown option \"%s\"\n\n", argv[i]);
@@ -1176,6 +1181,7 @@ int RunVBSP( int argc, char **argv )
 			"  -onlyents   : This option causes vbsp only import the entities from the .vmf\n"
 			"                file. -onlyents won't reimport brush models.\n"
 			"  -onlyprops  : Only update the static props and detail props.\n"
+			"  -onlyexportables : Only export the suitable entities outside the BSP.\n"
 			"  -glview     : Writes .gl files in the current directory that can be viewed\n"
 			"                with glview.exe. If you use -tmpout, it will write the files\n"
 			"                into the \\tmp folder.\n"
@@ -1245,7 +1251,7 @@ int RunVBSP( int argc, char **argv )
 	}
 
 	// Sanity check
-	if ( *g_szEmbedDir && ( onlyents || onlyprops ) )
+	if ( *g_szEmbedDir && ( onlyents || onlyprops || onlyExportables ) )
 	{
 		Warning( "-embed only makes sense alongside full BSP compiles.\n"
 		         "\n"
@@ -1377,6 +1383,10 @@ int RunVBSP( int argc, char **argv )
 		EmitDetailObjects();
 
 		WriteBSPFile (mapFile);
+	}
+	else if (onlyExportables)
+	{
+		LoadMapFile(name);
 	}
 	else
 	{

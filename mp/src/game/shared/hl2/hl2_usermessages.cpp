@@ -50,4 +50,8 @@ void RegisterUserMessages( void )
 	// NVNT register haptic user messages
 	RegisterHapticMessages();
 #endif
+
+#ifdef HL2RP_FULL
+	usermessages->Register("HL2RPKeyHintText", -1);
+#endif // HL2RP_FULL
 }

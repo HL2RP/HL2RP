@@ -43,7 +43,11 @@ ConVar mp_allowspectators(
 
 ConVar friendlyfire(
 	"mp_friendlyfire",
+#ifdef HL2RP
+	"1",
+#else
 	"0",
+#endif // HL2RP
 	FCVAR_REPLICATED | FCVAR_NOTIFY,
 	"Allows team members to injure other members of their team"
 	);

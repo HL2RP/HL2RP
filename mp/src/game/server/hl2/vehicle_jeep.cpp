@@ -139,9 +139,11 @@ BEGIN_DATADESC( CPropJeep )
 	DEFINE_THINKFUNC( JeepSeagullThink ),
 END_DATADESC()
 
+#ifndef HL2RP_LEGACY
 IMPLEMENT_SERVERCLASS_ST( CPropJeep, DT_PropJeep )
 	SendPropBool( SENDINFO( m_bHeadlightIsOn ) ),
 END_SEND_TABLE();
+#endif // !HL2RP_LEGACY
 
 // This is overriden for the episodic jeep
 #ifndef HL2_EPISODIC

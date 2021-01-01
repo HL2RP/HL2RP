@@ -15,12 +15,18 @@
 #include "r_efx.h"
 #include "dlight.h"
 
+#ifdef HL2RP
+#include <c_hl2_roleplayer.h>
+#endif // HL2RP
+
 // Don't alias here
 #if defined( CHL2MP_Player )
 #undef CHL2MP_Player	
 #endif
 
+#ifndef HL2RP
 LINK_ENTITY_TO_CLASS( player, C_HL2MP_Player );
+#endif // !HL2RP
 
 IMPLEMENT_CLIENTCLASS_DT(C_HL2MP_Player, DT_HL2MP_Player, CHL2MP_Player)
 	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
@@ -620,6 +626,12 @@ void C_HL2MP_Player::HandleSpeedChanges( void )
 			}
 		}
 	}
+#ifdef HL2RP
+	else
+	{
+		ToHL2Roleplayer(this)->HandleWalkChanges();
+	}
+#else
 	else if( buttonsChanged & IN_WALK )
 	{
 		if ( IsSuitEquipped() )
@@ -638,6 +650,7 @@ void C_HL2MP_Player::HandleSpeedChanges( void )
 
 	if ( IsSuitEquipped() && m_fIsWalking && !(m_nButtons & IN_WALK)  ) 
 		StopWalking();
+#endif // HL2RP
 }
 
 //-----------------------------------------------------------------------------

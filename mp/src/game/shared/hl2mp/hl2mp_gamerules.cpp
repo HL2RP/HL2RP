@@ -54,8 +54,9 @@ extern CBaseEntity	 *g_pLastRebelSpawn;
 
 #endif
 
-
+#ifndef HL2RP
 REGISTER_GAMERULES_CLASS( CHL2MPRules );
+#endif // !HL2RP
 
 BEGIN_NETWORK_TABLE_NOBASE( CHL2MPRules, DT_HL2MPRules )
 
@@ -935,6 +936,11 @@ CAmmoDef *GetAmmoDef()
 		def.AddAmmoType("SMG1_Grenade",		DMG_BURN,					TRACER_NONE,			0,			0,			3,			0,							0 );
 		def.AddAmmoType("Grenade",			DMG_BURN,					TRACER_NONE,			0,			0,			5,			0,							0 );
 		def.AddAmmoType("slam",				DMG_BURN,					TRACER_NONE,			0,			0,			5,			0,							0 );
+
+#ifdef HL2RP
+		void InitHL2RPAmmoDefs(CAmmoDef&);
+		InitHL2RPAmmoDefs(def);
+#endif // HL2RP
 	}
 
 	return &def;

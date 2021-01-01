@@ -704,6 +704,10 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	// load Mod specific game events ( MUST be before InitAllSystems() so it can pickup the mod specific events)
 	gameeventmanager->LoadEventsFromFile("resource/ModEvents.res");
 
+#ifdef HL2RP_FULL
+	gameeventmanager->LoadEventsFromFile("resource/hl2rp_events.res");
+#endif // HL2RP_FULL
+
 #ifdef CSTRIKE_DLL // BOTPORT: TODO: move these ifdefs out
 	InstallBotControl();
 #endif
@@ -3221,12 +3225,14 @@ void CServerGameClients::GetBugReportInfo( char *buf, int buflen )
 	}
 }
 
+#ifndef HL2RP
 //-----------------------------------------------------------------------------
 // Purpose: A user has had their network id setup and validated 
 //-----------------------------------------------------------------------------
 void CServerGameClients::NetworkIDValidated( const char *pszUserName, const char *pszNetworkID )
 {
 }
+#endif // !HL2RP
 
 // The client has submitted a keyvalues command
 void CServerGameClients::ClientCommandKeyValues( edict_t *pEntity, KeyValues *pKeyValues )

@@ -1,0 +1,25 @@
+// Server-only networked localization for both full and legacy version
+
+"Lang"
+{
+	"Language" "English"
+
+	"Tokens"
+	{
+		// HUD
+		"HL2RP_GenericZone"      "Generic Zone"
+		"HL2RP_AutoCrimeZone"    "Crime Zone"
+		"HL2RP_NoCrimeZone"      "No Crime Zone"
+		"HL2RP_NoKillZone"       "No Kill Zone"
+		"HL2RP_Jail"             "Jail"
+		"HL2RP_VIPJail"          "V.I.P. Jail"
+		"HL2RP_ExecutionRoom"    "Execution Room"
+		"HL2RP_HomeZone_Owned"   "%s1's Home"
+		"HL2RP_HomeZone_Unowned" "Unowned Home"
+		"HL2RP_CityZone_Notice"  "You are within '%s1'"
+
+		// Chat
+		"HL2RP_Ration_Heal_Success" "%static%You have recovered health by using a Combine-supplied Citizen Ration Unit"
+		"HL2RP_Ration_Heal_Deny"    "%static%[Note] Disordered Citizen! Make a reasonable use of the Citizen Ration, you are already healthy (Signed: The Combine)"
+	}
+}

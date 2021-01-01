@@ -29,6 +29,7 @@
 #include "ai_hull.h"
 #include "ai_utils.h"
 #include "physics_impact_damage.h"
+#include <listenablenetworkvar.h>
 
 class CNavArea;
 class CScriptedTarget;
@@ -508,12 +509,15 @@ private:
 	// ---------------
 	CUtlVector<Relationship_t>		m_Relationship;						// Array of relationships
 
+public:
+	void OnWeaponChanged(CBaseCombatWeapon*, bool isOwned);
+
 protected:
 	// shared ammo slots
-	CNetworkArrayForDerived( int, m_iAmmo, MAX_AMMO_SLOTS );
+	CListenableNetworkArrayForDerived( int, m_iAmmo, MAX_AMMO_SLOTS );
 
 	// Usable character items 
-	CNetworkArray( CBaseCombatWeaponHandle, m_hMyWeapons, MAX_WEAPONS );
+	CListenableNetworkArray( CBaseCombatWeaponHandle, m_hMyWeapons, MAX_WEAPONS );
 
 	CNetworkHandle( CBaseCombatWeapon, m_hActiveWeapon );
 
@@ -551,6 +555,11 @@ inline int	CBaseCombatCharacter::WeaponCount() const
 {
 	return MAX_WEAPONS;
 }
+
+#ifndef HL2RP
+inline void CBaseCombatCharacter::OnElementChanged_m_iAmmo(int, const int&) {}
+inline void CBaseCombatCharacter::OnElementChanged_m_hMyWeapons(int, const CBaseCombatWeaponHandle&) {}
+#endif // !HL2RP
 
 //-----------------------------------------------------------------------------
 // Purpose: 

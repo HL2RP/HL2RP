@@ -72,6 +72,12 @@ void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 	data->SetString( "msg",	"motd" );		// use this stringtable entry
 	data->SetBool( "unload", sv_motd_unload_on_dismissal.GetBool() );
 
+#ifdef HL2RP
+	// This is the first step to set MOTD guide to display only after player closes the above.
+	// Rest is handled on 'closed_htmlpage' command callback.
+	data->SetInt("cmd", TEXTWINDOW_CMD_CLOSED_HTMLPAGE);
+#endif // HL2RP
+
 	pPlayer->ShowViewPortPanel( PANEL_INFO, true, data );
 
 	data->deleteThis();
@@ -101,7 +107,7 @@ void ClientActive( edict_t *pEdict, bool bLoadGame )
 	FinishClientPutInServer( pPlayer );
 }
 
-
+#ifndef HL2RP
 /*
 ===============
 const char *GetGameDescription()
@@ -116,6 +122,7 @@ const char *GetGameDescription()
 	else
 		return "Half-Life 2 Deathmatch";
 }
+#endif // !HL2RP
 
 //-----------------------------------------------------------------------------
 // Purpose: Given a player and optional name returns the entity of that 
@@ -190,6 +197,7 @@ void GameStartFrame( void )
 #endif
 }
 
+#ifndef HL2RP_FULL
 //=========================================================
 // instantiate the proper game rules object
 //=========================================================
@@ -198,4 +206,4 @@ void InstallGameRules()
 	// vanilla deathmatch
 	CreateGameRulesObject( "CHL2MPRules" );
 }
-
+#endif // HL2RP_FULL

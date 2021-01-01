@@ -1,0 +1,29 @@
+$Macro HL2RP_SHARED_SRCDIR "$SRCDIR\game\shared\hl2rp"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories "$BASE;$HL2RP_SHARED_SRCDIR"
+		$PreprocessorDefinitions      "$BASE;HL2RP;MOVE_CONSTRUCTOR_SUPPORT"
+	}
+}
+
+$Project
+{
+	$Folder "Source Files"
+	{
+		$Folder "HL2RP"
+		{
+			$File "$HL2RP_SHARED_SRCDIR\hl2_roleplayer_shared.cpp"
+			$File "$HL2RP_SHARED_SRCDIR\hl2_roleplayer_shared.h"
+			$File "$HL2RP_SHARED_SRCDIR\hl2rp_gamerules_shared.cpp"
+			$File "$HL2RP_SHARED_SRCDIR\hl2rp_gamerules_shared.h"
+			$File "$HL2RP_SHARED_SRCDIR\hl2rp_localize.cpp"
+			$File "$HL2RP_SHARED_SRCDIR\hl2rp_localize.h"
+			$File "$HL2RP_SHARED_SRCDIR\hl2rp_shareddefs.h"
+			$File "$HL2RP_SHARED_SRCDIR\hl2rp_util_shared.h"
+			$File "$HL2RP_SHARED_SRCDIR\prop_ration_dispenser.h"
+		}
+	}
+}

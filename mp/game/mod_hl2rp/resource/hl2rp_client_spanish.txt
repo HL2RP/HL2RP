@@ -1,0 +1,21 @@
+// Full version client localization only
+
+"Lang"
+{
+	"Language" "Spanish"
+
+	"Tokens"
+	{
+		// Menus
+		"HL2RP_GameMenu_Other"        "OTROS"
+		"HL2RP_GameExperience"        "Experiencia de juego"
+		"HL2RP_ForgetHUDHints"        "Olvidar consejos en HUD..."
+		"HL2RP_ForgetHUDHintsWarning" "Esto borrará el registro de tus consejos en HUD aprendidos, para habilitar su visualización de nuevo. ¿Continuar?"
+
+		// HUD
+		"HL2RP_Ration"             "RACIÓN\n(Suplemento alimenticio proporcionado por La Alianza)"
+		"HL2RP_RationDeployedHint" "%+attack% (MANTÉN) PREPARAR LANZAMIENTO %+attack2% CURARSE"
+		"HL2RP_RationThrowingHint" "%+attack% (SUELTA) LANZAR %+reload% AÑADIR UNIDAD (DESDE MUNICIÓN) %+attack2% CANCELAR LANZAMIENTO"
+		"HL2RP_StickyWalkHint"    "%+walk% (x2) CAMINAR ASISTIDO"
+	}
+}

@@ -138,7 +138,8 @@ public:
 	virtual bool	CanHearAndReadChatFrom( CBasePlayer *pPlayer );
 
 		
-private:
+protected:
+	void InitSLAMProtectTime();
 
 	CNetworkQAngle( m_angEyeAngles );
 	CPlayerAnimState   m_PlayerAnimState;
