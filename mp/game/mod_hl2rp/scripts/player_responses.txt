@@ -1,0 +1,48 @@
+// Player sounds type reference (hl2mp_player_shared.h):
+// PLAYER_SOUNDS_CITIZEN = 0
+// PLAYER_SOUNDS_COMBINESOLDIER = 1
+// PLAYER_SOUNDS_METROPOLICE = 2
+
+criterion "IsCitizen" "soundsType" 0 required
+criterion "IsCombineSoldier" "soundsType" 1 required
+criterion "IsMetropolice" "soundsType" 2 required
+criterion "ConceptPain" "concept" "TLK_PAIN" required
+
+Response "CitizenPain"
+{
+	permitrepeats
+	speak "npc_citizen.ow01"
+	speak "npc_citizen.ow02"
+}
+
+Rule "CitizenPain"
+{
+	criteria IsCitizen ConceptPain
+	response CitizenPain
+}
+
+Response "CombineSoldierPain"
+{
+	permitrepeats
+	sentence !COMBINE_PAIN0
+	sentence !COMBINE_PAIN1
+	sentence !COMBINE_PAIN2
+}
+
+Rule "CombineSoldierPain"
+{
+	criteria IsCombineSoldier ConceptPain
+	response CombineSoldierPain
+}
+
+Response "MetropolicePain"
+{
+	permitrepeats
+	speak "NPC_MetroPolice.Pain"
+}
+
+Rule "MetropolicePain"
+{
+	criteria IsMetropolice ConceptPain
+	response MetropolicePain
+}

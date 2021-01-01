@@ -2219,6 +2219,9 @@ bool EvaluateConditional( const char *str )
 //-----------------------------------------------------------------------------
 bool KeyValues::LoadFromBuffer( char const *resourceName, CUtlBuffer &buf, IBaseFileSystem* pFileSystem, const char *pPathID )
 {
+	// Make s_pTokenBuf access thread safe
+	LOCAL_THREAD_LOCK();
+
 	KeyValues *pPreviousKey = NULL;
 	KeyValues *pCurrentKey = this;
 	CUtlVector< KeyValues * > includedKeys;

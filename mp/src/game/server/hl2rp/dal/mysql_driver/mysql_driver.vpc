@@ -1,0 +1,48 @@
+// The following table shows the MySQL Connector/C library version used for each platform,
+// aiming for the highest compatible or most suitable one according to manual verification
+// +----------+-----------------+----------------------------------------------------------------------------------+
+// | Platform | Library version | Main reason / comment                                                            |
+// +----------+-----------------+----------------------------------------------------------------------------------+
+// | Win32    | 5.7.39 (custom) | Official releases link against dynamic VC++ Runtime (which we don't want), also  |
+// |          |                 | causing errors. Solved with self built library, linking against the static one.  |
+// | Linux32  | 5.7.39 (custom) | Official releases >= 5.7.30 cause a segfault when the database I/O pthread ends, |
+// |          |                 | possibly by a system bug on their environment. Solved with self built library.   |
+// | OsX32    | 6.1.6           | Highest version with 32-bit support, the native Source architecture              |
+// +----------+-----------------+----------------------------------------------------------------------------------+
+
+$Macro SRCDIR		"..\..\..\..\.."
+$Macro OUTBINDIR	"$SRCDIR\..\game\bin"
+
+$Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories "$BASE,$SRCDIR\game\server\hl2rp,$SRCDIR\thirdparty\mysql,.."
+	}
+
+	$Linker [$WIN32]
+	{
+		$AdditionalDependencies "$BASE,crypt32.lib"
+	}
+}
+
+$Project "MySQL Driver"
+{
+	$Folder "Header Files"
+	{
+		$File "..\idatabase_driver.h"
+	}
+
+	$Folder "Source Files"
+	{
+		$File "mysql_driver.cpp"
+	}
+
+	$Folder "Link Libraries"
+	{
+		$Lib "mysqlclient" [$WIN32]
+		$Lib "libmysqlclient" [$POSIX]
+	}
+}

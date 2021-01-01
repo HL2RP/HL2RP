@@ -69,6 +69,13 @@ void CBaseHL2MPBludgeonWeapon::Precache( void )
 	BaseClass::Precache();
 }
 
+#if (defined GAME_DLL && defined HL2RP)
+int CBaseHL2MPBludgeonWeapon::CapabilitiesGet()
+{
+	return bits_CAP_WEAPON_MELEE_ATTACK1;
+}
+#endif // (defined GAME_DLL && defined HL2RP)
+
 //------------------------------------------------------------------------------
 // Purpose : Update weapon
 //------------------------------------------------------------------------------

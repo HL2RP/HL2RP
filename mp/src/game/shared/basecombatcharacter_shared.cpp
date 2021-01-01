@@ -11,6 +11,8 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#define BCC_INTERSECTING_ENTS_CLEAR_PERIOD  0.5f
+#define BCC_INTERSECTING_ENTS_CLEAR_CONTEXT "ClearIntersectingEnts"
 
 //-----------------------------------------------------------------------------
 // Purpose: Switches to the best weapon that is also better than the given weapon.
@@ -722,6 +724,82 @@ bool CBaseCombatCharacter::IsLineOfSightClear( const Vector &pos, LineOfSightChe
 	}
 }
 
+#ifdef HL2RP
+void CBaseCombatCharacter::AddIntersectingEnts()
+{
+	CBaseEntity* entities[MAX_EDICTS];
+
+	for (int i = UTIL_EntitiesInBox(entities, ARRAYSIZE(entities),
+		GetAbsOrigin() + WorldAlignMins(), GetAbsOrigin() + WorldAlignMaxs(), 0,
+#ifdef GAME_DLL
+		PARTITION_ENGINE_SOLID_EDICTS
+#else
+		PARTITION_CLIENT_SOLID_EDICTS
+#endif // GAME_DLL
+	); --i >= 0;)
+	{
+		if (entities[i] != this)
+		{
+			mSpawnIntersectingEnts.InsertIfNotFound(entities[i]);
+			CBaseCombatCharacter* pCharacter = entities[i]->MyCombatCharacterPointer();
+
+			if (pCharacter != NULL && !pCharacter->mSpawnIntersectingEnts.HasElement(this))
+			{
+				pCharacter->mSpawnIntersectingEnts.Insert(this);
+				pCharacter->CollisionRulesChanged();
+				pCharacter->SetContextThink(&ThisClass::ClearIntersectingEnts,
+					gpGlobals->curtime + BCC_INTERSECTING_ENTS_CLEAR_PERIOD, BCC_INTERSECTING_ENTS_CLEAR_CONTEXT);
+			}
+		}
+	}
+
+	if (mSpawnIntersectingEnts.Count() > 0)
+	{
+		CollisionRulesChanged();
+		SetContextThink(&ThisClass::ClearIntersectingEnts,
+			gpGlobals->curtime + BCC_INTERSECTING_ENTS_CLEAR_PERIOD, BCC_INTERSECTING_ENTS_CLEAR_CONTEXT);
+	}
+}
+
+void CBaseCombatCharacter::ClearIntersectingEnts()
+{
+	uint oldCount = mSpawnIntersectingEnts.Count();
+
+	FOR_EACH_DICT_FAST(mSpawnIntersectingEnts, i)
+	{
+		if (mSpawnIntersectingEnts[i] != NULL)
+		{
+			Ray_t ray;
+			ray.Init(GetAbsOrigin(), GetAbsOrigin(), WorldAlignMins(), WorldAlignMaxs());
+			trace_t trace;
+			enginetrace->ClipRayToEntity(ray, MASK_SOLID, mSpawnIntersectingEnts[i], &trace);
+
+			if (trace.startsolid)
+			{
+				continue;
+			}
+		}
+
+		mSpawnIntersectingEnts.RemoveAt(i);
+	}
+
+	if (mSpawnIntersectingEnts.Count() > oldCount)
+	{
+		CollisionRulesChanged();
+	}
+
+	if (mSpawnIntersectingEnts.Count() > 0)
+	{
+		SetNextThink(gpGlobals->curtime + BCC_INTERSECTING_ENTS_CLEAR_PERIOD, BCC_INTERSECTING_ENTS_CLEAR_CONTEXT);
+	}
+}
+
+bool CBaseCombatCharacter::ShouldCollide(int collisionGroup, int contentsMask, CBaseEntity* pOther) const
+{
+	return (!mSpawnIntersectingEnts.HasElement(pOther)
+		&& BaseClass::ShouldCollide(collisionGroup, contentsMask, pOther));
+}
+#endif // HL2RP
 
 /*
 //---------------------------------------------------------------------------------------------------------------------------

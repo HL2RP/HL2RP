@@ -13,15 +13,25 @@
 #include "basetoggle.h"
 #include "entityoutput.h"
 
+#ifdef HL2RP
+#include <hl2rp_property.h>
+#endif // HL2RP
 
 class IPhysicsFluidController;
 
 
-class CFuncMoveLinear : public CBaseToggle
+class CFuncMoveLinear : public DOOR_BASECLASS(CBaseToggle)
 {
-public:
-	DECLARE_CLASS( CFuncMoveLinear, CBaseToggle );
+	DECLARE_CLASS( CFuncMoveLinear, DOOR_BASECLASS(CBaseToggle) );
 
+#ifdef HL2RP
+	DECLARE_HL2RP_SERVERCLASS()
+
+	void InputLock(inputdata_t&);
+	void InputUnlock(inputdata_t&);
+#endif // HL2RP
+
+public:
 	void		Spawn( void );
 	void		Precache( void );
 	bool		CreateVPhysics( void );

@@ -1,0 +1,11 @@
+// Groups of maps that can share the same dynamic mod's data, if the data is linked to an appliable group.
+// Multiple groups are supported, with the data correctly loading and saving for the linked group.
+
+"MapGroups"
+{
+	"Sample City"
+	{
+		"1" "rp_samplecity_day" // Day version
+		"2" "rp_samplecity_night" // Night version
+	}
+}

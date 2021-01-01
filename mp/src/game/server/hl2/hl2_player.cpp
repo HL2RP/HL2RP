@@ -508,6 +508,11 @@ void CHL2_Player::HandleSpeedChanges( void )
 		}
 	}
 
+	HandleWalkChanges(0);
+}
+
+void CHL2_Player::HandleWalkChanges(int)
+{
 	bool bIsWalking = IsWalking();
 	// have suit, pressing button, not sprinting or ducking
 	bool bWantWalking;

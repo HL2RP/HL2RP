@@ -4581,10 +4581,16 @@ void CBasePlayer::PostThink()
 				SetAnimation( PLAYER_IN_VEHICLE );
 			else if (!GetAbsVelocity().x && !GetAbsVelocity().y)
 				SetAnimation( PLAYER_IDLE );
-			else if ((GetAbsVelocity().x || GetAbsVelocity().y) && ( GetFlags() & FL_ONGROUND ))
+			else if (FBitSet(GetFlags(), FL_ONGROUND))
 				SetAnimation( PLAYER_WALK );
-			else if (GetWaterLevel() > 1)
-				SetAnimation( PLAYER_WALK );
+#ifdef HL2RP
+			// NOTE: We must send at least one animation to cover cases where
+			// we need to update our activity (e.g. aiming state changed)
+			else SetAnimation(GetWaterLevel() != WL_Feet ? PLAYER_WALK : PLAYER_IDLE);
+#else
+			else if (GetWaterLevel() > WL_Feet)
+				SetAnimation(PLAYER_WALK);
+#endif // HL2RP
 		}
 
 		// Don't allow bogus sequence on player
@@ -9389,16 +9395,5 @@ bool CBasePlayer::GetSteamID( CSteamID *pID )
 	}
 
 	return false;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-uint64 CBasePlayer::GetSteamIDAsUInt64( void )
-{
-	CSteamID steamIDForPlayer;
-	if ( GetSteamID( &steamIDForPlayer ) )
-		return steamIDForPlayer.ConvertToUint64();
-	return 0;
 }
 #endif // NO_STEAM

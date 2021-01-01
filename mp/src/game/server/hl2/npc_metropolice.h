@@ -296,7 +296,7 @@ private:
 	virtual bool IsWaitingToRappel( void ) { return m_RappelBehavior.IsWaitingToRappel(); }
 	void BeginRappel() { m_RappelBehavior.BeginRappel(); }
 
-private:
+protected:
 	enum
 	{
 		BURST_NOT_ACTIVE = 0,
@@ -361,6 +361,7 @@ private:
 		SCHED_METROPOLICE_ALERT_FACE_BESTSOUND,
 		SCHED_METROPOLICE_RETURN_TO_PRECHASE,
 		SCHED_METROPOLICE_SMASH_PROP,
+		NEXT_SCHEDULE
 	};
 
 	enum 
@@ -389,11 +390,12 @@ private:
 		TASK_METROPOLICE_CLEAR_PRECHASE,
 	};
 
+	bool m_fWeaponDrawn; // Is my weapon drawn? (ready to use)
+
 private:
 
 	int				m_iPistolClips;		// How many clips the cop has in reserve
 	int				m_iManhacks;		// How many manhacks the cop has
-	bool			m_fWeaponDrawn;		// Is my weapon drawn? (ready to use)
 	bool			m_bSimpleCops;		// The easy version of the cops
 	int				m_LastShootSlot;
 	CRandSimTimer	m_TimeYieldShootSlot;

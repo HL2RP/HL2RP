@@ -1,5 +1,5 @@
 #!/bin/bash
 
 pushd `dirname $0`
-devtools/bin/vpc /hl2mp +game /mksln games
+devtools/bin/vpc /hl2mp /hl2rp_full /hl2rp_legacy +game /mksln games
 popd

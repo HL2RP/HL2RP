@@ -369,7 +369,12 @@ public:
 
 	// returns the player name
 	const char *			GetPlayerName() { return m_szNetname; }
-	void					SetPlayerName( const char *name );
+
+#ifdef HL2RP
+	virtual void			SetPlayerName(const char*);
+#else
+	void					SetPlayerName(const char*);
+#endif // HL2RP
 
 	int						GetUserID() { return engine->GetPlayerUserId( edict() ); }
 	const char *			GetNetworkIDString(); 
@@ -757,6 +762,10 @@ public:
 	void	NotePlayerTalked() { m_fLastPlayerTalkTime = gpGlobals->curtime; }
 	float	LastTimePlayerTalked() { return m_fLastPlayerTalkTime; }
 
+#ifdef HL2RP
+	virtual void OnChatMessagePassed(CBasePlayer* pTarget, bool teamOnly) {}
+#endif // HL2RP
+
 	void	DisableButtons( int nButtons );
 	void	EnableButtons( int nButtons );
 	void	ForceButtons( int nButtons );
@@ -1044,9 +1053,14 @@ private:
 	// Multiplayer handling
 	PlayerConnectedState	m_iConnected;
 
+#ifdef HL2RP
+	CNetworkVarForDerived(int, m_ArmorValue, virtual);
+#else
 	// from edict_t
 	// CBasePlayer doesn't send this but CCSPlayer does.
 	CNetworkVarForDerived( int, m_ArmorValue );
+#endif // HL2RP
+
 	float					m_AirFinished;
 	float					m_PainFinished;
 

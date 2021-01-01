@@ -11,6 +11,10 @@
 #include "entitylist.h"
 #include "globals.h"
 
+#ifdef HL2RP
+#include <hl2rp_property.h>
+#endif // HL2RP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -164,6 +168,14 @@ CBaseToggle::CBaseToggle()
 	m_vecFinalAngle.Init();
 #endif
 }
+
+#ifdef HL2RP
+int CBaseToggle::ObjectCaps()
+{
+	CHL2RP_PropertyDoorData* pData = GetPropertyDoorData();
+	return (BaseClass::ObjectCaps() | ((pData != NULL && pData->mProperty != NULL) ? FCAP_HL2RP_USE_BEHIND_ANY : 0));
+}
+#endif // HL2RP
 
 bool CBaseToggle::KeyValue( const char *szKeyName, const char *szValue )
 {

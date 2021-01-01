@@ -15,9 +15,12 @@
 #if defined( CLIENT_DLL )
 
 #define CBaseEntity				C_BaseEntity
+#define CServerOnlyEntity		C_BaseEntity
 #define CBaseCombatCharacter	C_BaseCombatCharacter
 #define CBaseAnimating			C_BaseAnimating
 #define CBasePlayer				C_BasePlayer
+#define CHL2Roleplayer			C_HL2Roleplayer
+#define CHL2RPRules				C_HL2RPRules
 
 #endif
 
