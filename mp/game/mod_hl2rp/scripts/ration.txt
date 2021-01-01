@@ -1,0 +1,45 @@
+// Citizen package used as survival ration
+
+"WeaponData"
+{
+	"printname"		"#HL2RP_Ration"
+	"viewmodel"		"models/weapons/v_ration.mdl"
+	"playermodel"	"models/weapons/w_ration.mdl"
+
+	"bucket"			"5"
+	"bucket_position"	"0"
+	"primary_ammo"		"Ration"
+	"default_clip"		"1"
+	"clip_size"			"1"
+
+	"SoundData"
+	{
+		"special1" "HealthKit.Touch" // Healing sound
+		"special2" "Buttons.snd34" // Additional unit reload for throwing
+		"special3" "Buttons.snd40" // Throwing cancel
+	}
+
+	"TextureData"
+	{
+		"Weapon"
+		{
+			"file" "sprites/ration"
+		}
+
+		// Weapon selection HUD icon
+		"Weapon_s"
+		{
+			"file"		"sprites/ration"
+			"width"		"128"
+			"height"	"128"
+		}
+
+		// Primary ammo HUD icon
+		"Ammo"
+		{
+			"file"		"sprites/ration"
+			"width"		"128"
+			"height"	"128"
+		}
+	}
+}

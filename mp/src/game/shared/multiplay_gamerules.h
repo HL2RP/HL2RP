@@ -151,7 +151,7 @@ public:
 // Client kills/scoring
 	virtual int IPointsForKill( CBasePlayer *pAttacker, CBasePlayer *pKilled );
 	virtual void PlayerKilled( CBasePlayer *pVictim, const CTakeDamageInfo &info );
-	virtual void DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &info );
+	virtual void DeathNotice( CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info );
 	CBasePlayer *GetDeathScorer( CBaseEntity *pKiller, CBaseEntity *pInflictor );									// old version of method - kept for backward compat
 	virtual CBasePlayer *GetDeathScorer( CBaseEntity *pKiller, CBaseEntity *pInflictor, CBaseEntity *pVictim );		// new version of method
 

@@ -353,7 +353,7 @@ bool CSingleplayRules::Damage_ShouldNotBleed( int iDmgType )
 	//=========================================================
 	// Deathnotice
 	//=========================================================
-	void CSingleplayRules::DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &info )
+	void CSingleplayRules::DeathNotice( CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info )
 	{
 	}
 

@@ -1,0 +1,13 @@
+// Shared localization between client and server
+
+"Lang"
+{
+	"Language" "English"
+
+	"Tokens"
+	{
+		"HL2RP_Access_Granted_Issuer"	"You have granted %1 access to: %2"
+		"HL2RP_Access_Removed_Issuer"	"You have removed access from %1 to: %2"
+		"HL2RP_ManagePropertyDoor"		"Manage Property/Door"
+	}
+}

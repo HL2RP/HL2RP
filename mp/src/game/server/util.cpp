@@ -282,9 +282,9 @@ float UTIL_GetSimulationInterval()
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-int UTIL_EntitiesInBox( const Vector &mins, const Vector &maxs, CFlaggedEntitiesEnum *pEnum )
+int UTIL_EntitiesInBox( const Vector &mins, const Vector &maxs, CFlaggedEntitiesEnum *pEnum, int partitionMask )
 {
-	partition->EnumerateElementsInBox( PARTITION_ENGINE_NON_STATIC_EDICTS, mins, maxs, false, pEnum );
+	partition->EnumerateElementsInBox( partitionMask, mins, maxs, false, pEnum );
 	return pEnum->GetCount();
 }
 
@@ -642,6 +642,17 @@ CBasePlayer* UTIL_PlayerByUserId( int userID )
 // 
 CBasePlayer *UTIL_GetLocalPlayer( void )
 {
+#ifdef HL2RP
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
+
+		if (pPlayer != NULL)
+		{
+			return pPlayer;
+		}
+	}
+#else
 	if ( gpGlobals->maxClients > 1 )
 	{
 		if ( developer.GetBool() )
@@ -655,6 +666,7 @@ CBasePlayer *UTIL_GetLocalPlayer( void )
 
 		return NULL;
 	}
+#endif // HL2RP
 
 	return UTIL_PlayerByIndex( 1 );
 }

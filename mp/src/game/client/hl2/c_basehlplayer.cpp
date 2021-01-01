@@ -333,10 +333,12 @@ void C_BaseHLPlayer::PerformClientSideObstacleAvoidance( float flFrameTime, CUse
 		if ( !obj->IsMoving() && flDist > objectradius )
 			  continue;
 
+#ifndef HL2RP
 		if ( flDist > objectradius && obj->IsEffectActive( EF_NODRAW ) )
 		{
 			obj->RemoveEffects( EF_NODRAW );
 		}
+#endif // !HL2RP
 
 		Vector vecNPCVelocity;
 		obj->EstimateAbsVelocity( vecNPCVelocity );
@@ -414,10 +416,12 @@ void C_BaseHLPlayer::PerformClientSideObstacleAvoidance( float flFrameTime, CUse
 				fwd = currentdir.Dot( -vecNPCForward );
 				rt = rightdir.Dot( -vecNPCForward );
 
+#ifndef HL2RP
 				if ( flDist < objectradius )
 				{
 					obj->AddEffects( EF_NODRAW );
 				}
+#endif // !HL2RP
 
 				//Msg( "PUSH AWAY FACE fwd=%f, rt=%f\n", fwd, rt );
 
@@ -434,10 +438,12 @@ void C_BaseHLPlayer::PerformClientSideObstacleAvoidance( float flFrameTime, CUse
 				fwd = currentdir.Dot( vMoveDir );
 				rt = rightdir.Dot( vMoveDir );
 
+#ifndef HL2RP
 				if ( flDist < objectradius )
 				{
 					obj->AddEffects( EF_NODRAW );
 				}
+#endif // !HL2RP
 
 				//Msg( "PUSH ALONG fwd=%f, rt=%f\n", fwd, rt );
 
@@ -465,10 +471,12 @@ void C_BaseHLPlayer::PerformClientSideObstacleAvoidance( float flFrameTime, CUse
 			fwd = currentdir.Dot( -vMoveDir );
 			rt = rightdir.Dot( -vMoveDir );
 
+#ifndef HL2RP
 			if ( flDist < objectradius )
 			{
 				obj->AddEffects( EF_NODRAW );
 			}
+#endif // !HL2RP
 
 			//Msg( "PUSH THROUGH fwd=%f, rt=%f\n", fwd, rt );
 

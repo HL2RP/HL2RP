@@ -37,7 +37,9 @@ extern CBaseEntity				*g_pLastSpawn;
 
 void DropPrimedFragGrenade( CHL2MP_Player *pPlayer, CBaseCombatWeapon *pGrenade );
 
+#ifndef HL2RP
 LINK_ENTITY_TO_CLASS( player, CHL2MP_Player );
+#endif // !HL2RP
 
 LINK_ENTITY_TO_CLASS( info_player_combine, CPointEntity );
 LINK_ENTITY_TO_CLASS( info_player_rebel, CPointEntity );
@@ -62,6 +64,23 @@ END_DATADESC()
 
 const char *g_ppszRandomCitizenModels[] = 
 {
+#ifdef HL2RP
+	"models/humans/group01/male_01.mdl",
+	"models/humans/group01/male_02.mdl",
+	"models/humans/group01/male_03.mdl",
+	"models/humans/group01/male_04.mdl",
+	"models/humans/group01/male_05.mdl",
+	"models/humans/group01/male_06.mdl",
+	"models/humans/group01/male_07.mdl",
+	"models/humans/group01/male_08.mdl",
+	"models/humans/group01/male_09.mdl",
+	"models/humans/group01/female_01.mdl",
+	"models/humans/group01/female_02.mdl",
+	"models/humans/group01/female_03.mdl",
+	"models/humans/group01/female_04.mdl",
+	"models/humans/group01/female_06.mdl",
+	"models/humans/group01/female_07.mdl"
+#else
 	"models/humans/group03/male_01.mdl",
 	"models/humans/group03/male_02.mdl",
 	"models/humans/group03/female_01.mdl",
@@ -77,6 +96,7 @@ const char *g_ppszRandomCitizenModels[] =
 	"models/humans/group03/female_07.mdl",
 	"models/humans/group03/male_08.mdl",
 	"models/humans/group03/male_09.mdl",
+#endif // HL2RP
 };
 
 const char *g_ppszRandomCombineModels[] =
@@ -198,6 +218,7 @@ void CHL2MP_Player::GiveDefaultItems( void )
 {
 	EquipSuit();
 
+#ifndef HL2RP
 	CBasePlayer::GiveAmmo( 255,	"Pistol");
 	CBasePlayer::GiveAmmo( 45,	"SMG1");
 	CBasePlayer::GiveAmmo( 1,	"grenade" );
@@ -217,6 +238,7 @@ void CHL2MP_Player::GiveDefaultItems( void )
 	GiveNamedItem( "weapon_smg1" );
 	GiveNamedItem( "weapon_frag" );
 	GiveNamedItem( "weapon_physcannon" );
+#endif // !HL2RP
 
 	const char *szDefaultWeaponName = engine->GetClientConVarValue( engine->IndexOfEdict( edict() ), "cl_defaultweapon" );
 
@@ -234,6 +256,7 @@ void CHL2MP_Player::GiveDefaultItems( void )
 
 void CHL2MP_Player::PickDefaultSpawnTeam( void )
 {
+#ifndef HL2RP
 	if ( GetTeamNumber() == 0 )
 	{
 		if ( HL2MPRules()->IsTeamplay() == false )
@@ -280,6 +303,7 @@ void CHL2MP_Player::PickDefaultSpawnTeam( void )
 			}
 		}
 	}
+#endif // !HL2RP
 }
 
 //-----------------------------------------------------------------------------
@@ -408,7 +432,6 @@ void CHL2MP_Player::SetPlayerTeamModel( void )
 	}
 	
 	SetModel( szModelName );
-	SetupPlayerSoundsByModel( szModelName );
 
 	m_flNextModelChangeTime = gpGlobals->curtime + MODEL_CHANGE_INTERVAL;
 }
@@ -484,9 +507,14 @@ void CHL2MP_Player::SetPlayerModel( void )
 	}
 
 	SetModel( szModelName );
-	SetupPlayerSoundsByModel( szModelName );
 
 	m_flNextModelChangeTime = gpGlobals->curtime + MODEL_CHANGE_INTERVAL;
+}
+
+void CHL2MP_Player::SetModel(const char* pModel)
+{
+	BaseClass::SetModel(pModel);
+	SetupPlayerSoundsByModel(pModel);
 }
 
 void CHL2MP_Player::SetupPlayerSoundsByModel( const char *pModelName )
@@ -503,6 +531,12 @@ void CHL2MP_Player::SetupPlayerSoundsByModel( const char *pModelName )
 	{
 		m_iPlayerSoundType = (int)PLAYER_SOUNDS_COMBINESOLDIER;
 	}
+#ifdef HL2RP
+	else // Fallback
+	{
+		m_iPlayerSoundType = (GetTeamNumber() == TEAM_COMBINE) ? PLAYER_SOUNDS_COMBINESOLDIER : PLAYER_SOUNDS_CITIZEN;
+	}
+#endif // HL2RP
 }
 
 void CHL2MP_Player::ResetAnimation( void )
@@ -511,8 +545,13 @@ void CHL2MP_Player::ResetAnimation( void )
 	{
 		const Vector& absVelocity = GetAbsVelocity();
 
-		if ((absVelocity.x != 0.0f || absVelocity.y != 0.0f)
-			&& (FBitSet(GetFlags(), FL_ONGROUND) || GetWaterLevel() > WL_Feet))
+		if ((absVelocity.x != 0.0f || absVelocity.y != 0.0f) && (FBitSet(GetFlags(), FL_ONGROUND)
+#ifdef HL2RP
+			|| GetWaterLevel() != WL_Feet
+#else
+			|| GetWaterLevel() > WL_Feet
+#endif // HL2RP
+			))
 		{
 			return SetAnimation(PLAYER_WALK);
 		}
@@ -958,12 +997,14 @@ bool CHL2MP_Player::HandleCommand_JoinTeam( int team )
 			return false;
 		}
 
+#ifndef HL2RP // Disable instant suicide so that current equipment can be detected for saving
 		if ( GetTeamNumber() != TEAM_UNASSIGNED && !IsDead() )
 		{
 			m_fNextSuicideTime = gpGlobals->curtime;	// allow the suicide to work
 			SETBITS(m_iSuicideCustomKillFlags, EPlayerSuicideFlag_LockScore);
 			CommitSuicide();
 		}
+#endif // !HL2RP
 
 		ChangeTeam( TEAM_SPECTATOR );
 
@@ -1311,7 +1352,6 @@ CBaseEntity* CHL2MP_Player::EntSelectSpawnPoint( void )
 {
 	CBaseEntity *pSpot = NULL;
 	CBaseEntity *pLastSpawnPoint = g_pLastSpawn;
-	edict_t		*player = edict();
 	const char *pSpawnpointName = "info_player_deathmatch";
 
 	if ( HL2MPRules()->IsTeamplay() == true )
@@ -1364,9 +1404,11 @@ CBaseEntity* CHL2MP_Player::EntSelectSpawnPoint( void )
 		pSpot = gEntList.FindEntityByClassname( pSpot, pSpawnpointName );
 	} while ( pSpot != pFirstSpot ); // loop if we're not back to the start
 
+#ifndef HL2RP
 	// we haven't found a place to spawn yet,  so kill any guy at the first spawn point and spawn there
 	if ( pSpot )
 	{
+		edict_t* player = edict();
 		CBaseEntity *ent = NULL;
 		for ( CEntitySphereQuery sphere( pSpot->GetAbsOrigin(), 128 ); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity() )
 		{
@@ -1376,6 +1418,7 @@ CBaseEntity* CHL2MP_Player::EntSelectSpawnPoint( void )
 		}
 		goto ReturnSpot;
 	}
+#endif // !HL2RP
 
 	if ( !pSpot  )
 	{
@@ -1401,11 +1444,15 @@ ReturnSpot:
 
 	g_pLastSpawn = pSpot;
 
-	m_flSlamProtectTime = gpGlobals->curtime + 0.5;
+	InitSLAMProtectTime();
 
 	return pSpot;
 } 
 
+void CHL2MP_Player::InitSLAMProtectTime()
+{
+	m_flSlamProtectTime = gpGlobals->curtime + 0.5f;
+}
 
 CON_COMMAND( timeleft, "prints the time remaining in the match" )
 {

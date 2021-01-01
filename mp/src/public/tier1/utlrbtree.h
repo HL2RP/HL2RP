@@ -415,7 +415,7 @@ inline void CUtlRBTree<T, I, L, M>::CopyFrom( const CUtlRBTree<T, I, L, M> &othe
 {
 	Purge();
 	m_Elements.EnsureCapacity( other.m_Elements.Count() );
-	memcpy( m_Elements.Base(), other.m_Elements.Base(), other.m_Elements.Count() * sizeof( T ) );
+	memcpy( m_Elements.Base(), other.m_Elements.Base(), other.m_Elements.Count() * sizeof( *m_Elements.Base() ) );
 	m_LessFunc = other.m_LessFunc;
 	m_Root = other.m_Root;
 	m_NumElements = other.m_NumElements;

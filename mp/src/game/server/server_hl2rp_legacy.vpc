@@ -1,0 +1,16 @@
+$Macro GAMENAME "hl2mp"
+
+$Include "server_hl2rp_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$PreprocessorDefinitions "$BASE;HL2RP_LEGACY;HL2RP_CLIENT_OR_LEGACY"
+	}
+}
+
+$Project "Server (HL2RP Legacy)"
+{
+
+}

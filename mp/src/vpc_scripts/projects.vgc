@@ -16,7 +16,8 @@ $Project "captioncompiler"
 
 $Project "client"
 {
-	"game\client\client_hl2mp.vpc"		[($WIN32||$POSIX) && $HL2MP]
+	"game\client\client_hl2mp_stub.vpc"		[($WIN32||$POSIX) && $HL2MP]
+	"game\client\client_hl2rp.vpc" [($WIN32 || $POSIX) && $HL2RP_FULL]
 }
 
 $Project "fgdlib"
@@ -41,7 +42,9 @@ $Project "height2normal"
 
 $Project "server"
 {
-	"game\server\server_hl2mp.vpc"		[($WIN32||$POSIX) && $HL2MP]
+	"game\server\server_hl2mp_stub.vpc"		[($WIN32||$POSIX) && $HL2MP]
+	"game\server\server_hl2rp_full.vpc" [($WIN32 || $POSIX) && $HL2RP_FULL]
+	"game\server\server_hl2rp_legacy.vpc" [($WIN32 || $POSIX) && $HL2RP_LEGACY]
 }
 
 $Project "mathlib"
@@ -52,6 +55,11 @@ $Project "mathlib"
 $Project "motionmapper"
 {
 	"utils\motionmapper\motionmapper.vpc" [$WIN32]
+}
+
+$Project "mysql_driver"
+{
+	"game\server\hl2rp\dal\mysql_driver\mysql_driver.vpc" [$WIN32 || $POSIX]
 }
 
 $Project "phonemeextractor"
@@ -72,6 +80,11 @@ $Project "qc_eyes"
 $Project "serverplugin_empty"
 {
 	"utils\serverplugin_sample\serverplugin_empty.vpc" [$WIN32||$POSIX]
+}
+
+$Project "sqlite3_driver"
+{
+	"game\server\hl2rp\dal\sqlite3_driver\sqlite3_driver.vpc" [$WIN32 || $POSIX]
 }
 
 $Project "tgadiff"

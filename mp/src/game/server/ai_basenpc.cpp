@@ -8431,11 +8431,19 @@ void CAI_BaseNPC::HandleAnimEvent( animevent_t *pEvent )
 
 	case NPC_EVENT_OPEN_DOOR:
 		{
-			CBasePropDoor *pDoor = (CBasePropDoor *)(CBaseEntity *)GetNavigator()->GetPath()->GetCurWaypoint()->GetEHandleData();
-			if (pDoor != NULL)
+			CBaseEntity* pDoor = GetNavigator()->GetPath()->GetCurWaypoint()->GetEHandleData();
+			CBasePropDoor* pPropDoor = dynamic_cast<CBasePropDoor*>(pDoor);
+
+			if (pPropDoor != NULL)
 			{
-				OpenPropDoorNow( pDoor );
+				OpenPropDoorNow(pPropDoor);
 			}
+#ifdef HL2RP
+			else if (pDoor != NULL)
+			{
+				OpenDoorNow(pDoor);
+			}
+#endif // HL2RP
 	
 			break;
 		}
@@ -12141,6 +12149,15 @@ bool CAI_BaseNPC::OnCalcBaseMove( AILocalMoveGoal_t *pMoveGoal,
 {
 	if ( pMoveGoal->directTrace.pObstruction )
 	{
+#ifdef HL2RP
+		CBaseDoor* pDoor = dynamic_cast<CBaseDoor*>(pMoveGoal->directTrace.pObstruction);
+
+		if (pDoor != NULL)
+		{
+			return OnUpcomingDoor(pMoveGoal, pDoor, distClear, pResult);
+		}
+#endif // HL2RP
+
 		CBasePropDoor *pPropDoor = dynamic_cast<CBasePropDoor *>( pMoveGoal->directTrace.pObstruction );
 		if ( pPropDoor && OnUpcomingPropDoor( pMoveGoal, pPropDoor, distClear, pResult ) )
 		{
@@ -12196,6 +12213,61 @@ bool CAI_BaseNPC::OnObstructingDoor( AILocalMoveGoal_t *pMoveGoal,
 	return false;
 }
 
+#ifdef HL2RP
+bool CAI_BaseNPC::OnUpcomingDoor(AILocalMoveGoal_t* pMoveGoal, CBaseDoor* pDoor,
+	float distClear, AIMoveResult_t* pResult)
+{
+	if (FBitSet(pMoveGoal->flags, AILMG_TARGET_IS_GOAL) ? pMoveGoal->maxDist >= distClear
+		: pMoveGoal->maxDist + GetHullWidth() * 0.25f >= distClear)
+	{
+		if (pDoor == m_hOpeningDoor)
+		{
+			if (pDoor->m_hActivator == this)
+			{
+				// We're in the process of opening the door, don't be blocked by it
+				pMoveGoal->maxDist = distClear;
+				*pResult = AIMR_OK;
+				return true;
+			}
+
+			m_hOpeningDoor = NULL;
+		}
+
+		if (FBitSet(CapabilitiesGet(), bits_CAP_DOORS_GROUP) && !pDoor->IsLocked()
+			&& (pDoor->m_toggle_state == TS_AT_BOTTOM || pDoor->m_toggle_state == TS_GOING_DOWN))
+		{
+			// Angles may not determine door's facing direction, so, use hit normal instead.
+			// Also, add the distance until the hit position from door origin along hit normal.
+			opendata_t openData;
+			openData.vecStandPos = pDoor->GetAbsOrigin() + pMoveGoal->directTrace.vHitNormal
+				* ((pMoveGoal->directTrace.vEndPosition - pDoor->GetAbsOrigin()).Dot(pMoveGoal->directTrace.vHitNormal)
+					+ GetHullWidth() / 2.0f);
+
+			openData.vecFaceDir = -pMoveGoal->directTrace.vHitNormal;
+			AI_Waypoint_t* pRoute = GetPathfinder()->BuildLocalRoute(GetAbsOrigin(), openData.vecStandPos, NULL,
+				bits_WP_TO_DOOR | bits_WP_DONT_SIMPLIFY, NO_NODE, bits_BUILD_GROUND | bits_BUILD_IGNORE_NPCS, 0.0f);
+
+			if (pRoute != NULL)
+			{
+				pRoute->m_hData = pDoor; // Attach the door to the waypoint so we open it when we get there
+				GetNavigator()->GetPath()->PrependWaypoints(pRoute);
+				m_hOpeningDoor = pDoor;
+				pMoveGoal->maxDist = distClear;
+				*pResult = AIMR_CHANGE_TYPE;
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void CAI_BaseNPC::OpenDoorNow(CBaseEntity* pDoor)
+{
+	pDoor->Use(this, this, USE_ON, 0.0f);
+	m_flMoveWaitFinished = gpGlobals->curtime + pDoor->GetMoveDoneTime();
+}
+#endif // HL2RP
 
 //-----------------------------------------------------------------------------
 // Purpose: 

@@ -1519,6 +1519,13 @@ void CWeaponPhysCannon::Drop( const Vector &vecVelocity )
 {
 	ForceDrop();
 
+#ifdef HL2RP
+	if (GetOwner() != NULL && GetOwner()->IsAlive())
+	{
+		return BaseClass::Drop(vecVelocity);
+	}
+#endif // HL2RP
+
 #ifndef CLIENT_DLL
 	UTIL_Remove( this );
 #endif

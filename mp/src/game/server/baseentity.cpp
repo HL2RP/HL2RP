@@ -2183,6 +2183,14 @@ void CBaseEntity::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE u
 	}
 }
 
+#ifdef HL2RP
+CBasePlayer* CBaseEntity::UTIL_GetLocalPlayer()
+{
+	CBasePlayer* pPlayer = ToBasePlayer(GetEnemy());
+	return (pPlayer != NULL ? pPlayer : ::UTIL_GetLocalPlayer());
+}
+#endif // HL2RP
+
 static CBaseEntity *FindPhysicsBlocker( IPhysicsObject *pPhysics, physicspushlist_t &list, const Vector &pushVel )
 {
 	IPhysicsFrictionSnapshot *pSnapshot = pPhysics->CreateFrictionSnapshot();

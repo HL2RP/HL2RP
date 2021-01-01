@@ -1197,8 +1197,12 @@ void CNPC_MetroPolice::OnUpdateShotRegulator( )
 {
 	BaseClass::OnUpdateShotRegulator();
 
-	// FIXME: This code (except the burst interval) could be used for all weapon types 
+	// FIXME: This code (except the burst interval) could be used for all weapon types
+#ifdef HL2RP
+	if (GetActiveWeapon() != NULL && FClassnameIs(GetActiveWeapon(), "weapon_pistol"))
+#else
 	if( Weapon_OwnsThisType( "weapon_pistol" ) )
+#endif // HL2RP
 	{
 		if ( m_nBurstMode == BURST_NOT_ACTIVE )
 		{
@@ -2883,16 +2887,14 @@ void CNPC_MetroPolice::OnAnimEventShove( void )
 //-----------------------------------------------------------------------------
 void CNPC_MetroPolice::OnAnimEventBatonOn( void )
 {
-#ifndef HL2MP
-
+#if (!defined HL2MP || defined HL2RP)
 	CWeaponStunStick *pStick = dynamic_cast<CWeaponStunStick *>(GetActiveWeapon());
 
 	if ( pStick )
 	{
 		pStick->SetStunState( true );
 	}
-#endif
-
+#endif // (!defined HL2MP || defined HL2RP)
 }
 
 //-----------------------------------------------------------------------------
@@ -2900,15 +2902,14 @@ void CNPC_MetroPolice::OnAnimEventBatonOn( void )
 //-----------------------------------------------------------------------------
 void CNPC_MetroPolice::OnAnimEventBatonOff( void )
 {
-#ifndef HL2MP
-
+#if (!defined HL2MP || defined HL2RP)
 	CWeaponStunStick *pStick = dynamic_cast<CWeaponStunStick *>(GetActiveWeapon());
 	
 	if ( pStick )
 	{
 		pStick->SetStunState( false );
 	}
-#endif
+#endif // (!defined HL2MP || defined HL2RP)
 }
 
 //-----------------------------------------------------------------------------
@@ -3097,14 +3098,14 @@ void CNPC_MetroPolice::Event_Killed( const CTakeDamageInfo &info )
 		m_hManhack = NULL;
 	}
 
-	CBasePlayer *pPlayer = ToBasePlayer( info.GetAttacker() );
+	CHalfLife2* pHL2GameRules = HL2GameRules();
 
-	if ( pPlayer != NULL )
+	if (pHL2GameRules != NULL)
 	{
-		CHalfLife2 *pHL2GameRules = static_cast<CHalfLife2 *>(g_pGameRules);
+		CBasePlayer *pPlayer = ToBasePlayer( info.GetAttacker() );
 
 		// Attempt to drop health
-		if ( pHL2GameRules->NPC_ShouldDropHealth( pPlayer ) )
+		if ( pPlayer != NULL && pHL2GameRules->NPC_ShouldDropHealth( pPlayer ) )
 		{
 			DropItem( "item_healthvial", WorldSpaceCenter()+RandomVector(-4,4), RandomAngle(0,360) );
 			pHL2GameRules->NPC_DroppedHealth();
@@ -5051,13 +5052,12 @@ bool CNPC_MetroPolice::HasBaton( void )
 //-----------------------------------------------------------------------------
 bool CNPC_MetroPolice::BatonActive( void )
 {
-#ifndef HL2MP
-
+#if (!defined HL2MP || defined HL2RP)
 	CWeaponStunStick *pStick = dynamic_cast<CWeaponStunStick *>(GetActiveWeapon());
 
 	if ( pStick )
 		return pStick->GetStunState();
-#endif
+#endif // (!defined HL2MP || defined HL2RP)
 
 	return false;
 }
