@@ -68,7 +68,6 @@ class CBaseHL2Roleplayer : public CHL2MP_Player
 	DECLARE_CLASS(CBaseHL2Roleplayer, CHL2MP_Player)
 
 	void PreThink() OVERRIDE;
-	bool ShouldCollide(int, int) const OVERRIDE;
 	virtual void OnDatabasePropChanged(EPlayerDatabasePropType::Value) {}
 
 public:

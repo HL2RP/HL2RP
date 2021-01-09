@@ -82,6 +82,15 @@ bool g_bMovementOptimizations = true;
 
 extern IGameMovement *g_pGameMovement;
 
+#ifdef HL2RP
+bool ShouldPlayerMoveTraceHit(IHandleEntity*, int contentsMask);
+#else
+bool ShouldPlayerMoveTraceHit(IHandleEntity*, int)
+{
+	return true;
+}
+#endif // HL2RP
+
 #if defined( PLAYER_GETTING_STUCK_TESTING )
 
 // If you ever get stuck walking around, then you can run this code to find the code which would leave the player in a bad spot
@@ -785,7 +794,7 @@ CBaseHandle CGameMovement::TestPlayerPosition( const Vector& pos, int collisionG
 {
 	Ray_t ray;
 	ray.Init( pos, pos, GetPlayerMins(), GetPlayerMaxs() );
-	UTIL_TraceRay( ray, PlayerSolidMask(), mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
+	UTIL_TraceRay( ray, PlayerSolidMask(), mv->m_nPlayerHandle.Get(), collisionGroup, &pm, ShouldPlayerMoveTraceHit );
 	if ( (pm.contents & PlayerSolidMask()) && pm.m_pEnt )
 	{
 		return pm.m_pEnt->GetRefEHandle();
@@ -4923,7 +4932,7 @@ void CGameMovement::TracePlayerBBox( const Vector& start, const Vector& end, uns
 
 	Ray_t ray;
 	ray.Init( start, end, GetPlayerMins(), GetPlayerMaxs() );
-	UTIL_TraceRay( ray, fMask, mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
+	UTIL_TraceRay( ray, fMask, mv->m_nPlayerHandle.Get(), collisionGroup, &pm, ShouldPlayerMoveTraceHit );
 
 }
 
@@ -4938,6 +4947,6 @@ void  CGameMovement::TryTouchGround( const Vector& start, const Vector& end, con
 
 	Ray_t ray;
 	ray.Init( start, end, mins, maxs );
-	UTIL_TraceRay( ray, fMask, mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
+	UTIL_TraceRay( ray, fMask, mv->m_nPlayerHandle.Get(), collisionGroup, &pm, ShouldPlayerMoveTraceHit );
 }
 

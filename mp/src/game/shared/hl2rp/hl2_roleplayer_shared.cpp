@@ -32,6 +32,12 @@ CHL2Roleplayer* ToHL2Roleplayer(CBaseEntity* pEntity)
 	return ToHL2Roleplayer(ToBasePlayer(pEntity));
 }
 
+bool ShouldPlayerMoveTraceHit(IHandleEntity* pHandleEntity, int)
+{
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(EntityFromEntityHandle(pHandleEntity));
+	return (pPlayer == NULL || !FBitSet(pPlayer->mMovementFlags, EPlayerMovementFlag::Interpenetrating));
+}
+
 struct SRelativeTime
 {
 	SRelativeTime(int seconds) : mHours(seconds / 3600), mMinutes(seconds % 3600 / 60), mSeconds(seconds % 60) {}
@@ -74,12 +80,6 @@ void CBaseHL2Roleplayer::PreThink()
 			SETBITS(mMovementFlags, EPlayerMovementFlag::Interpenetrating);
 		}
 	}
-}
-
-bool CBaseHL2Roleplayer::ShouldCollide(int collisionGroup, int contentsMask) const
-{
-	return (!FBitSet(mMovementFlags, EPlayerMovementFlag::Interpenetrating)
-		&& BaseClass::ShouldCollide(collisionGroup, contentsMask));
 }
 
 void CHL2Roleplayer::HandleWalkChanges()
