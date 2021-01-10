@@ -127,13 +127,14 @@ void CBaseHL2Roleplayer::StopWalking()
 	CLEARBITS(mMovementFlags, EPlayerMovementFlag::InStickyWalkMode);
 }
 
-#ifdef HL2RP_UNPREDICTED_SHAREABLE_CODE
+#ifdef HL2RP_CLIENT_OR_LEGACY
 void CBaseHL2Roleplayer::ComputeMainHUD(localizebuf_t& dest)
 {
 	SRelativeTime time(mSeconds);
-	gHL2RPLocalize.Localize(this, dest, false, "#HL2RP_MainHUD", time.mHours, time.mMinutes, time.mSeconds, mCrime->Get());
+	gHL2RPLocalizer.Localize(this, dest, false, "#HL2RP_MainHUD", time.mHours, time.mMinutes, time.mSeconds,
+		mCrime->Get());
 }
-#endif // HL2RP_UNPREDICTED_SHAREABLE_CODE
+#endif // HL2RP_CLIENT_OR_LEGACY
 
 bool CHL2Roleplayer::ComputeAimingEntityAndHUD(localizebuf_t& dest)
 {
@@ -149,7 +150,7 @@ bool CHL2Roleplayer::ComputeAimingEntityAndHUD(localizebuf_t& dest)
 
 	if (trace.DidHitNonWorldEntity())
 	{
-#ifdef HL2RP_UNPREDICTED_SHAREABLE_CODE
+#ifdef HL2RP_CLIENT_OR_LEGACY
 		// Aiming entities must only be displayed within citizen's range, regardless of team
 		if (maxDistance * trace.fraction < HL2_ROLEPLAYER_CITIZEN_AIM_TRACE_DIST
 #ifdef HL2RP_LEGACY
@@ -163,19 +164,19 @@ bool CHL2Roleplayer::ComputeAimingEntityAndHUD(localizebuf_t& dest)
 			{
 				if (gpGlobals->curtime >= pDispenser->mNextTimeAvailable)
 				{
-					gHL2RPLocalize.Localize(this, dest, false, "#HL2RP_Dispenser_Available");
+					gHL2RPLocalizer.Localize(this, dest, false, "#HL2RP_Dispenser_Available");
 				}
 				else
 				{
 					SRelativeTime time(pDispenser->mNextTimeAvailable - gpGlobals->curtime);
-					gHL2RPLocalize.Localize(this, dest, false, "HL2RP_Dispenser_Restoring",
+					gHL2RPLocalizer.Localize(this, dest, false, "#HL2RP_Dispenser_Restoring",
 						time.mHours, time.mMinutes, time.mSeconds);
 				}
 			}
 
 			success = (dest[0] != '\0');
 		}
-#endif // HL2RP_UNPREDICTED_SHAREABLE_CODE
+#endif // HL2RP_CLIENT_OR_LEGACY
 
 		mhAimingEntity = trace.m_pEnt;
 		return success;

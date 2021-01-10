@@ -11,7 +11,11 @@
 
 		// HUD
 		"HL2RP_Dispenser_Available" "Pulsa la tecla <USAR> para interactuar con este Dispensador"
-		"HL2RP_Dispenser_Restoring" "Este Dispensador estará disponible en: %s1 horas, %s2 minutos, %s3 segundos"
+		"HL2RP_Dispenser_Restoring" "Este Dispensador estará disponible en:\n%s1 horas, %s2 minutos, %s3 segundos"
 		"HL2RP_MainHUD"             "Tiempo jugado: %s1 horas, %s2 minutos, %s3 segundos\nCrimen: %s4"
+
+		// Chat
+		"HL2RP_Ration_Heal_Success" "%static%Has recuperado %dynamic%+%s1 %static%punto/s de salud usando una Unidad de Ración Ciudadana proporcionada por La Alianza"
+		"HL2RP_Ration_Heal_Deny"    "%static%[Nota] ¡Ciudadano enfermo! Haz un uso razonable de la Ración Ciudadana, ya estás sano (Firmado: La Alianza)"
 	}
 }

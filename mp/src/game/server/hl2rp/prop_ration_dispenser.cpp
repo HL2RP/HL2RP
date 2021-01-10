@@ -6,58 +6,16 @@
 #include <ration.h>
 #include <npcevent.h>
 
-#define RATION_DISPENSER_MODEL_PATH              "models/props_combine/combine_dispenser.mdl"
-#define RATION_DISPENSER_SUPPLY_GLOW_SPRITE_PATH "sprites/plasmaember.vmt"
-#define RATION_DISPENSER_DENY_GLOW_SPRITE_PATH   "sprites/redglow2.vmt"
-#define RATION_DISPENSER_GLOW_SPRITE_SIZE        0.1f
+#define RATION_DISPENSER_SF_COMBINE_CONTROLLED 512
 
-#define RATION_DISPENSER_AVAILABILITY_COOLDOWN     1800.0f
+#define RATION_DISPENSER_GLOW_SPRITE_SIZE 0.1f
+
 #define RATION_DISPENSER_REACTION_EFFECTS_COOLDOWN 5.0f
-
-#define RATION_DISPENSER_SUPPLY_SOUND "buttons/button5.wav"
-#define RATION_DISPENSER_DENY_SOUND   "npc/attack_helicopter/aheli_damaged_alarm1.wav"
 
 ENUM(ERationDispenserEvent,
 	FullyOpen,
 	FullyClosed
 )
-
-LINK_ENTITY_TO_CLASS(prop_ration_dispenser, CRationDispenserProp)
-
-#ifdef HL2RP_FULL
-IMPLEMENT_HL2RP_NETWORKCLASS(RationDispenserProp)
-SendPropTime(SENDINFO(mNextTimeAvailable))
-END_NETWORK_TABLE()
-#endif // HL2RP_FULL
-
-CRationDispenserProp::~CRationDispenserProp()
-{
-	if (mhContainedRation != NULL)
-	{
-		mhContainedRation->mhParentDispenser = NULL;
-	}
-}
-
-void CRationDispenserProp::Spawn()
-{
-	SetModelName(MAKE_STRING(RATION_DISPENSER_MODEL_PATH));
-	SetSolid(SOLID_VPHYSICS);
-	BaseClass::Spawn();
-}
-
-void CRationDispenserProp::Precache()
-{
-	PrecacheModel(RATION_DISPENSER_MODEL_PATH);
-	PrecacheModel(RATION_DISPENSER_SUPPLY_GLOW_SPRITE_PATH);
-	PrecacheModel(RATION_DISPENSER_DENY_GLOW_SPRITE_PATH);
-	enginesound->PrecacheSound(RATION_DISPENSER_SUPPLY_SOUND);
-	enginesound->PrecacheSound(RATION_DISPENSER_DENY_SOUND);
-}
-
-int CRationDispenserProp::ObjectCaps()
-{
-	return (BaseClass::ObjectCaps() | FCAP_IMPULSE_USE);
-}
 
 void CRationDispenserProp::Use(CBaseEntity* pActivator, CBaseEntity*, USE_TYPE, float)
 {
@@ -140,15 +98,5 @@ void CRationDispenserProp::HandleAnimEvent(animevent_t* pEvent)
 
 		PropSetAnim("idle");
 	}
-	}
-}
-
-void CRationDispenserProp::OnContainedRationPickup()
-{
-	mNextTimeAvailable = gpGlobals->curtime + RATION_DISPENSER_AVAILABILITY_COOLDOWN;
-
-	if (!IsSequenceFinished())
-	{
-		mNextTimeAvailable += SequenceDuration() * (1.0f - GetCycle());
 	}
 }

@@ -29,7 +29,7 @@ public:
 
 	bool IsEntityWithin(CBaseEntity*);
 
-	ECityZoneType::Value mType;
+	ECityZoneType::_Value mType;
 };
 
 #endif // !TRIGGER_CITY_ZONE_H

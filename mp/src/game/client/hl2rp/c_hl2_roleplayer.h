@@ -3,7 +3,7 @@
 #pragma once
 
 #include <hl2_roleplayer_shared.h>
-#include <hl2rp_localize.h>
+#include <hl2rp_localizer.h>
 #include <hl2rp_shareddefs.h>
 
 class C_HL2Roleplayer : public CBaseHL2Roleplayer
@@ -11,11 +11,15 @@ class C_HL2Roleplayer : public CBaseHL2Roleplayer
 	DECLARE_CLASS(C_HL2Roleplayer, CBaseHL2Roleplayer)
 	DECLARE_HL2RP_NETWORKCLASS()
 
-	void SendHUDHint(EPlayerHUDHintType::Value, const char*, bool);
+	CNetworkVar(int, m_iMaxHealth)
 
 public:
+	int GetMaxHealth() const OVERRIDE;
+
 	void HandleWalkChanges();
+	void Print(int type, const char*, ...);
 	bool ComputeAimingEntityAndHUD(localizebuf_t& dest);
+	void SendHUDHint(EPlayerHUDHintType::_Value, const char*, ...);
 };
 
 C_HL2Roleplayer* GetLocalHL2Roleplayer();

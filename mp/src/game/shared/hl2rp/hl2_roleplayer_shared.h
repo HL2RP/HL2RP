@@ -15,11 +15,9 @@
 #include <hl2mp_player.h>
 #endif
 
-#if (defined HL2RP_LEGACY || defined CLIENT_DLL)
-#include "hl2rp_localize.h"
-
-#define HL2RP_UNPREDICTED_SHAREABLE_CODE
-#endif // (defined HL2RP_LEGACY || defined CLIENT_DLL)
+#ifdef HL2RP_CLIENT_OR_LEGACY
+#include "hl2rp_localizer.h"
+#endif // HL2RP_CLIENT_OR_LEGACY
 
 template<typename T, class Listener>
 class CPlayerDatabasePropBase : public CPositiveVar<T, Listener>
@@ -68,12 +66,12 @@ class CBaseHL2Roleplayer : public CHL2MP_Player
 	DECLARE_CLASS(CBaseHL2Roleplayer, CHL2MP_Player)
 
 	void PreThink() OVERRIDE;
-	virtual void OnDatabasePropChanged(EPlayerDatabasePropType::Value) {}
+	virtual void OnDatabasePropChanged(EPlayerDatabasePropType::_Value) {}
 
 public:
-#ifdef HL2RP_UNPREDICTED_SHAREABLE_CODE
+#ifdef HL2RP_CLIENT_OR_LEGACY
 	void ComputeMainHUD(localizebuf_t& dest);
-#endif // HL2RP_UNPREDICTED_SHAREABLE_CODE
+#endif // HL2RP_CLIENT_OR_LEGACY
 
 	CNetworkVar(int, mMovementFlags);
 	EHANDLE mhAimingEntity;

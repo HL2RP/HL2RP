@@ -11,7 +11,11 @@
 
 		// HUD
 		"HL2RP_Dispenser_Available" "Press the <USE> key to interact with this Dispenser"
-		"HL2RP_Dispenser_Restoring" "This Dispenser will be available in: %s1 hours, %s2 minutes, %s3 seconds"
+		"HL2RP_Dispenser_Restoring" "This Dispenser will be available in:\n%s1 hours, %s2 minutes, %s3 seconds"
 		"HL2RP_MainHUD"             "Play time: %s1 hours, %s2 minutes, %s3 seconds\nCrime: %s4"
+
+		// Chat
+		"HL2RP_Ration_Heal_Success" "%static%You have recovered %dynamic%+%s1 %static%HP by using a Combine-supplied Citizen Ration Unit"
+		"HL2RP_Ration_Heal_Deny"    "%static%[Note] Disordered Citizen! Make a reasonable use of the Citizen Ration, you are already healthy (Signed: The Combine)"
 	}
 }

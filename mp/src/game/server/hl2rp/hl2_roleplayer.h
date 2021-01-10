@@ -3,7 +3,7 @@
 #pragma once
 
 #include <hl2_roleplayer_shared.h>
-#include <hl2rp_localize.h>
+#include <hl2rp_localizer.h>
 #include <hl2rp_shareddefs.h>
 #include <bitflags.h>
 #include <generic.h>
@@ -73,15 +73,17 @@ class CHL2Roleplayer : public CBaseHL2Roleplayer
 	void Spawn() OVERRIDE;
 	CBaseEntity* EntSelectSpawnPoint() OVERRIDE;
 	void PostThink() OVERRIDE;
+	bool PassesDamageFilter(const CTakeDamageInfo&) OVERRIDE;
 	void Weapon_Drop(CBaseCombatWeapon*, const Vector*, const Vector*) OVERRIDE;
 	void Event_Killed(const CTakeDamageInfo&) OVERRIDE;
+	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_iMaxHealth);
 
 	int TransferPrimaryAmmoFromWeapon(CBaseCombatWeapon*);
 	int TransferSecondaryAmmoFromWeapon(CBaseCombatWeapon*);
 	void HUDThink();
 	void SendMainHUD();
-	bool AcquireHUDTime(EPlayerHUDType::Value, bool force = false);
-	void SendHUDMessage(EPlayerHUDType::Value, const char* pMessage, float xPos, float yPos, const Color&);
+	bool AcquireHUDTime(EPlayerHUDType::_Value, bool force = false);
+	void SendHUDMessage(EPlayerHUDType::_Value, const char* pMessage, float xPos, float yPos, const Color&);
 
 	CSimpleSimTimer mHUDExpireTimers[EPlayerHUDType::TypeCount];
 
@@ -90,11 +92,12 @@ public:
 
 	void Weapon_Equip(CBaseCombatWeapon*) OVERRIDE;
 	bool Weapon_EquipAmmoOnly(CBaseCombatWeapon*) OVERRIDE;
-	void OnDatabasePropChanged(EPlayerDatabasePropType::Value) OVERRIDE;
+	void OnDatabasePropChanged(EPlayerDatabasePropType::_Value) OVERRIDE;
 
 	void LoadFromDatabase();
 	void HandleWalkChanges();
-	void SendHUDHint(EPlayerHUDHintType::Value, const char*, bool networked = true);
+	void Print(int type, const char*, bool networked = true);
+	void SendHUDHint(EPlayerHUDHintType::_Value, const char*, bool networked = true);
 	bool ComputeAimingEntityAndHUD(localizebuf_t& dest);
 
 	CBitFlags<> mDatabaseIOFlags;

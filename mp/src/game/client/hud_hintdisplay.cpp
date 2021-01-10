@@ -20,7 +20,6 @@
 
 #ifdef HL2RP
 #include <hl2rp_configuration.h>
-#include <hl2rp_shareddefs.h>
 #include <bitflags.h>
 #endif // HL2RP
 
@@ -355,12 +354,7 @@ class CHudHintKeyDisplay : public vgui::Panel, public CHudElement
 {
 	DECLARE_CLASS_SIMPLE( CHudHintKeyDisplay, vgui::Panel );
 
-#ifdef HL2RP
-	void FireGameEvent(IGameEvent*) OVERRIDE;
-#endif // HL2RP
-
 	void StartTextDisplay(const char*);
-	void StartTextDisplay(int type, const char*);
 
 public:
 	CHudHintKeyDisplay( const char *pElementName );
@@ -415,7 +409,6 @@ void CHudHintKeyDisplay::Init()
 
 #ifdef HL2RP
 	HOOK_HUD_MESSAGE(CHudHintKeyDisplay, HL2RPKeyHintText);
-	ListenForGameEvent(HL2RP_KEY_HINT_MESSAGE_LOCAL_EVENT_NAME);
 #endif // HL2RP
 }
 
@@ -823,21 +816,11 @@ void CHudHintKeyDisplay::MsgFunc_HL2RPKeyHintText(bf_read& msg)
 	long type = msg.ReadLong();
 	char token[64];
 	msg.ReadString(token, sizeof(token));
-	StartTextDisplay(type, token);
-}
-
-void CHudHintKeyDisplay::FireGameEvent(IGameEvent* pEvent)
-{
-	StartTextDisplay(pEvent->GetInt("type"), pEvent->GetString("token"));
-}
-
-void CHudHintKeyDisplay::StartTextDisplay(int type, const char* pToken)
-{
 	CBitFlags<> sentHUDHints(gHL2RPConfiguration.mUserData->GetInt("sentHUDHints"));
 
 	if (!sentHUDHints.IsBitSet(type))
 	{
-		StartTextDisplay(pToken);
+		StartTextDisplay(token);
 		sentHUDHints.SetBit(type);
 		gHL2RPConfiguration.mUserData->SetInt("sentHUDHints", sentHUDHints);
 	}

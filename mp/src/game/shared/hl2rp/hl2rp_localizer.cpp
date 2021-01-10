@@ -1,34 +1,25 @@
 // This is an open source non-commercial project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include <cbase.h>
-#include "hl2rp_localize.h"
+#include "hl2rp_localizer.h"
 
 #ifdef CLIENT_DLL
 #include <tier3/tier3.h>
 #include <vgui/ILocalize.h>
-#include <fmtstr.h>
 #else
 #include <tier2/fileutils.h>
 #include <language.h>
 #include <utlbuffer.h>
 #endif // CLIENT_DLL
 
-CHL2RPLocalize gHL2RPLocalize;
+CHL2RPLocalizer gHL2RPLocalizer;
 
-CHL2RPLocalize::CHL2RPLocalize() : mVariables("")
+CHL2RPLocalizer::CHL2RPLocalizer() : mVariables("")
 {
 
 }
 
-void CHL2RPLocalize::PostInit()
-{
-#ifdef CLIENT_DLL
-	AddLanguageLocalizationFromFile("hl2mp"); // Base localization
-	AddLanguageLocalizationFromFile("hl2rp_client");
-#endif // CLIENT_DLL
-}
-
-void CHL2RPLocalize::LevelInitPostEntity()
+void CHL2RPLocalizer::LevelInitPostEntity()
 {
 	mVariables->SetString("default", "\x01");
 	mVariables->SetString("indianred", "\x07" "CD5C5C");
@@ -36,7 +27,7 @@ void CHL2RPLocalize::LevelInitPostEntity()
 	mVariables->SetString("dynamic", "\x04"); // Green
 	mVariables->SetString("team", "\x03");
 
-#ifndef CLIENT_DLL
+#ifdef GAME_DLL
 	// Load HL2RP server localization for all languages
 	FOR_EACH_LANGUAGE(language)
 	{
@@ -51,19 +42,19 @@ void CHL2RPLocalize::LevelInitPostEntity()
 		// Load the localized language names, to be displayed during in-game translating by users
 		AddLanguageLocalizationFromFile("gameui", pLangShortName, "GameUI_Language_");
 	}
-#endif // !CLIENT_DLL
+#endif // GAME_DLL
 }
 
-void CHL2RPLocalize::LevelShutdownPostEntity()
+void CHL2RPLocalizer::LevelShutdownPostEntity()
 {
 	mVariables->Clear();
 
-#ifndef CLIENT_DLL
+#ifdef GAME_DLL
 	mLocalizationByLanguage.PurgeAndDeleteElements();
-#endif // !CLIENT_DLL
+#endif // GAME_DLL
 }
 
-void CHL2RPLocalize::AddLanguageLocalizationFromFile(const char* pBasePath,
+void CHL2RPLocalizer::AddLanguageLocalizationFromFile(const char* pBasePath,
 	const char* pLanguage, const char* pTokenPrefix)
 {
 	char path[MAX_PATH];
@@ -119,36 +110,16 @@ void CHL2RPLocalize::AddLanguageLocalizationFromFile(const char* pBasePath,
 #endif // CLIENT_DLL
 }
 
-int CHL2RPLocalize::ConstructString(locchar_t* pDest, int maxLen, bool parseVariables,
-	const locchar_t* pFormat, int argCount, ...)
-{
-#ifndef CLIENT_DLL
-	char buffer[HL2RP_LOCALIZE_MAX_BUFFER_SIZE];
-
-	if (parseVariables)
-	{
-		ILocalize::ConstructString(buffer, sizeof(buffer), pFormat, mVariables);
-		pFormat = buffer;
-	}
-#endif // !CLIENT_DLL
-
-	va_list args;
-	va_start(args, argCount);
-	ILocalize::ConstructStringVArgs(pDest, maxLen, pFormat, argCount, args);
-	va_end(args);
-	return loc_strlen(pDest);
-}
-
-const locchar_t* CHL2RPLocalize::Localize(CBasePlayer* pPlayer, const char* pToken)
+const char* CHL2RPLocalizer::LocalizeAsUTF8(CBasePlayer* pPlayer, const char* pToken)
 {
 #ifdef CLIENT_DLL
-	return Localize(pToken);
+	return g_pVGuiLocalize->FindAsUTF8(pToken);
 #else
-	const char* pLanguage = engine->GetClientConVarValue(pPlayer->entindex(), "cl_language");
+	const char* pLanguage = engine->GetClientConVarValue(pPlayer->entindex(), "cl_language"), * pCleanToken = pToken;
 
-	if (pToken[0] == '#')
+	if (*pCleanToken == '#')
 	{
-		++pToken;
+		++pCleanToken;
 	}
 
 	for (int i = 0; i < 2; pLanguage = "english", ++i)
@@ -157,7 +128,7 @@ const locchar_t* CHL2RPLocalize::Localize(CBasePlayer* pPlayer, const char* pTok
 
 		if (mLocalizationByLanguage.IsValidIndex(localizationIndex))
 		{
-			int phraseIndex = mLocalizationByLanguage[localizationIndex]->Find(pToken);
+			int phraseIndex = mLocalizationByLanguage[localizationIndex]->Find(pCleanToken);
 
 			if (mLocalizationByLanguage[localizationIndex]->IsValidIndex(phraseIndex)
 				&& !mLocalizationByLanguage[localizationIndex]->Element(phraseIndex).IsEmpty())
@@ -167,21 +138,21 @@ const locchar_t* CHL2RPLocalize::Localize(CBasePlayer* pPlayer, const char* pTok
 		}
 	}
 
-	return "";
+	return pToken;
 #endif // CLIENT_DLL
 }
 
 #ifdef CLIENT_DLL
-const wchar_t* CHL2RPLocalize::Localize(const char* pToken)
+void CHL2RPLocalizer::PostInit()
+{
+	AddLanguageLocalizationFromFile("hl2mp"); // Base localization
+	AddLanguageLocalizationFromFile("hl2rp_client");
+}
+
+const wchar_t* CHL2RPLocalizer::LocalizeAsWideString(const char* pToken)
 {
 	wchar_t* pFormat = g_pVGuiLocalize->Find(pToken);
-
-	if (pFormat != NULL)
-	{
-		return pFormat;
-	}
-
-	return L"";
+	return (pFormat != NULL ? pFormat : L"");
 }
 #else
 void CPhraseDictionary::AddPhrase(const char* pToken, const char* pPhrase)
@@ -196,7 +167,7 @@ void CPhraseDictionary::AddPhrase(const char* pToken, const char* pPhrase)
 	Element(index).Set(pPhrase);
 }
 
-CPhraseDictionary* CHL2RPLocalize::CreateLocalization(const char* pLanguage)
+CPhraseDictionary* CHL2RPLocalizer::CreateLocalization(const char* pLanguage)
 {
 	int index = mLocalizationByLanguage.Find(pLanguage);
 

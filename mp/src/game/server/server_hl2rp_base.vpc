@@ -5,7 +5,7 @@ $Configuration
 {
 	$Compiler
 	{
-		$AdditionalIncludeDirectories "$BASE;hl2rp,hl2rp\dal,hl2rp\weapons"
+		$AdditionalIncludeDirectories "$BASE,hl2rp\dal,hl2rp\weapons"
 		$SymbolVisibility             "hidden" 
 	}
 }
@@ -44,7 +44,6 @@ $Project
 			{
 				$File "hl2rp\weapons\variable_ammo_item.cpp"
 				$File "hl2rp\weapons\ration.cpp"
-				$File "hl2rp\weapons\ration.h"
 			}
 
 			$File "hl2rp\trigger_city_zone.cpp"

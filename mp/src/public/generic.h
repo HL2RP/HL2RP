@@ -5,7 +5,7 @@
 #define ENUM(Name, ...) \
 namespace Name \
 { \
-	enum Value \
+	enum _Value \
 	{ \
 		__VA_ARGS__, \
 		_Count \

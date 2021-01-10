@@ -6,14 +6,14 @@
 
 const char* CCityZone::sTypeTokens[ECityZoneType::_Count] =
 {
-	"HL2RP_GenericZone",
-	"HL2RP_AutoCrimeZone",
-	"HL2RP_NoCrimeZone",
-	"HL2RP_NoKillZone",
-	"HL2RP_Jail",
-	"HL2RP_VIPJail",
-	"HL2RP_ExecutionRoom",
-	"HL2RP_HomeZone_Unowned"
+	"#HL2RP_GenericZone",
+	"#HL2RP_AutoCrimeZone",
+	"#HL2RP_NoCrimeZone",
+	"#HL2RP_NoKillZone",
+	"#HL2RP_Jail",
+	"#HL2RP_VIPJail",
+	"#HL2RP_ExecutionRoom",
+	"#HL2RP_HomeZone_Unowned"
 };
 
 LINK_ENTITY_TO_CLASS(trigger_city_zone, CCityZone)

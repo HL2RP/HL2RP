@@ -16,6 +16,6 @@
 		"HL2RP_Ration"             "RACIÓN\n(Suplemento alimenticio proporcionado por La Alianza)"
 		"HL2RP_RationDeployedHint" "%+attack% (MANTÉN) PREPARAR LANZAMIENTO %+attack2% CURARSE"
 		"HL2RP_RationThrowingHint" "%+attack% (SUELTA) LANZAR %+reload% AÑADIR UNIDAD (DESDE MUNICIÓN) %+attack2% CANCELAR LANZAMIENTO"
-		"HL2RP_StickyWalkHint"    "%+walk% (x2) CAMINAR ASISTIDO"
+		"HL2RP_StickyWalkHint"     "%+walk% (x2) CAMINAR ASISTIDO"
 	}
 }

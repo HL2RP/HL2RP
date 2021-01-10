@@ -32,7 +32,6 @@ mod_hl2rp,resource\forgethudhints_dialog.res,,!,
 mod_hl2rp,resource\gamemenu.res,,!,
 mod_hl2rp,resource\hl2rp_client_english.txt,,!,1
 mod_hl2rp,resource\hl2rp_client_spanish.txt,,!,1
-mod_hl2rp,resource\hl2rp_events.res,,!,
 mod_hl2rp,resource\hl2rp_server_english.txt,,,1
 mod_hl2rp,resource\hl2rp_server_spanish.txt,,,1
 mod_hl2rp,resource\mod_hl2rp_english.txt,resource\hl2rp_english.txt,,1

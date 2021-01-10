@@ -343,12 +343,12 @@ class CSQLDTOHandler : public CNodeDTOHandler
 protected:
 	CSQLDTOHandler(ISQLDriver* pDriver) : mpDriver(pDriver) {}
 
-	void AppendRecord(CRecordNodeDTO*, ESQLRecordAppendFlag::Value, const char* pAutoDeducedValueFormat = NULL);
-	const char* AppendFields(const CFieldDictionaryDTO&, ESQLRecordAppendFlag::Value,
+	void AppendRecord(CRecordNodeDTO*, ESQLRecordAppendFlag::_Value, const char* pAutoDeducedValueFormat = NULL);
+	const char* AppendFields(const CFieldDictionaryDTO&, ESQLRecordAppendFlag::_Value,
 		const char* pSeparator = "", const char* pAutoDeducedValueFormat = NULL, int start = 0); // Returns updated separator
-	const char* AppendFieldAt(const CFieldDictionaryDTO&, int index, ESQLRecordAppendFlag::Value,
+	const char* AppendFieldAt(const CFieldDictionaryDTO&, int index, ESQLRecordAppendFlag::_Value,
 		const char* pSeparator = "", const char* pAutoDeducedValueFormat = NULL); // Returns updated separator
-	const char* AppendField(const SFieldDTO&, const char* pName, ESQLRecordAppendFlag::Value,
+	const char* AppendField(const SFieldDTO&, const char* pName, ESQLRecordAppendFlag::_Value,
 		const char* pSeparator = "", const char* pAutoDeducedValueFormat = NULL); // Returns updated separator
 	void Execute(CRecordListDTO* pResults);
 
@@ -357,14 +357,14 @@ protected:
 	CUtlVector<const char*> mStringValues;
 };
 
-void CSQLDTOHandler::AppendRecord(CRecordNodeDTO* pRecord, ESQLRecordAppendFlag::Value flags,
+void CSQLDTOHandler::AppendRecord(CRecordNodeDTO* pRecord, ESQLRecordAppendFlag::_Value flags,
 	const char* pAutoDeducedValueFormat)
 {
 	const char* pSeparator = AppendFields(pRecord->mIndexFieldByName, flags, "", pAutoDeducedValueFormat);
 	AppendFields(pRecord->mNormalFieldByName, flags, pSeparator, pAutoDeducedValueFormat);
 }
 
-const char* CSQLDTOHandler::AppendFields(const CFieldDictionaryDTO& fieldByName, ESQLRecordAppendFlag::Value flags,
+const char* CSQLDTOHandler::AppendFields(const CFieldDictionaryDTO& fieldByName, ESQLRecordAppendFlag::_Value flags,
 	const char* pSeparator, const char* pAutoDeducedValueFormat, int start)
 {
 	for (; start < fieldByName.MaxElement(); ++start)
@@ -379,13 +379,13 @@ const char* CSQLDTOHandler::AppendFields(const CFieldDictionaryDTO& fieldByName,
 }
 
 const char* CSQLDTOHandler::AppendFieldAt(const CFieldDictionaryDTO& fieldByName, int index,
-	ESQLRecordAppendFlag::Value flags, const char* pSeparator, const char* pAutoDeducedValueFormat)
+	ESQLRecordAppendFlag::_Value flags, const char* pSeparator, const char* pAutoDeducedValueFormat)
 {
 	return AppendField(fieldByName[index], fieldByName.GetElementName(index),
 		flags, pSeparator, pAutoDeducedValueFormat);
 }
 
-const char* CSQLDTOHandler::AppendField(const SFieldDTO& field, const char* pName, ESQLRecordAppendFlag::Value flags,
+const char* CSQLDTOHandler::AppendField(const SFieldDTO& field, const char* pName, ESQLRecordAppendFlag::_Value flags,
 	const char* pSeparator, const char* pAutoDeducedValueFormat)
 {
 	mQuery += pSeparator;

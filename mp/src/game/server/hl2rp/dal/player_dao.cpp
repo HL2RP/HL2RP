@@ -85,7 +85,6 @@ void CPlayerLoadDAO::HandleCompletion()
 	}
 
 	pPlayer->mDatabaseIOFlags.SetBit(EPlayerDatabaseIOFlag::IsLoaded);
-	pPlayer->m_takedamage = DAMAGE_AIM;
 	CRecordListDTO* pMainData = mResultDatabase.GetPtr(PLAYER_DAO_MAIN_COLLECTION_NAME);
 	CRecordListDTO* pAmmunition = mResultDatabase.GetPtr(PLAYER_DAO_AMMO_COLLECTION_NAME);
 	CRecordListDTO* pWeapons = mResultDatabase.GetPtr(PLAYER_DAO_WEAPON_COLLECTION_NAME);

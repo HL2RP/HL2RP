@@ -30,6 +30,8 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#define CHATLINE_MAX_SIZE 256
+
 #define CHAT_WIDTH_PERCENTAGE 0.6f
 
 #ifndef _XBOX
@@ -763,7 +765,7 @@ void CBaseHudChat::Init( void )
 //-----------------------------------------------------------------------------
 void CBaseHudChat::MsgFunc_SayText( bf_read &msg )
 {
-	char szString[256];
+	char szString[CHATLINE_MAX_SIZE];
 
 	int client = msg.ReadByte();
 	msg.ReadString( szString, sizeof(szString) );
@@ -809,8 +811,8 @@ void CBaseHudChat::MsgFunc_SayText2( bf_read &msg )
 	int client = msg.ReadByte();
 	bool bWantsToChat = msg.ReadByte();
 
-	wchar_t szBuf[6][256];
-	char untranslated_msg_text[256];
+	wchar_t szBuf[6][CHATLINE_MAX_SIZE];
+	char untranslated_msg_text[CHATLINE_MAX_SIZE];
 	wchar_t *msg_text = ReadLocalizedString( msg, szBuf[0], sizeof( szBuf[0] ), false, untranslated_msg_text, sizeof( untranslated_msg_text ) );
 
 	// keep reading strings and using C format strings for subsituting the strings into the localised text string
@@ -821,7 +823,7 @@ void CBaseHudChat::MsgFunc_SayText2( bf_read &msg )
 
 	g_pVGuiLocalize->ConstructString( szBuf[5], sizeof( szBuf[5] ), msg_text, 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
 
-	char ansiString[512];
+	char ansiString[CHATLINE_MAX_SIZE * 2];
 	g_pVGuiLocalize->ConvertUnicodeToANSI( ConvertCRtoNL( szBuf[5] ), ansiString, sizeof( ansiString ) );
 
 	if ( bWantsToChat )
@@ -865,10 +867,10 @@ void CBaseHudChat::MsgFunc_SayText2( bf_read &msg )
 void CBaseHudChat::MsgFunc_TextMsg( bf_read &msg )
 {
 	char szString[2048];
-	int msg_dest = msg.ReadByte();
+	int msg_dest = msg.ReadByte(), len;
 
-	wchar_t szBuf[5][256];
-	wchar_t outputBuf[256];
+	wchar_t szBuf[5][CHATLINE_MAX_SIZE];
+	wchar_t outputBuf[CHATLINE_MAX_SIZE];
 
 	for ( int i=0; i<5; ++i )
 	{
@@ -895,7 +897,6 @@ void CBaseHudChat::MsgFunc_TextMsg( bf_read &msg )
 	if ( !cl_showtextmsg.GetInt() )
 		return;
 
-	int len;
 	switch ( msg_dest )
 	{
 	case HUD_PRINTCENTER:
@@ -923,6 +924,11 @@ void CBaseHudChat::MsgFunc_TextMsg( bf_read &msg )
 			Q_strncat( szString, "\n", sizeof(szString), 1 );
 		}
 		Printf( CHAT_FILTER_NONE, "%s", ConvertCRtoNL( szString ) );
+
+#ifdef HL2RP
+		RemoveColorMarkup(szString);
+#endif // HL2RP
+
 		Msg( "%s", ConvertCRtoNL( szString ) );
 		break;
 
@@ -1136,23 +1142,6 @@ int CBaseHudChat::ComputeBreakChar( int width, const char *text, int textlen )
 #else
 	return 0;
 #endif
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : *fmt - 
-//			... - 
-//-----------------------------------------------------------------------------
-void CBaseHudChat::Printf( int iFilter, const char *fmt, ... )
-{
-	va_list marker;
-	char msg[4096];
-
-	va_start(marker, fmt);
-	Q_vsnprintf(msg, sizeof( msg), fmt, marker);
-	va_end(marker);
-
-	ChatPrintf( 0, iFilter, "%s", msg );
 }
 
 //-----------------------------------------------------------------------------
