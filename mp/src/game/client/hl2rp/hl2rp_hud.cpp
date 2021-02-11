@@ -22,9 +22,8 @@ protected:
 
 	bool IsSettingEmpty(KeyValues* pSettings, const char*);
 	void ApplySettings(KeyValues* pSettings, int defaultXPos, int defaultYPos, const Color& defaultTextColor);
-	void Paint(const wchar_t* pText);
-	void Paint(const wchar_t* pText, const Color&);
-
+	void Paint(localizebuf_t&);
+	void Paint(localizebuf_t&, const Color&);
 };
 
 CHL2RPHUD::CHL2RPHUD(const char* pElementName, const char* pPanelName) : CHudElement(pElementName),
@@ -63,43 +62,27 @@ void CHL2RPHUD::ApplySettings(KeyValues* pSettings, int defaultXPos, int default
 	}
 }
 
-void CHL2RPHUD::Paint(const wchar_t* pText)
+void CHL2RPHUD::Paint(localizebuf_t& text)
 {
-	Paint(pText, mTextColor);
+	Paint(text, mTextColor);
 }
 
-void CHL2RPHUD::Paint(const wchar_t* pText, const Color& color)
+void CHL2RPHUD::Paint(localizebuf_t& text, const Color& color)
 {
-	int wide, tall;
-	surface()->GetTextSize(g_hFontTrebuchet24, pText, wide, tall);
-	SetSize(wide, tall);
+	int width, height, xPos, yPos, lineWidth, lineHeight, yOffset = 0;
+	GetPos(xPos, yPos);
+	surface()->GetTextSize(g_hFontTrebuchet24, text, width, height);
+	SetBounds(mCenterHorizontally ? (ScreenWidth() - width) / 2 : xPos, yPos, width, height);
 	surface()->DrawSetTextFont(g_hFontTrebuchet24);
 	surface()->DrawSetTextColor(color);
 
-	if (mCenterHorizontally)
-	{
-		SetPos((ScreenWidth() - wide) / 2, GetYPos());
-	}
-
 	// Draw each line delimited by new line characters separately, since VGUI2 doesn't handle this
-	for (int yOffset = 0; pText != NULL; yOffset += surface()->GetFontTall(g_hFontTrebuchet24))
+	for (wchar_t* pLineBreak = L"\n", *pLine = wcstok(text, pLineBreak); pLine != NULL;
+		pLine = wcstok(NULL, pLineBreak), yOffset += lineHeight)
 	{
-		const wchar_t* pLineBreak = wcschr(pText, L'\n'), * pLine = pText;
-		int lineLen;
-
-		if (pLineBreak != NULL)
-		{
-			lineLen = pLineBreak - pLine;
-			pText = pLineBreak + 1;
-		}
-		else
-		{
-			lineLen = Q_wcslen(pLine);
-			pText = NULL;
-		}
-
-		surface()->DrawSetTextPos(0, yOffset);
-		surface()->DrawPrintText(pLine, lineLen);
+		surface()->GetTextSize(g_hFontTrebuchet24, pLine, lineWidth, lineHeight);
+		surface()->DrawSetTextPos(mCenterHorizontally ? (width - lineWidth) / 2 : 0, yOffset);
+		surface()->DrawPrintText(pLine, Q_wcslen(pLine));
 	}
 }
 
