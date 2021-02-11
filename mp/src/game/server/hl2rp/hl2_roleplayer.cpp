@@ -478,14 +478,14 @@ void CHL2Roleplayer::LoadFromDatabase()
 int CHL2Roleplayer::TransferPrimaryAmmoFromWeapon(CBaseCombatWeapon* pWeapon)
 {
 	int givenCount = GiveAmmo(pWeapon->GetPrimaryAmmoCount(), pWeapon->GetPrimaryAmmoType(), false);
-	pWeapon->SetPrimaryAmmoCount(0);
+	pWeapon->SetPrimaryAmmoCount(pWeapon->GetPrimaryAmmoCount() - givenCount);
 	return givenCount;
 }
 
 int CHL2Roleplayer::TransferSecondaryAmmoFromWeapon(CBaseCombatWeapon* pWeapon)
 {
 	int givenCount = GiveAmmo(pWeapon->GetSecondaryAmmoCount(), pWeapon->GetSecondaryAmmoType(), false);
-	pWeapon->SetSecondaryAmmoCount(0);
+	pWeapon->SetSecondaryAmmoCount(pWeapon->GetSecondaryAmmoCount() - givenCount);
 	return givenCount;
 }
 
