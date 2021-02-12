@@ -30,14 +30,14 @@ public:
 
 struct SSQLDriverFeatures
 {
-	const char* mpUInt64ColumnKeyword, * mpAutoIncrementKeyword = "";
+	const char* mpUInt64ColumnKeyword = "", * mpAutoIncrementKeyword = "";
 	bool mUsesStrictForeignKeyChecks = false; // Used for multiple tests (if true, targets MySQL in practice)
 };
 
 struct SSQLDuplicateKeyConflictInfo
 {
 	bool mAppendIndexNames = false;
-	const char* mpExtraClause = "", * mpAutoDeducedValueFormat;
+	const char* mpExtraClause = "", * mpAutoDeducedValueFormat = "";
 };
 
 abstract_class ISQLDriver : public IDatabaseDriver
