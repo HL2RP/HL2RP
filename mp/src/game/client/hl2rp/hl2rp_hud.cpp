@@ -8,6 +8,10 @@
 #include <vgui/ISurface.h>
 #include <iclientmode.h>
 
+#ifdef WIN32
+#define wcstok wcstok_s
+#endif // WIN32
+
 using namespace vgui;
 
 class CHL2RPHUD : public CHudElement, public EditablePanel
@@ -22,8 +26,8 @@ protected:
 
 	bool IsSettingEmpty(KeyValues* pSettings, const char*);
 	void ApplySettings(KeyValues* pSettings, int defaultXPos, int defaultYPos, const Color& defaultTextColor);
-	void Paint(localizebuf_t&);
-	void Paint(localizebuf_t&, const Color&);
+	void Paint(wchar_t*);
+	void Paint(wchar_t*, const Color&);
 };
 
 CHL2RPHUD::CHL2RPHUD(const char* pElementName, const char* pPanelName) : CHudElement(pElementName),
@@ -62,23 +66,22 @@ void CHL2RPHUD::ApplySettings(KeyValues* pSettings, int defaultXPos, int default
 	}
 }
 
-void CHL2RPHUD::Paint(localizebuf_t& text)
+void CHL2RPHUD::Paint(wchar_t* pText)
 {
-	Paint(text, mTextColor);
+	Paint(pText, mTextColor);
 }
 
-void CHL2RPHUD::Paint(localizebuf_t& text, const Color& color)
+void CHL2RPHUD::Paint(wchar_t* pText, const Color& color)
 {
 	int width, height, xPos, yPos, lineWidth, lineHeight, yOffset = 0;
 	GetPos(xPos, yPos);
-	surface()->GetTextSize(g_hFontTrebuchet24, text, width, height);
+	surface()->GetTextSize(g_hFontTrebuchet24, pText, width, height);
 	SetBounds(mCenterHorizontally ? (ScreenWidth() - width) / 2 : xPos, yPos, width, height);
 	surface()->DrawSetTextFont(g_hFontTrebuchet24);
 	surface()->DrawSetTextColor(color);
 
 	// Draw each line delimited by new line characters separately, since VGUI2 doesn't handle this
-	for (wchar_t* pLineBreak = L"\n", *pLine = wcstok(text, pLineBreak); pLine != NULL;
-		pLine = wcstok(NULL, pLineBreak), yOffset += lineHeight)
+	for (wchar_t* pLine = pText; (pLine = wcstok(NULL, L"\n", &pText)) != NULL; yOffset += lineHeight)
 	{
 		surface()->GetTextSize(g_hFontTrebuchet24, pLine, lineWidth, lineHeight);
 		surface()->DrawSetTextPos(mCenterHorizontally ? (width - lineWidth) / 2 : 0, yOffset);
