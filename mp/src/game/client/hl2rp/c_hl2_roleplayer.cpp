@@ -64,7 +64,7 @@ void C_HL2Roleplayer::Print(int type, const char* pText, ...)
 	{
 		messenger->WriteByte(type);
 		messenger->WriteString(pText);
-		messenger->WriteSignedVarInt32(0); // Zero out remaining lines required by TextMsg handler (overflow error)
+		messenger->WriteBytes("\0\0\0\0", 4); // Zero out remaining lines required by TextMsg handler (overflow error)
 		messenger.Dispatch("TextMsg");
 	}
 }

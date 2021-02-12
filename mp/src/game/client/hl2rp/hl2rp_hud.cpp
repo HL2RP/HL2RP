@@ -2,9 +2,8 @@
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include <cbase.h>
 #include "c_hl2_roleplayer.h"
-#include <prop_ration_dispenser.h>
 #include <hudelement.h>
-#include <vgui_controls/EditablePanel.h>
+#include <vgui_controls/Panel.h>
 #include <vgui/ISurface.h>
 #include <iclientmode.h>
 
@@ -14,9 +13,9 @@
 
 using namespace vgui;
 
-class CHL2RPHUD : public CHudElement, public EditablePanel
+class CHL2RPHUD : public CHudElement, public Panel
 {
-	DECLARE_CLASS_SIMPLE(CHL2RPHUD, EditablePanel)
+	DECLARE_CLASS_SIMPLE(CHL2RPHUD, Panel)
 
 	CPanelAnimationVar(Color, mTextColor, "textColor", "");
 	bool mCenterHorizontally = false;
