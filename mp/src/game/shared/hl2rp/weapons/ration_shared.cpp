@@ -201,13 +201,13 @@ void CRation::RevertExcessClip1()
 {
 	if (m_iClip1 > 1)
 	{
-#ifdef GAME_DLL // Let only the server add up the ammo to prevent duplicated HUD history icons at client
 		int ammoCount = GetOwner()->GetAmmoCount(m_iPrimaryAmmoType),
 			maxClips = Min(m_iClip1 - 1, GetAmmoDef()->MaxCarry(m_iPrimaryAmmoType) - ammoCount);
+		m_iClip1 -= maxClips;
+
+#ifdef GAME_DLL // Let only the server add up the ammo to prevent duplicated HUD history icons at client
 		GetOwner()->SetAmmoCount(ammoCount + maxClips, m_iPrimaryAmmoType);
 #endif // GAME_DLL
-
-		m_iClip1 = 1;
 	}
 }
 
