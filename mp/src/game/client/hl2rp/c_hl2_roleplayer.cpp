@@ -19,21 +19,26 @@ class CLocalUserMessenger
 	bf_write mWriter;
 
 public:
-	CLocalUserMessenger() : mWriter(mBuffer, sizeof(mBuffer)) {}
-
-	// Returns whether the object is valid during prediction, to prevent duplicating the message
-	operator bool()
+	CLocalUserMessenger() : mWriter(mBuffer, sizeof(mBuffer))
 	{
-		return prediction->IsFirstTimePredicted();
+		Q_memset(mBuffer, 0, sizeof(mBuffer));
 	}
 
-	bf_write* operator->()
-	{
-		return &mWriter;
-	}
-
+	operator bool();
+	bf_write* operator->();
 	void Dispatch(const char* pName);
 };
+
+// Returns whether the object is valid during prediction, to prevent duplicating the message
+CLocalUserMessenger::operator bool()
+{
+	return prediction->IsFirstTimePredicted();
+}
+
+bf_write* CLocalUserMessenger::operator->()
+{
+	return &mWriter;
+}
 
 void CLocalUserMessenger::Dispatch(const char* pName)
 {
