@@ -10,12 +10,12 @@
 #include <ammodef.h>
 #include <in_buttons.h>
 
-#ifdef CLIENT_DLL
+#ifdef GAME_DLL
+#include <hl2_roleplayer.h>
+#else
 #include <c_hl2_roleplayer.h>
 #include <prediction.h>
-#else
-#include <hl2_roleplayer.h>
-#endif // CLIENT_DLL
+#endif // GAME_DLL
 
 #define RATION_USAGE_HEALTH_GAIN 5
 

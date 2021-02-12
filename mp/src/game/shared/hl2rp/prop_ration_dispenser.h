@@ -4,15 +4,15 @@
 
 #include "hl2rp_shareddefs.h"
 
-#ifdef CLIENT_DLL
+#ifdef GAME_DLL
+#include <idto.h>
+#include <props.h>
+#else
 #include <c_props.h>
 
 #define CRation              C_Ration
 #define CRationDispenserProp C_RationDispenserProp
-#else
-#include <idto.h>
-#include <props.h>
-#endif // CLIENT_DLL
+#endif // GAME_DLL
 
 #define RATION_DISPENSER_AVAILABILITY_COOLDOWN 1800.0f
 

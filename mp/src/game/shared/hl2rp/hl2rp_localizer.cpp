@@ -3,14 +3,14 @@
 #include <cbase.h>
 #include "hl2rp_localizer.h"
 
-#ifdef CLIENT_DLL
-#include <tier3/tier3.h>
-#include <vgui/ILocalize.h>
-#else
+#ifdef GAME_DLL
 #include <tier2/fileutils.h>
 #include <language.h>
 #include <utlbuffer.h>
-#endif // CLIENT_DLL
+#else
+#include <tier3/tier3.h>
+#include <vgui/ILocalize.h>
+#endif // GAME_DLL
 
 CHL2RPLocalizer gHL2RPLocalizer;
 
@@ -60,9 +60,7 @@ void CHL2RPLocalizer::AddLanguageLocalizationFromFile(const char* pBasePath,
 	char path[MAX_PATH];
 	V_sprintf_safe(path, "resource/%s_%s.txt", pBasePath, pLanguage);
 
-#ifdef CLIENT_DLL
-	g_pVGuiLocalize->AddFile(path);
-#else
+#ifdef GAME_DLL
 	CInputTextFile file(path);
 
 	if (file.IsOk())
@@ -107,14 +105,14 @@ void CHL2RPLocalizer::AddLanguageLocalizationFromFile(const char* pBasePath,
 			}
 		}
 	}
-#endif // CLIENT_DLL
+#else
+	g_pVGuiLocalize->AddFile(path);
+#endif // GAME_DLL
 }
 
+#ifdef GAME_DLL
 const char* CHL2RPLocalizer::LocalizeAsUTF8(CBasePlayer* pPlayer, const char* pToken)
 {
-#ifdef CLIENT_DLL
-	return g_pVGuiLocalize->FindAsUTF8(pToken);
-#else
 	const char* pLanguage = engine->GetClientConVarValue(pPlayer->entindex(), "cl_language"), * pCleanToken = pToken;
 
 	if (*pCleanToken == '#')
@@ -139,22 +137,8 @@ const char* CHL2RPLocalizer::LocalizeAsUTF8(CBasePlayer* pPlayer, const char* pT
 	}
 
 	return pToken;
-#endif // CLIENT_DLL
 }
 
-#ifdef CLIENT_DLL
-void CHL2RPLocalizer::PostInit()
-{
-	AddLanguageLocalizationFromFile("hl2mp"); // Base localization
-	AddLanguageLocalizationFromFile("hl2rp_client");
-}
-
-const wchar_t* CHL2RPLocalizer::LocalizeAsWideString(const char* pToken)
-{
-	wchar_t* pFormat = g_pVGuiLocalize->Find(pToken);
-	return (pFormat != NULL ? pFormat : L"");
-}
-#else
 void CPhraseDictionary::AddPhrase(const char* pToken, const char* pPhrase)
 {
 	int index = Find(pToken);
@@ -178,4 +162,21 @@ CPhraseDictionary* CHL2RPLocalizer::CreateLocalization(const char* pLanguage)
 
 	return mLocalizationByLanguage[index];
 }
-#endif // CLIENT_DLL
+#else
+const char* CHL2RPLocalizer::LocalizeAsUTF8(CBasePlayer*, const char* pToken)
+{
+	return g_pVGuiLocalize->FindAsUTF8(pToken);
+}
+
+void CHL2RPLocalizer::PostInit()
+{
+	AddLanguageLocalizationFromFile("hl2mp"); // Base localization
+	AddLanguageLocalizationFromFile("hl2rp_client");
+}
+
+const wchar_t* CHL2RPLocalizer::LocalizeAsWideString(const char* pToken)
+{
+	wchar_t* pFormat = g_pVGuiLocalize->Find(pToken);
+	return (pFormat != NULL ? pFormat : L"");
+}
+#endif // GAME_DLL

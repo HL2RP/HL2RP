@@ -5,12 +5,12 @@
 #include "prop_ration_dispenser.h"
 #include <in_buttons.h>
 
-#ifdef CLIENT_DLL
+#ifdef GAME_DLL
+#include <hl2_roleplayer.h>
+#else
 #include <c_hl2_roleplayer.h>
 #include <hl2mp_gamerules.h>
-#else
-#include <hl2_roleplayer.h>
-#endif // CLIENT_DLL
+#endif // GAME_DLL
 
 // Maximum timeout between two walk key presses within which player is able to enter sticky walk mode
 #define HL2_ROLEPLAYER_STICKY_WALKING_CHANCE_TIMEOUT 0.3f

@@ -97,7 +97,12 @@ public:
 	}
 #endif // GC
 
-#ifdef CLIENT_DLL
+#ifdef GAME_DLL
+	CPhraseDictionary* CreateLocalization(const char* pLanguage);
+
+private:
+	CAutoPurgeAdapter<CUtlDict<CPhraseDictionary*>> mLocalizationByLanguage;
+#else
 	const wchar_t* LocalizeAsWideString(const char*);
 
 	template<typename... T>
@@ -108,12 +113,7 @@ public:
 
 private:
 	void PostInit() OVERRIDE;
-#else
-	CPhraseDictionary* CreateLocalization(const char* pLanguage);
-
-private:
-	CAutoPurgeAdapter<CUtlDict<CPhraseDictionary*>> mLocalizationByLanguage;
-#endif // CLIENT_DLL
+#endif // GAME_DLL
 };
 
 #ifdef CLIENT_DLL

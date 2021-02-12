@@ -5,15 +5,15 @@
 #include "hl2rp_util_shared.h"
 #include <generic.h>
 
-#ifdef CLIENT_DLL
+#ifdef GAME_DLL
+#include <hl2mp_player.h>
+#else
 #include <c_hl2mp_player.h>
 #include <simtimer.h>
 
 #define CBaseHL2Roleplayer C_BaseHL2Roleplayer
 #define CHL2Roleplayer     C_HL2Roleplayer
-#else
-#include <hl2mp_player.h>
-#endif
+#endif // GAME_DLL
 
 #ifdef HL2RP_CLIENT_OR_LEGACY
 #include "hl2rp_localizer.h"

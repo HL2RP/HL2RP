@@ -4,13 +4,13 @@
 #include "hl2rp_gamerules_shared.h"
 #include <ammodef.h>
 
-#ifdef CLIENT_DLL
+#ifdef GAME_DLL
+#include <hl2rp_gamerules.h>
+#else
 #include <c_hl2rp_gamerules.h>
 
 #define CHL2RPRules C_HL2RPRules
-#else
-#include <hl2rp_gamerules.h>
-#endif // CLIENT_DLL
+#endif // GAME_DLL
 
 #ifdef HL2RP_FULL
 REGISTER_GAMERULES_CLASS(CHL2RPRules)
