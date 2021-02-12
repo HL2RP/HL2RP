@@ -45,8 +45,8 @@ abstract_class ISQLDriver : public IDatabaseDriver
 public:
 	virtual bool Connect(const char* pDatabaseName, const char* pHostName,
 		const char* pUserName, const char* pPassword, int port) = 0;
-	virtual void ExecuteQuery(const char* pQuery, CRecordListDTO* pDestResults = NULL) = 0;
-	virtual ISQLPreparedStatement* PrepareStatement(const char* pQuery) = 0;
+	virtual void ExecuteQuery(const char*, CRecordListDTO* pDestResults = NULL) = 0;
+	virtual ISQLPreparedStatement* PrepareStatement(const char*) = 0;
 	virtual void GetFeatures(SSQLDriverFeatures&) = 0;
 	virtual void GetDuplicateKeyConflictInfo(CRecordNodeDTO*, CSQLQuery&, SSQLDuplicateKeyConflictInfo&) = 0;
 
@@ -54,7 +54,7 @@ public:
 	// Returns a driver-fixed column name that contains the retrieved table column names.
 	virtual const char* GetTableColumnNames(const char* pTableName, CRecordListDTO* pColumnNames) = 0;
 
-	void ExecuteFormattedQuery(CRecordListDTO* pDestResults, const char* pQueryFormat, ...);
+	void ExecuteQuery(CRecordListDTO* pDestResults, PRINTF_FORMAT_STRING const char*, ...) FMTFUNCTION(3, 4);
 };
 
 #endif // !ISQL_DRIVER_H

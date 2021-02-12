@@ -6,12 +6,12 @@
 #include "keyvalues_driver.h"
 #include <filesystem.h>
 
-void ISQLDriver::ExecuteFormattedQuery(CRecordListDTO* pDestResults, const char* pQueryFormat, ...)
+void ISQLDriver::ExecuteQuery(CRecordListDTO* pDestResults, const char* pFormat, ...)
 {
 	char query[SQL_MAX_QUERY_SIZE];
 	va_list args;
-	va_start(args, pQueryFormat);
-	V_vsprintf_safe(query, pQueryFormat, args);
+	va_start(args, pFormat);
+	V_vsprintf_safe(query, pFormat, args);
 	va_end(args);
 	ExecuteQuery(query, pDestResults);
 }
@@ -19,7 +19,7 @@ void ISQLDriver::ExecuteFormattedQuery(CRecordListDTO* pDestResults, const char*
 class CKeyValuesIOException : public CDatabaseIOException
 {
 public:
-	CKeyValuesIOException(const char* pWarningFormat, ...)
+	CKeyValuesIOException(PRINTF_FORMAT_STRING const char* pWarningFormat, ...) FMTFUNCTION(2, 3)
 	{
 		Warning("KeyValues driver error: ");
 		va_list args;

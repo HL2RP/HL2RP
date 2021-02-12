@@ -54,7 +54,7 @@ void CDatabaseSetupDAO::ExecuteIO(ISQLDriver* pDriver)
 
 	if (features.mUsesStrictForeignKeyChecks)
 	{
-		pDriver->ExecuteFormattedQuery(NULL, "SET FOREIGN_KEY_CHECKS = 0;");
+		pDriver->ExecuteQuery(NULL, "SET FOREIGN_KEY_CHECKS = 0;");
 	}
 
 	for (auto pTableSetupDTOFactory : DatabaseSetupDAOFactory().mSQLTableSetupDTOFactories)
@@ -70,7 +70,7 @@ void CDatabaseSetupDAO::ExecuteIO(ISQLDriver* pDriver)
 
 	if (features.mUsesStrictForeignKeyChecks)
 	{
-		pDriver->ExecuteFormattedQuery(NULL, "SET FOREIGN_KEY_CHECKS = 1;");
+		pDriver->ExecuteQuery(NULL, "SET FOREIGN_KEY_CHECKS = 1;");
 	}
 }
 
@@ -669,7 +669,7 @@ void CAutoIncrementInsertDAO::ExecuteIO(ISQLDriver* pDriver)
 {
 	CSaveDAO::ExecuteIO(pDriver);
 	CRecordListDTO results;
-	pDriver->ExecuteFormattedQuery(&results, "SELECT MAX(`%s`) AS `%s` FROM `%s`;", mpAutoIncrementField,
+	pDriver->ExecuteQuery(&results, "SELECT MAX(`%s`) AS `%s` FROM `%s`;", mpAutoIncrementField,
 		mpAutoIncrementField, mSaveDatabase.GetElementName(0));
 
 	if (!results.IsEmpty())

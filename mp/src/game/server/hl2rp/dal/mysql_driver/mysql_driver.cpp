@@ -23,7 +23,7 @@ public:
 		PrintNativeError(mysql_stmt_error(pStmt), mysql_stmt_errno(pStmt));
 	}
 
-	CMySQLIOException(const char* pErrorFormat, ...)
+	CMySQLIOException(PRINTF_FORMAT_STRING const char* pErrorFormat, ...) FMTFUNCTION(2, 3)
 	{
 		Warning("MySQL error: ");
 		va_list args;

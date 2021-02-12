@@ -241,7 +241,7 @@ public:
 	void			MsgFunc_TextMsg(const char *pszName, int iSize, void *pbuf);
 
 	template<typename... T>
-	void Printf(int filter, PRINTF_FORMAT_STRING const char* pFormat, T&&... args)
+	void Printf(int filter, const char* pFormat, T&&... args)
 	{
 		ChatPrintf(0, filter, pFormat, args...);
 	}
