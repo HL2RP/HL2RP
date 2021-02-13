@@ -56,7 +56,7 @@ int C_HL2Roleplayer::GetMaxHealth() const
 	return m_iMaxHealth;
 }
 
-void C_HL2Roleplayer::Print(int type, const char* pText, ...)
+void C_HL2Roleplayer::LocalPrint(int type, const char* pText)
 {
 	CLocalUserMessenger messenger;
 
@@ -69,7 +69,7 @@ void C_HL2Roleplayer::Print(int type, const char* pText, ...)
 	}
 }
 
-void C_HL2Roleplayer::SendHUDHint(EPlayerHUDHintType::_Value type, const char* pToken, ...)
+void C_HL2Roleplayer::LocalDisplayHUDHint(EPlayerHUDHintType::_Value type, const char* pToken)
 {
 	CLocalUserMessenger messenger;
 

@@ -81,7 +81,7 @@ class CHL2Roleplayer : public CBaseHL2Roleplayer
 	int TransferPrimaryAmmoFromWeapon(CBaseCombatWeapon*);
 	int TransferSecondaryAmmoFromWeapon(CBaseCombatWeapon*);
 	void HUDThink();
-	void SendMainHUD();
+	void SendMainHUD() HL2RP_LEGACY_FUNCTION;
 	bool AcquireHUDTime(EPlayerHUDType::_Value, bool force = false);
 	void SendHUDMessage(EPlayerHUDType::_Value, const char* pMessage, float xPos, float yPos, const Color&);
 
@@ -96,8 +96,10 @@ public:
 
 	void LoadFromDatabase();
 	void HandleWalkChanges();
-	void Print(int type, const char*, bool networked = true);
-	void SendHUDHint(EPlayerHUDHintType::_Value, const char*, bool networked = true);
+	void LocalPrint(int type, const char*) HL2RP_LEGACY_FUNCTION;
+	void Print(int type, const char*);
+	void LocalDisplayHUDHint(EPlayerHUDHintType::_Value, const char*) HL2RP_LEGACY_FUNCTION;
+	void SendHUDHint(EPlayerHUDHintType::_Value, const char*);
 	bool ComputeAimingEntityAndHUD(localizebuf_t& dest);
 
 	CBitFlags<> mDatabaseIOFlags;

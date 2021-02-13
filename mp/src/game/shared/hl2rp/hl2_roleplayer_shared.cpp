@@ -99,7 +99,7 @@ void CHL2Roleplayer::HandleWalkChanges()
 			if (mStickyWalkChanceExpireTimer.Expired())
 			{
 				mStickyWalkChanceExpireTimer.Set(HL2_ROLEPLAYER_STICKY_WALKING_CHANCE_TIMEOUT);
-				return SendHUDHint(EPlayerHUDHintType::StickyWalking, "#HL2RP_StickyWalkHint", false);
+				return LocalDisplayHUDHint(EPlayerHUDHintType::StickyWalking, "#HL2RP_StickyWalkHint");
 			}
 
 			SETBITS(mMovementFlags, EPlayerMovementFlag::InStickyWalkMode);

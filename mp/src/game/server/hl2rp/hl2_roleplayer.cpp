@@ -277,14 +277,29 @@ void CHL2Roleplayer::PostThink()
 	}
 }
 
-void CHL2Roleplayer::Print(int type, const char* pText, bool networked)
+#ifdef HL2RP_LEGACY
+void CHL2Roleplayer::LocalPrint(int type, const char* pText)
 {
-#ifdef HL2RP_FULL
-	if (networked)
-#endif // HL2RP_FULL
-	{
-		ClientPrint(this, type, pText);
-	}
+	Print(type, pText);
+}
+
+void CHL2Roleplayer::LocalDisplayHUDHint(EPlayerHUDHintType::_Value type, const char* pToken)
+{
+	SendHUDHint(type, pToken);
+}
+
+void CHL2Roleplayer::SendMainHUD()
+{
+	localizebuf_t message;
+	ComputeMainHUD(message);
+	SendHUDMessage(EPlayerHUDType::Main, message, HL2RP_MAIN_HUD_DEFAULT_X_POS, HL2RP_MAIN_HUD_DEFAULT_Y_POS,
+		mCrime > 0 ? HL2RP_MAIN_HUD_DEFAULT_CRIMINAL_TEXT_COLOR : HL2RP_MAIN_HUD_DEFAULT_NORMAL_TEXT_COLOR);
+}
+#endif // HL2RP_LEGACY
+
+void CHL2Roleplayer::Print(int type, const char* pText)
+{
+	ClientPrint(this, type, pText);
 }
 
 void CHL2Roleplayer::HUDThink()
@@ -307,32 +322,19 @@ void CHL2Roleplayer::HUDThink()
 	}
 }
 
-void CHL2Roleplayer::SendMainHUD()
-{
-#ifdef HL2RP_LEGACY
-	localizebuf_t message;
-	ComputeMainHUD(message);
-	SendHUDMessage(EPlayerHUDType::Main, message, HL2RP_MAIN_HUD_DEFAULT_X_POS, HL2RP_MAIN_HUD_DEFAULT_Y_POS,
-		mCrime > 0 ? HL2RP_MAIN_HUD_DEFAULT_CRIMINAL_TEXT_COLOR : HL2RP_MAIN_HUD_DEFAULT_NORMAL_TEXT_COLOR);
-#endif // HL2RP_LEGACY
-}
-
-void CHL2Roleplayer::SendHUDHint(EPlayerHUDHintType::_Value type, const char* pToken, bool networked)
+void CHL2Roleplayer::SendHUDHint(EPlayerHUDHintType::_Value type, const char* pToken)
 {
 	if (!mSentHUDHints.IsBitSet(type))
 	{
 #ifdef HL2RP_FULL
-		if (networked)
-		{
-			CSingleUserRecipientFilter filter(this);
-			filter.MakeReliable();
-			UserMessageBegin(filter, HL2RP_KEY_HINT_USER_MESSAGE);
-			WRITE_LONG(type);
-			WRITE_STRING(pToken);
-			MessageEnd();
-		}
+		CSingleUserRecipientFilter filter(this);
+		filter.MakeReliable();
+		UserMessageBegin(filter, HL2RP_KEY_HINT_USER_MESSAGE);
+		WRITE_LONG(type);
+		WRITE_STRING(pToken);
+		MessageEnd();
 #else
-		ClientPrint(this, HUD_PRINTCENTER, gHL2RPLocalizer.Localize(this, pToken));
+		Print(HUD_PRINTCENTER, gHL2RPLocalizer.Localize(this, pToken));
 #endif // HL2RP_FULL
 
 		mSentHUDHints.SetBit(type);

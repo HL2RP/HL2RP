@@ -124,7 +124,7 @@ void CRation::ItemPostFrame()
 			if (FBitSet(pPlayer->m_afButtonPressed, IN_ATTACK))
 			{
 				SendWeaponAnim(ACT_VM_PULLBACK);
-				pPlayer->SendHUDHint(EPlayerHUDHintType::RationThrowing, "#HL2RP_RationThrowingHint", false);
+				pPlayer->LocalDisplayHUDHint(EPlayerHUDHintType::RationThrowing, "#HL2RP_RationThrowingHint");
 				m_flNextPrimaryAttack = gpGlobals->curtime + GetViewModelSequenceDuration(); // Available throw time
 				mPOVState = ERationPOVState::HaulingBackForThrow;
 			}
@@ -151,11 +151,11 @@ void CRation::ItemPostFrame()
 					gHL2RPLocalizer.Localize(pPlayer, message, true, "#HL2RP_Ration_Heal_Deny");
 				}
 
-				pPlayer->Print(HUD_PRINTTALK, message, false);
+				pPlayer->LocalPrint(HUD_PRINTTALK, message);
 			}
 			else
 			{
-				pPlayer->SendHUDHint(EPlayerHUDHintType::RationDeployed, "#HL2RP_RationDeployedHint", false);
+				pPlayer->LocalDisplayHUDHint(EPlayerHUDHintType::RationDeployed, "#HL2RP_RationDeployedHint");
 			}
 
 			RevertExcessClip1();

@@ -17,9 +17,9 @@ public:
 	int GetMaxHealth() const OVERRIDE;
 
 	void HandleWalkChanges();
-	void Print(int type, const char*, ...);
+	void LocalPrint(int type, const char*);
+	void LocalDisplayHUDHint(EPlayerHUDHintType::_Value, const char*);
 	bool ComputeAimingEntityAndHUD(localizebuf_t& dest);
-	void SendHUDHint(EPlayerHUDHintType::_Value, const char*, ...);
 };
 
 C_HL2Roleplayer* GetLocalHL2Roleplayer();
