@@ -62,18 +62,16 @@ void CSQLite3PreparedStatement::Execute(CRecordListDTO* pDestResults)
 					case SQLITE_INTEGER:
 					{
 						destResult.SetField(pColumnName, (uint64)sqlite3_column_int64(mpStmt, i));
-						break;
+						continue;
 					}
 					case SQLITE_FLOAT:
 					{
 						destResult.SetField(pColumnName, (float)sqlite3_column_double(mpStmt, i));
-						break;
-					}
-					default:
-					{
-						destResult.SetField(pColumnName, (char*)sqlite3_column_text(mpStmt, i));
+						continue;
 					}
 					}
+
+					destResult.SetField(pColumnName, (char*)sqlite3_column_text(mpStmt, i));
 				}
 			} while (sqlite3_step(mpStmt) == SQLITE_ROW);
 		}
@@ -81,13 +79,11 @@ void CSQLite3PreparedStatement::Execute(CRecordListDTO* pDestResults)
 	case SQLITE_OK:
 	case SQLITE_DONE:
 	{
-		break;
-	}
-	default:
-	{
-		throw CSQLite3IOException(mpConnection, sqlite3_sql(mpStmt));
+		return;
 	}
 	}
+
+	throw CSQLite3IOException(mpConnection, sqlite3_sql(mpStmt));
 }
 
 class CSQLite3Driver : public ISQLDriver

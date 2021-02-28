@@ -158,8 +158,7 @@ void CRation::ItemPostFrame()
 				pPlayer->LocalDisplayHUDHint(EPlayerHUDHintType::RationDeployed, "#HL2RP_RationDeployedHint");
 			}
 
-			RevertExcessClip1();
-			break;
+			return RevertExcessClip1();
 		}
 		case ERationPOVState::HaulingBackForThrow:
 		{
@@ -186,13 +185,11 @@ void CRation::ItemPostFrame()
 				mPOVState = ERationPOVState::ActioningBeforeDeploy;
 			}
 
-			break;
-		}
-		default: // ERationPOVState::ActioningBeforeDeploy
-		{
-			Deploy();
+			return;
 		}
 		}
+
+		Deploy(); // ERationPOVState::ActioningBeforeDeploy
 	}
 }
 

@@ -140,16 +140,14 @@ void CMySQLPreparedStatement::Execute(CRecordListDTO* pDestResults)
 					resultBinds[i].buffer = NULL;
 					resultBinds[i].buffer_length = 0; // Must be zero even when buffer is NULL to safely call function
 					resultBinds[i].length = &resultBinds[i].length_value;
-					break;
-				}
-				default:
-				{
-					resultBuffers[i].SetLength(pField->length);
-					resultBinds[i].buffer = resultBuffers[i].Get();
-					resultBinds[i].buffer_length = pField->length;
-					resultBinds[i].length = NULL;
+					continue;
 				}
 				}
+
+				resultBuffers[i].SetLength(pField->length);
+				resultBinds[i].buffer = resultBuffers[i].Get();
+				resultBinds[i].buffer_length = pField->length;
+				resultBinds[i].length = NULL;
 			}
 
 			if (mysql_stmt_bind_result(mpStmt, resultBinds.Base()) != 0 || mysql_stmt_store_result(mpStmt) != 0)
@@ -183,28 +181,26 @@ void CMySQLPreparedStatement::Execute(CRecordListDTO* pDestResults)
 						case MYSQL_TYPE_LONG:
 						{
 							destResult.SetField(pFieldName, *(int32*)resultBinds[j].buffer);
-							break;
+							continue;
 						}
 						case MYSQL_TYPE_LONGLONG:
 						{
 							destResult.SetField(pFieldName, *(uint64*)resultBinds[j].buffer);
-							break;
+							continue;
 						}
 						case MYSQL_TYPE_FLOAT:
 						{
 							destResult.SetField(pFieldName, *(float32*)resultBinds[j].buffer);
-							break;
+							continue;
 						}
 						case MYSQL_TYPE_DOUBLE:
 						{
 							destResult.SetField(pFieldName, (float)*(float64*)resultBinds[j].buffer);
-							break;
-						}
-						default:
-						{
-							destResult.SetField(pFieldName, (char*)resultBinds[j].buffer);
+							continue;
 						}
 						}
+
+						destResult.SetField(pFieldName, (char*)resultBinds[j].buffer);
 					}
 				}
 			}
@@ -289,23 +285,21 @@ void CMySQLDriver::ExecuteQuery(const char* pQuery, CRecordListDTO* pDestResults
 						case MYSQL_TYPE_LONG:
 						{
 							destResult.SetField(pSrcResult->fields[i].name, Q_atoi(srcRow[i]));
-							break;
+							continue;
 						}
 						case MYSQL_TYPE_LONGLONG:
 						{
 							destResult.SetField(pSrcResult->fields[i].name, Q_atoui64(srcRow[i]));
-							break;
+							continue;
 						}
 						case MYSQL_TYPE_FLOAT:
 						{
 							destResult.SetField(pSrcResult->fields[i].name, Q_atof(srcRow[i]));
-							break;
-						}
-						default:
-						{
-							destResult.SetField(pSrcResult->fields[i].name, srcRow[i]);
+							continue;
 						}
 						}
+
+						destResult.SetField(pSrcResult->fields[i].name, srcRow[i]);
 					}
 				}
 			}

@@ -97,8 +97,8 @@ public:
 	void LoadFromDatabase();
 	void HandleWalkChanges();
 	void LocalPrint(int type, const char*) HL2RP_LEGACY_FUNCTION;
-	void Print(int type, const char*);
 	void LocalDisplayHUDHint(EPlayerHUDHintType::_Value, const char*) HL2RP_LEGACY_FUNCTION;
+	void Print(int type, const char*);
 	void SendHUDHint(EPlayerHUDHintType::_Value, const char*);
 	bool ComputeAimingEntityAndHUD(localizebuf_t& dest);
 
