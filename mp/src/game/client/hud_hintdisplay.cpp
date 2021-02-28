@@ -20,6 +20,7 @@
 
 #ifdef HL2RP
 #include <hl2rp_configuration.h>
+#include <hl2rp_shareddefs.h>
 #include <bitflags.h>
 #endif // HL2RP
 
@@ -816,13 +817,13 @@ void CHudHintKeyDisplay::MsgFunc_HL2RPKeyHintText(bf_read& msg)
 	long type = msg.ReadLong();
 	char token[64];
 	msg.ReadString(token, sizeof(token));
-	CBitFlags<> sentHUDHints(gHL2RPConfiguration.mUserData->GetInt("sentHUDHints"));
+	CBitFlags<> learnedHUDHints(gHL2RPConfiguration.mUserData->GetInt(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME));
 
-	if (!sentHUDHints.IsBitSet(type))
+	if (!learnedHUDHints.IsBitSet(type))
 	{
 		StartTextDisplay(token);
-		sentHUDHints.SetBit(type);
-		gHL2RPConfiguration.mUserData->SetInt("sentHUDHints", sentHUDHints);
+		learnedHUDHints.SetBit(type);
+		gHL2RPConfiguration.mUserData->SetInt(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME, learnedHUDHints);
 	}
 }
 #endif // HL2RP

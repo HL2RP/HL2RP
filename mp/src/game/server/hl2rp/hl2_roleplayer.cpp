@@ -324,7 +324,7 @@ void CHL2Roleplayer::HUDThink()
 
 void CHL2Roleplayer::SendHUDHint(EPlayerHUDHintType::_Value type, const char* pToken)
 {
-	if (!mSentHUDHints.IsBitSet(type))
+	if (!mLearnedHUDHints.IsBitSet(type))
 	{
 #ifdef HL2RP_FULL
 		CSingleUserRecipientFilter filter(this);
@@ -337,7 +337,7 @@ void CHL2Roleplayer::SendHUDHint(EPlayerHUDHintType::_Value type, const char* pT
 		Print(HUD_PRINTCENTER, gHL2RPLocalizer.Localize(this, pToken));
 #endif // HL2RP_FULL
 
-		mSentHUDHints.SetBit(type);
+		mLearnedHUDHints.SetBit(type);
 	}
 }
 

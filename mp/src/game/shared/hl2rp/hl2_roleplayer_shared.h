@@ -47,7 +47,7 @@ ENUM(EPlayerDatabasePropType,
 	Health,
 	Armor,
 	MiscFlags,
-	SentHUDHints
+	LearnedHUDHints
 )
 
 ENUM(EPlayerHUDHintType,

@@ -153,13 +153,13 @@ void CHL2RPRules::PlayerDisconnected(CBasePlayer* pPlayer)
 void CHL2RPRules::ClientCommandKeyValues(edict_t* pClient, KeyValues* pKeyValues)
 {
 #ifdef HL2RP_FULL
-	if (Q_strcmp(pKeyValues->GetName(), HL2RP_SENT_HUD_HINTS_UPDATE_EVENT_NAME) == 0)
+	if (Q_strcmp(pKeyValues->GetName(), HL2RP_LEARNED_HUD_HINTS_UPDATE_EVENT_NAME) == 0)
 	{
 		CHL2Roleplayer* pPlayer = ToHL2Roleplayer(CBaseEntity::Instance(pClient));
 
 		if (pPlayer != NULL)
 		{
-			pPlayer->mSentHUDHints = pKeyValues->GetInt(HL2RP_SENT_HUD_HINTS_UPDATE_EVENT_DATA_KEY);
+			pPlayer->mLearnedHUDHints = pKeyValues->GetInt(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME);
 		}
 	}
 #endif // HL2RP_FULL

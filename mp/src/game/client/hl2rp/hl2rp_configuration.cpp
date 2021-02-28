@@ -49,9 +49,9 @@ class CForgetHUDHintsDialog : QueryBox
 
 		if (Q_strcmp(pCommand, "OK") == 0)
 		{
-			gHL2RPConfiguration.mUserData->SetInt("sentHUDHints", 0);
+			gHL2RPConfiguration.mUserData->SetInt(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME, 0);
 			FindSiblingByName("ForgetHUDHintsButton")->SetEnabled(false);
-			engine->ServerCmdKeyValues(new KeyValues(HL2RP_SENT_HUD_HINTS_UPDATE_EVENT_NAME)); // Notify implicit reset
+			engine->ServerCmdKeyValues(new KeyValues(HL2RP_LEARNED_HUD_HINTS_UPDATE_EVENT_NAME)); // Notify implicit reset
 		}
 	}
 

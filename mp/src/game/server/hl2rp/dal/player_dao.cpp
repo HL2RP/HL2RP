@@ -26,7 +26,7 @@ public:
 		CreateIntColumn("miscFlags");
 
 #ifdef HL2RP_LEGACY
-		CreateIntColumn("sentHUDHints");
+		CreateIntColumn(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME);
 #endif // HL2RP_LEGACY
 	}
 };
@@ -101,7 +101,7 @@ void CPlayerLoadDAO::HandleCompletion()
 		pPlayer->mMiscFlags.SetFlag(mainData.GetInt("miscFlags"));
 
 #ifdef HL2RP_LEGACY
-		pPlayer->mSentHUDHints.SetFlag(mainData.GetInt("sentHUDHints"));
+		pPlayer->mLearnedHUDHints.SetFlag(mainData.GetInt(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME));
 #endif // HL2RP_LEGACY
 	}
 
@@ -202,9 +202,9 @@ CPlayersMainDataSaveDAO::CPlayersMainDataSaveDAO(CHL2Roleplayer* pPlayer, const 
 	}
 
 #ifdef HL2RP_LEGACY
-	if (selectedProps.IsBitSet(EPlayerDatabasePropType::SentHUDHints))
+	if (selectedProps.IsBitSet(EPlayerDatabasePropType::LearnedHUDHints))
 	{
-		pMainData->AddNormalField("sentHUDHints", pPlayer->mSentHUDHints);
+		pMainData->AddNormalField(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME, pPlayer->mLearnedHUDHints);
 	}
 #endif // HL2RP_LEGACY
 }

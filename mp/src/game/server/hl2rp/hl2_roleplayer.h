@@ -105,7 +105,7 @@ public:
 	CBitFlags<> mDatabaseIOFlags;
 	CPlayerDatabaseProp(CBitFlags<>, EPlayerDatabasePropType::AccessFlags, mAccessFlags);
 	CPlayerDatabaseProp(CBitFlags<>, EPlayerDatabasePropType::MiscFlags, mMiscFlags);
-	CPlayerDatabaseProp(CBitFlags<>, EPlayerDatabasePropType::SentHUDHints, mSentHUDHints);
+	CPlayerDatabaseProp(CBitFlags<>, EPlayerDatabasePropType::LearnedHUDHints, mLearnedHUDHints);
 	CPlainAutoPtr<CRestorablePlayerEquipment> mRestorableCitizenEquipment;
 	float mMOTDGuideSendReadyTime = FLT_MAX;
 	CHandle<CCityZone> mhCityZone; // The zone that player is currently within

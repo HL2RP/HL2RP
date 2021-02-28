@@ -17,7 +17,8 @@ void C_HL2RPRules::FireGameEvent(IGameEvent* pEvent)
 	if (Q_strcmp(pEvent->GetName(), "player_activate") == 0)
 	{
 		// Notify the server of current learned HUD hints, to save server from sending these again
-		engine->ServerCmdKeyValues(new KeyValues(HL2RP_SENT_HUD_HINTS_UPDATE_EVENT_NAME,
-			HL2RP_SENT_HUD_HINTS_UPDATE_EVENT_DATA_KEY, gHL2RPConfiguration.mUserData->GetInt("sentHUDHints")));
+		engine->ServerCmdKeyValues(new KeyValues(HL2RP_LEARNED_HUD_HINTS_UPDATE_EVENT_NAME,
+			HL2RP_LEARNED_HUD_HINTS_FIELD_NAME,
+			gHL2RPConfiguration.mUserData->GetInt(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME)));
 	}
 }
