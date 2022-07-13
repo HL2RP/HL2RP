@@ -180,7 +180,8 @@ void ParseParticleEffectsMap( const char *pMapName, bool bLoadSheets, IFileList 
 	}
 
 	// Open the manifest file, and read the particles specified inside it
-	KeyValues *manifest = new KeyValues( szMapManifestFilename );
+	KeyValuesAD manifest(szMapManifestFilename);
+
 	if ( manifest->LoadFromFile( filesystem, szMapManifestFilename, "GAME" ) )
 	{
 		DevMsg( "Successfully loaded particle effects manifest '%s' for map '%s'\n", szMapManifestFilename, pMapName );
