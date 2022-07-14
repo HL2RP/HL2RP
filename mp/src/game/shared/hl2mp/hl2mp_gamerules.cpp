@@ -446,17 +446,19 @@ float CHL2MPRules::FlWeaponTryRespawn( CBaseCombatWeapon *pWeapon )
 // VecWeaponRespawnSpot - where should this weapon spawn?
 // Some game variations may choose to randomize spawn locations
 //=========================================================
-Vector CHL2MPRules::VecWeaponRespawnSpot( CBaseCombatWeapon *pWeapon )
+Vector CHL2MPRules::VecWeaponRespawnSpot( CBaseCombatWeapon *pWeapon, QAngle& angles )
 {
 #ifndef CLIENT_DLL
 	CWeaponHL2MPBase *pHL2Weapon = dynamic_cast< CWeaponHL2MPBase*>( pWeapon );
 
 	if ( pHL2Weapon )
 	{
+		angles = pHL2Weapon->GetOriginalSpawnAngles();
 		return pHL2Weapon->GetOriginalSpawnOrigin();
 	}
 #endif
 	
+	angles = pWeapon->GetAbsAngles();
 	return pWeapon->GetAbsOrigin();
 }
 
@@ -512,12 +514,12 @@ void CHL2MPRules::ManageObjectRelocation( void )
 			
 			if ( pObject )
 			{
-				Vector vSpawOrigin;
+				Vector vSpawnOrigin;
 				QAngle vSpawnAngles;
 
-				if ( GetObjectsOriginalParameters( pObject, vSpawOrigin, vSpawnAngles ) == true )
+				if ( GetObjectsOriginalParameters( pObject, vSpawnOrigin, vSpawnAngles ) == true )
 				{
-					float flDistanceFromSpawn = (pObject->GetAbsOrigin() - vSpawOrigin ).Length();
+					float flDistanceFromSpawn = (pObject->GetAbsOrigin() - vSpawnOrigin ).Length();
 
 					if ( flDistanceFromSpawn > WEAPON_MAX_DISTANCE_FROM_SPAWN )
 					{
@@ -535,14 +537,17 @@ void CHL2MPRules::ManageObjectRelocation( void )
 
 						if ( shouldReset )
 						{
-							pObject->Teleport( &vSpawOrigin, &vSpawnAngles, NULL );
 							pObject->EmitSound( "AlyxEmp.Charge" );
 
-							IPhysicsObject *pPhys = pObject->VPhysicsGetObject();
-
-							if ( pPhys )
+							if ( pPhysics )
 							{
-								pPhys->Wake();
+								pPhysics->SetPosition(vSpawnOrigin, vSpawnAngles, true);
+								pPhysics->Wake();
+							}
+							else
+							{
+								pObject->SetAbsOrigin(vSpawnOrigin);
+								pObject->SetAbsAngles(vSpawnAngles);
 							}
 						}
 					}

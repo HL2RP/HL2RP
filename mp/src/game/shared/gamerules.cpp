@@ -250,6 +250,16 @@ bool CGameRules::CanHavePlayerItem( CBasePlayer *pPlayer, CBaseCombatWeapon *pWe
 }
 
 //=========================================================
+// VecWeaponRespawnSpot - where should this weapon spawn?
+// Some game variations may choose to randomize spawn locations
+//=========================================================
+Vector CGameRules::VecWeaponRespawnSpot(CBaseCombatWeapon* pWeapon, QAngle& angles)
+{
+	angles = pWeapon->GetAbsAngles();
+	return pWeapon->GetAbsOrigin();
+}
+
+//=========================================================
 // load the SkillData struct with the proper values based on the skill level.
 //=========================================================
 void CGameRules::RefreshSkillData ( bool forceUpdate )
