@@ -94,7 +94,6 @@ public:
 	virtual int WeaponShouldRespawn( CBaseCombatWeapon *pWeapon );
 	virtual float FlWeaponRespawnTime( CBaseCombatWeapon *pWeapon );
 	virtual float FlWeaponTryRespawn( CBaseCombatWeapon *pWeapon );
-	virtual Vector VecWeaponRespawnSpot( CBaseCombatWeapon *pWeapon );
 
 // Item retrieval
 	virtual bool CanHaveItem( CBasePlayer *pPlayer, CItem *pItem );

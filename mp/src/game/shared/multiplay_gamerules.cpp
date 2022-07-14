@@ -925,15 +925,6 @@ ConVarRef suitcharger( "sk_suitcharger" );
 	}
 
 	//=========================================================
-	// VecWeaponRespawnSpot - where should this weapon spawn?
-	// Some game variations may choose to randomize spawn locations
-	//=========================================================
-	Vector CMultiplayRules::VecWeaponRespawnSpot( CBaseCombatWeapon *pWeapon )
-	{
-		return pWeapon->GetAbsOrigin();
-	}
-
-	//=========================================================
 	// WeaponShouldRespawn - any conditions inhibiting the
 	// respawning of this weapon?
 	//=========================================================

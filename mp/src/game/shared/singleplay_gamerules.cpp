@@ -377,15 +377,6 @@ bool CSingleplayRules::Damage_ShouldNotBleed( int iDmgType )
 	}
 
 	//=========================================================
-	// VecWeaponRespawnSpot - where should this weapon spawn?
-	// Some game variations may choose to randomize spawn locations
-	//=========================================================
-	Vector CSingleplayRules::VecWeaponRespawnSpot( CBaseCombatWeapon *pWeapon )
-	{
-		return pWeapon->GetAbsOrigin();
-	}
-
-	//=========================================================
 	// WeaponShouldRespawn - any conditions inhibiting the
 	// respawning of this weapon?
 	//=========================================================
