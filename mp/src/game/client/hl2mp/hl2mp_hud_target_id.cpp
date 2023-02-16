@@ -171,7 +171,8 @@ void CTargetID::Paint()
 
 			if ( bShowHealth )
 			{
-				_snwprintf( wszHealthText, ARRAYSIZE(wszHealthText) - 1, L"%.0f%%",  ((float)pPlayer->GetHealth() / (float)pPlayer->GetMaxHealth() ) );
+				_snwprintf( wszHealthText, ARRAYSIZE(wszHealthText) - 1, L"%i%%",
+					pPlayer->GetHealth() * 100 / pPlayer->GetMaxHealth() );
 				wszHealthText[ ARRAYSIZE(wszHealthText)-1 ] = '\0';
 			}
 		}
