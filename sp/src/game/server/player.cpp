@@ -7328,7 +7328,7 @@ void CBasePlayer::Weapon_Equip( CBaseCombatWeapon *pWeapon )
 {
 	BaseClass::Weapon_Equip( pWeapon );
 
-	bool bShouldSwitch = g_pGameRules->FShouldSwitchWeapon( this, pWeapon );
+	bool bShouldSwitch = g_pGameRules->FShouldSwitchWeapon( this, pWeapon, false );
 
 #ifdef HL2_DLL
 	if ( bShouldSwitch == false && PhysCannonGetHeldEntity( GetActiveWeapon() ) == pWeapon && 

@@ -174,7 +174,7 @@ bool CSingleplayRules::Damage_ShouldNotBleed( int iDmgType )
 	// Purpose: Determine whether the player should switch to the weapon passed in
 	// Output : Returns true on success, false on failure.
 	//-----------------------------------------------------------------------------
-	bool CSingleplayRules::FShouldSwitchWeapon( CBasePlayer *pPlayer, CBaseCombatWeapon *pWeapon )
+	bool CSingleplayRules::FShouldSwitchWeapon( CBasePlayer *pPlayer, CBaseCombatWeapon *pWeapon, bool wasCarried )
 	{
 		//Must have ammo
 		if ( ( pWeapon->HasAnyAmmo() == false ) && ( pPlayer->GetAmmoCount( pWeapon->m_iPrimaryAmmoType ) <= 0 ) )
@@ -197,7 +197,8 @@ bool CSingleplayRules::Damage_ShouldNotBleed( int iDmgType )
 			return false;
 
 		//Only switch if the weapon is better than what we're using
-		if ( ( pWeapon != pPlayer->GetActiveWeapon() ) && ( pWeapon->GetWeight() <= pPlayer->GetActiveWeapon()->GetWeight() ) )
+		if ( ( pWeapon != pPlayer->GetActiveWeapon() )
+			&& ( pWeapon->GetWeight(wasCarried) <= pPlayer->GetActiveWeapon()->GetWeight(true) ) )
 			return false;
 
 		return true;
@@ -232,9 +233,11 @@ bool CSingleplayRules::Damage_ShouldNotBleed( int iDmgType )
 			// Must be eligible for switching to.
 			if (!pPlayer->Weapon_CanSwitchTo(pWeapon))
 				continue;
+
+			int weight = pWeapon->GetWeight(pWeapon->GetOwner() == pPlayer);
 			
 			// Must be of higher quality.
-			if ( pWeapon->GetWeight() <= nBestWeight )
+			if ( weight <= nBestWeight )
 				continue;
 
 			// We must have primary ammo
@@ -242,7 +245,7 @@ bool CSingleplayRules::Damage_ShouldNotBleed( int iDmgType )
 				continue;
 
 			// This is a better candidate than what we had.
-			nBestWeight = pWeapon->GetWeight();
+			nBestWeight = weight;
 			pBestWeapon = pWeapon;
 		}
 

@@ -2621,8 +2621,8 @@ int CHL2_Player::GiveAmmo( int nCount, int nAmmoIndex, bool bSuppressSound)
 	{
 		CBaseCombatWeapon *pWeapon = g_pGameRules->GetNextBestWeapon(this, GetActiveWeapon());
 
-		if ( pWeapon && pWeapon->GetPrimaryAmmoType() == nAmmoIndex
-			&& (GetActiveWeapon() == NULL || pWeapon->GetWeight() > GetActiveWeapon()->GetWeight()) )
+		if ( pWeapon && pWeapon->GetPrimaryAmmoType() == nAmmoIndex && (GetActiveWeapon() == NULL
+			|| pWeapon->GetWeight(pWeapon->GetOwner() == this) > GetActiveWeapon()->GetWeight(true)) )
 		{
 			Weapon_Switch(pWeapon);
 		}
