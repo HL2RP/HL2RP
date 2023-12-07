@@ -461,7 +461,7 @@ ConVarRef suitcharger( "sk_suitcharger" );
 
 	//=========================================================
 	//=========================================================
-	bool CMultiplayRules::FShouldSwitchWeapon( CBasePlayer *pPlayer, CBaseCombatWeapon *pWeapon )
+	bool CMultiplayRules::FShouldSwitchWeapon( CBasePlayer *pPlayer, CBaseCombatWeapon *pWeapon, bool wasCarried )
 	{
 		if ( !pPlayer->Weapon_CanSwitchTo( pWeapon ) )
 		{
@@ -487,7 +487,7 @@ ConVarRef suitcharger( "sk_suitcharger" );
 			return false;
 		}
 
-		if ( pWeapon->GetWeight() > pPlayer->GetActiveWeapon()->GetWeight() )
+		if ( pWeapon->GetWeight(wasCarried) > pPlayer->GetActiveWeapon()->GetWeight(true) )
 		{
 			return true;
 		}
@@ -518,7 +518,7 @@ ConVarRef suitcharger( "sk_suitcharger" );
 				return NULL;
 			}
 
-			iCurrentWeight = pCurrentWeapon->GetWeight();
+			iCurrentWeight = pCurrentWeapon->GetWeight(true);
 		}
 
 		for ( int i = 0 ; i < pPlayer->WeaponCount(); ++i )
@@ -532,7 +532,9 @@ ConVarRef suitcharger( "sk_suitcharger" );
 			if ( pCurrentWeapon && !pCheck->AllowsAutoSwitchTo() )
 				continue;
 
-			if ( pCheck->GetWeight() > -1 && pCheck->GetWeight() == iCurrentWeight && pCheck != pCurrentWeapon )
+			int weight = pCheck->GetWeight(pCheck->GetOwner() == pPlayer);
+
+			if ( weight > -1 && weight == iCurrentWeight && pCheck != pCurrentWeapon )
 			{
 				// this weapon is from the same category. 
 				if ( pCheck->HasAnyAmmo() )
@@ -543,7 +545,7 @@ ConVarRef suitcharger( "sk_suitcharger" );
 					}
 				}
 			}
-			else if ( pCheck->GetWeight() > iBestWeight && pCheck != pCurrentWeapon )// don't reselect the weapon we're trying to get rid of
+			else if ( weight > iBestWeight && pCheck != pCurrentWeapon )// don't reselect the weapon we're trying to get rid of
 			{
 				//Msg( "Considering %s\n", STRING( pCheck->GetClassname() );
 				// we keep updating the 'best' weapon just in case we can't find a weapon of the same weight
@@ -552,7 +554,7 @@ ConVarRef suitcharger( "sk_suitcharger" );
 				if ( pCheck->HasAnyAmmo() )
 				{
 					// if this weapon is useable, flag it as the best
-					iBestWeight = pCheck->GetWeight();
+					iBestWeight = weight;
 					pBest = pCheck;
 				}
 			}

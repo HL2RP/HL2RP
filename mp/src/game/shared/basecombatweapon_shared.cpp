@@ -418,9 +418,9 @@ bool CBaseCombatWeapon::UsesClipsForAmmo2( void ) const
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-int CBaseCombatWeapon::GetWeight( void ) const
+int CBaseCombatWeapon::GetWeight( bool wasCarried ) const
 {
-	return GetWpnData().iWeight;
+	return (wasCarried ? GetWpnData().iCarriedWeight : GetWpnData().iWeight);
 }
 
 //-----------------------------------------------------------------------------

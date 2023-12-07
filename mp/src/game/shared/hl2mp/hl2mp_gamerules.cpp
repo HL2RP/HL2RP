@@ -981,7 +981,7 @@ CAmmoDef *GetAmmoDef()
 
 #endif
 
-	bool CHL2MPRules::FShouldSwitchWeapon( CBasePlayer *pPlayer, CBaseCombatWeapon *pWeapon )
+	bool CHL2MPRules::FShouldSwitchWeapon( CBasePlayer *pPlayer, CBaseCombatWeapon *pWeapon, bool wasCarried )
 	{		
 		if ( pPlayer->GetActiveWeapon() && pPlayer->IsNetClient() )
 		{
@@ -993,7 +993,7 @@ CAmmoDef *GetAmmoDef()
 			}
 		}
 
-		return BaseClass::FShouldSwitchWeapon( pPlayer, pWeapon );
+		return BaseClass::FShouldSwitchWeapon( pPlayer, pWeapon, wasCarried );
 	}
 
 #endif

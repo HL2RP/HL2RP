@@ -20,6 +20,7 @@ WeaponData
 	"secondary_ammo"		"None"
 
 	"weight"				"0"
+	"carried_weight"		"8"
 	"item_flags"			"0"
 	"damage"			"150"
 
