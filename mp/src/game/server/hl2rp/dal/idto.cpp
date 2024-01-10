@@ -4,41 +4,8 @@
 #include "idto.h"
 
 #define SQL_INT_COLUMN_TYPE     "INTEGER"
-#define SQL_FLOAT_COLUMN_TYPE   "DECIMAL"
+#define SQL_FLOAT_COLUMN_TYPE   "FLOAT"
 #define SQL_VARCHAR_COLUMN_TYPE "VARCHAR"
-
-SFieldDTO::operator const char* () const
-{
-	return mString;
-}
-
-const char* SFieldDTO::ToString(CNumStr&& dest) const
-{
-	switch (mType)
-	{
-	case EType::Int:
-	{
-		dest.SetInt32(mInt);
-		break;
-	}
-	case EType::UInt64:
-	{
-		dest.SetUint64(mUInt64);
-		break;
-	}
-	case EType::Float:
-	{
-		dest.SetFloat(mFloat);
-		break;
-	}
-	default: // EType::String
-	{
-		return mString;
-	}
-	}
-
-	return dest;
-}
 
 int CFieldDictionaryDTO::GetInt(const char* pName)
 {
@@ -47,15 +14,15 @@ int CFieldDictionaryDTO::GetInt(const char* pName)
 
 uint64 CFieldDictionaryDTO::GetUInt64(const char* pName)
 {
-	SFieldDTO field = GetField(pName);
+	SUtlField field = GetField(pName);
 
 	switch (field.mType)
 	{
-	case SFieldDTO::EType::Float:
+	case SUtlField::EType::Float:
 	{
 		return Float2Int(field.mFloat);
 	}
-	case SFieldDTO::EType::String:
+	case SUtlField::EType::String:
 	{
 		return Q_atoui64(field.mString);
 	}
@@ -66,15 +33,15 @@ uint64 CFieldDictionaryDTO::GetUInt64(const char* pName)
 
 float CFieldDictionaryDTO::GetFloat(const char* pName)
 {
-	SFieldDTO field = GetField(pName);
+	SUtlField field = GetField(pName);
 
 	switch (field.mType)
 	{
-	case SFieldDTO::EType::Float:
+	case SUtlField::EType::Float:
 	{
 		return field.mFloat;
 	}
-	case SFieldDTO::EType::String:
+	case SUtlField::EType::String:
 	{
 		return Q_atof(field.mString);
 	}
@@ -83,9 +50,14 @@ float CFieldDictionaryDTO::GetFloat(const char* pName)
 	return field.mInt;
 }
 
-SFieldDTO CFieldDictionaryDTO::GetField(const char* pName)
+CUtlString CFieldDictionaryDTO::GetString(const char* pName)
 {
-	return GetElementOrDefault<SFieldDTO>(pName);
+	return GetField(pName).ToString();
+}
+
+SUtlField CFieldDictionaryDTO::GetField(const char* pName)
+{
+	return GetElementOrDefault<const char*, SUtlField>(pName);
 }
 
 void CFieldDictionaryDTO::MergeFrom(CFieldDictionaryDTO& other)
@@ -124,23 +96,23 @@ bool CFieldDictionaryDTO::MatchesFieldAt(KeyValues* pKeyValues, int index)
 {
 	if (IsValidIndex(index))
 	{
-		SFieldDTO& field = Element(index);
+		SUtlField& field = Element(index);
 		const char* pFieldName = GetElementName(index);
 
 		switch (field.mType)
 		{
-		case SFieldDTO::EType::Int:
-		case SFieldDTO::EType::UInt64:
+		case SUtlField::EType::Int:
+		case SUtlField::EType::UInt64:
 		{
 			return (pKeyValues->GetUint64(pFieldName) == field.mUInt64);
 		}
-		case SFieldDTO::EType::Float:
+		case SUtlField::EType::Float:
 		{
 			return (pKeyValues->GetFloat(pFieldName) == field.mFloat);
 		}
 		}
 
-		return (pKeyValues->GetString(pFieldName) == field.mString); // SFieldDTO::EType::String
+		return (pKeyValues->GetString(pFieldName) == field.mString);
 	}
 
 	return true;
@@ -152,6 +124,11 @@ void CFieldDictionaryDTO::PopulateOther(KeyValues* pKeyValues)
 	{
 		pKeyValues->SetString(GetElementName(i), Element(i).ToString());
 	}
+}
+
+CRecordListDTO* CLinearDatabaseDTO::GetList(const char* pCollection)
+{
+	return GetElementOrDefault<const char*, CRecordListDTO*>(pCollection);
 }
 
 void CNodeDTO::TransferDistinctFrom(CNodeDTO& other)
@@ -196,7 +173,7 @@ CRecordNodeDTO* CNodeDTO::CreateChild(const char* pName)
 	return Element(index);
 }
 
-CRecordNodeDTO* CRecordNodeDTO::AddIndexField(const char* pName, const SFieldDTO& field)
+CRecordNodeDTO* CRecordNodeDTO::AddIndexField(const char* pName, const SUtlField& field)
 {
 	CRecordNodeDTO* pChild = CreateChild(field.ToString());
 	pChild->mIndexFieldByName.MergeFrom(mIndexFieldByName);
@@ -239,7 +216,7 @@ SDatabaseIdDTO::operator int()
 	return mId;
 }
 
-SDatabaseIdDTO::operator SFieldDTO()
+SDatabaseIdDTO::operator SUtlField()
 {
 	return mId;
 }
@@ -262,7 +239,7 @@ bool SDatabaseIdDTO::SetForLoading()
 
 CRecordNodeDTO* CDatabaseNodeDTO::GetCollection(const char* pName)
 {
-	return GetElementOrDefault<CRecordNodeDTO*>(pName);
+	return GetElementOrDefault<const char*, CRecordNodeDTO*>(pName);
 }
 
 CRecordNodeDTO* CDatabaseNodeDTO::CreateCollection(const char* pName)

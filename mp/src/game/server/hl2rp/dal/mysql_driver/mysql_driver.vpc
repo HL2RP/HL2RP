@@ -19,7 +19,7 @@ $Configuration
 {
 	$Compiler
 	{
-		$AdditionalIncludeDirectories "$BASE,$SRCDIR\thirdparty\mysql,.."
+		$AdditionalIncludeDirectories "$BASE,$SRCDIR\game\server\hl2rp,$SRCDIR\thirdparty\mysql,.."
 	}
 
 	$Linker [$WIN32]

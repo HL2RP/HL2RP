@@ -6,7 +6,6 @@
 #include <hl2_roleplayer.h>
 #include <hl2rp_gamerules.h>
 
-#define PLAYER_DAO_MAIN_COLLECTION_NAME   "Player"
 #define PLAYER_DAO_AMMO_COLLECTION_NAME   "PlayerAmmo"
 #define PLAYER_DAO_WEAPON_COLLECTION_NAME "PlayerWeapon"
 
@@ -42,7 +41,7 @@ public:
 	CSQLPlayerAmmoTableSetupDTO() : CSQLTableSetupDTO(PLAYER_DAO_AMMO_COLLECTION_NAME)
 	{
 		int index = mPrimaryKeyColumnIndices.AddToTail(CreateUInt64Column(PLAYER_DAO_ID_FOREIGN_COLUMN));
-		AddForeignKey(index, PLAYER_DAO_MAIN_COLLECTION_NAME, IDTO_PRIMARY_COLUMN_NAME);
+		AddForeignKey(mPrimaryKeyColumnIndices[index], PLAYER_DAO_MAIN_COLLECTION_NAME, IDTO_PRIMARY_COLUMN_NAME);
 		mPrimaryKeyColumnIndices.AddToTail(CreateIntColumn("type"));
 		CreateIntColumn("count");
 	}
@@ -54,7 +53,7 @@ public:
 	CSQLPlayerWeaponTableSetupDTO() : CSQLTableSetupDTO(PLAYER_DAO_WEAPON_COLLECTION_NAME)
 	{
 		int index = mPrimaryKeyColumnIndices.AddToTail(CreateUInt64Column(PLAYER_DAO_ID_FOREIGN_COLUMN));
-		AddForeignKey(index, PLAYER_DAO_MAIN_COLLECTION_NAME, IDTO_PRIMARY_COLUMN_NAME);
+		AddForeignKey(mPrimaryKeyColumnIndices[index], PLAYER_DAO_MAIN_COLLECTION_NAME, IDTO_PRIMARY_COLUMN_NAME);
 		mPrimaryKeyColumnIndices.AddToTail(CreateVarCharColumn("weapon", MAX_WEAPON_STRING));
 		CreateIntColumn("clip1");
 		CreateIntColumn("clip2");
@@ -65,7 +64,7 @@ REGISTER_SQL_TABLE_SETUP_DTO_FACTORY(CSQLPlayerMainTableSetupDTO)
 REGISTER_SQL_TABLE_SETUP_DTO_FACTORY(CSQLPlayerAmmoTableSetupDTO)
 REGISTER_SQL_TABLE_SETUP_DTO_FACTORY(CSQLPlayerWeaponTableSetupDTO)
 
-CPlayerLoadDAO::CPlayerLoadDAO(CHL2Roleplayer* pPlayer) : mSteamIdNumber(pPlayer->GetSteamIDAsUInt64())
+CPlayerLoadDAO::CPlayerLoadDAO(CBasePlayer* pPlayer) : mSteamIdNumber(pPlayer->GetSteamIDAsUInt64())
 {
 	mQueryDatabase.CreateCollection(PLAYER_DAO_MAIN_COLLECTION_NAME)
 		->AddIndexField(IDTO_PRIMARY_COLUMN_NAME, mSteamIdNumber);
@@ -89,7 +88,8 @@ void CPlayerLoadDAO::HandleCompletion()
 		return;
 	}
 
-	CRecordListDTO* pMainData = mResultDatabase.GetPtr(PLAYER_DAO_MAIN_COLLECTION_NAME);
+	bool updateMainData = pPlayer->mDatabaseIOFlags.IsBitSet(EPlayerDatabaseIOFlag::UpdateMainDataOnLoaded);
+	CRecordListDTO* pMainData = mResultDatabase.GetList(PLAYER_DAO_MAIN_COLLECTION_NAME);
 
 	if (pMainData->IsEmpty())
 	{
@@ -109,25 +109,29 @@ void CPlayerLoadDAO::HandleCompletion()
 		pPlayer->mRestorableEquipment.Attach(pEquipment);
 		pEquipment->mHealth = mainData.GetInt(gPlayerDatabasePropNames[EPlayerDatabasePropType::Health]);
 		pEquipment->mArmor = mainData.GetInt(gPlayerDatabasePropNames[EPlayerDatabasePropType::Armor]);
-		CRecordListDTO* pWeapons = mResultDatabase.GetPtr(PLAYER_DAO_WEAPON_COLLECTION_NAME),
-			* pAmmunition = mResultDatabase.GetPtr(PLAYER_DAO_AMMO_COLLECTION_NAME);
 
-		for (auto& ammo : *pAmmunition)
+		for (auto& ammo : *mResultDatabase.GetList(PLAYER_DAO_AMMO_COLLECTION_NAME))
 		{
 			pEquipment->mAmmoCountByIndex.InsertOrReplace(ammo.GetInt("type"), ammo.GetInt("count"));
 		}
 
-		for (auto& weapon : *pWeapons)
+		for (auto& weapon : *mResultDatabase.GetList(PLAYER_DAO_WEAPON_COLLECTION_NAME))
 		{
-			pEquipment->AddWeapon(weapon.GetField("weapon"), weapon.GetInt("clip1"), weapon.GetInt("clip2"));
+			pEquipment->AddWeapon(weapon.GetString("weapon"), weapon.GetInt("clip1"), weapon.GetInt("clip2"));
+		}
+
+		if (!updateMainData && Q_strcmp(pPlayer->GetPlayerName(),
+			mainData.GetString(gPlayerDatabasePropNames[EPlayerDatabasePropType::Name])) != 0)
+		{
+			DAL().AddDAO(new CPlayersMainDataSaveDAO(pPlayer, pPlayer->GetPlayerName(), EPlayerDatabasePropType::Name));
 		}
 
 		// Override faction/job only if player wasn't explicitly assigned a job during load, for fairness
 		if (pPlayer->mJobName.Get() == NULL_STRING && pPlayer->HasFactionAccess(faction))
 		{
 			pPlayer->mFaction = faction;
-			SFieldDTO job = mainData.GetField(gPlayerDatabasePropNames[EPlayerDatabasePropType::Job]);
-			pPlayer->mJobName = MAKE_STRING(job);
+			CUtlString jobName = mainData.GetString(gPlayerDatabasePropNames[EPlayerDatabasePropType::Job]);
+			pPlayer->mJobName = MAKE_STRING(jobName);
 			auto& jobs = HL2RPRules()->mJobByName[faction];
 			int index = pPlayer->CheckCurrentJobAccess();
 
@@ -151,13 +155,13 @@ void CPlayerLoadDAO::HandleCompletion()
 		if (pPlayer->mModelGroup.Get() == NULL_STRING)
 		{
 			auto& models = HL2RPRules()->mPlayerModelsByGroup;
-			int index = models.Find(mainData.GetField(gPlayerDatabasePropNames[EPlayerDatabasePropType::ModelGroup]));
+			int index = models.Find(mainData.GetString(gPlayerDatabasePropNames[EPlayerDatabasePropType::ModelGroup]));
 
 			if (models.IsValidIndex(index) && pPlayer->HasModelGroupAccess(index))
 			{
 				// Search last player model in the registry, to keep if possible. Otherwise, set a random one.
 				int aliasIndex = models[index]->Find(mainData
-					.GetField(gPlayerDatabasePropNames[EPlayerDatabasePropType::ModelAlias]));
+					.GetString(gPlayerDatabasePropNames[EPlayerDatabasePropType::ModelAlias]));
 
 				if (!models[index]->IsValidIndex(aliasIndex))
 				{
@@ -168,13 +172,26 @@ void CPlayerLoadDAO::HandleCompletion()
 			}
 		}
 
+		FOR_EACH_DICT_FAST(HL2RPRules()->mProperties, i)
+		{
+			if (HL2RPRules()->mProperties[i]->HasOwner() && HL2RPRules()->mProperties[i]->HasAccess(pPlayer))
+			{
+				if (HL2RPRules()->mProperties[i]->IsOwner(pPlayer))
+				{
+					pPlayer->mHomes.Insert(HL2RPRules()->mProperties[i]);
+				}
+
+				HL2RPRules()->mPlayerNameBySteamIdNum.InsertOrReplace(mSteamIdNumber, pPlayer->GetPlayerName());
+			}
+		}
+
 #ifdef HL2RP_LEGACY
 		pPlayer->mLearnedHUDHints.SetFlag(mainData
 			.GetInt(gPlayerDatabasePropNames[EPlayerDatabasePropType::LearnedHUDHints]));
 #endif // HL2RP_LEGACY
 	}
 
-	if (pPlayer->mDatabaseIOFlags.IsBitSet(EPlayerDatabaseIOFlag::UpdateMainDataOnLoaded))
+	if (updateMainData)
 	{
 		DAL().AddDAO(new CPlayersMainDataSaveDAO(pPlayer));
 		pPlayer->mDatabaseIOFlags.ClearBit(EPlayerDatabaseIOFlag::UpdateMainDataOnLoaded);
@@ -216,7 +233,7 @@ void CPlayerLoadDAO::HandleCompletion()
 	pPlayer->mDatabaseIOFlags.ClearBits(EPlayerDatabaseIOFlag::UpdateAmmunitionOnLoaded,
 		EPlayerDatabaseIOFlag::UpdateWeaponsOnLoaded);
 	pPlayer->mDatabaseIOFlags.SetBit(EPlayerDatabaseIOFlag::IsLoaded);
-	pPlayer->SetContextThink(&CHL2Roleplayer::PrintWelcomeMessage,
+	pPlayer->SetContextThink(&CHL2Roleplayer::PrintWelcomeInfo,
 		pPlayer->mFirstSpawnTime + PLAYER_DAO_WELCOME_PRINT_MAX_DELAY, "WelcomePrintThink");
 }
 
@@ -241,24 +258,24 @@ CPlayersMainDataSaveDAO::CPlayersMainDataSaveDAO(CHL2Roleplayer* pPlayer)
 	}
 }
 
-CPlayersMainDataSaveDAO::CPlayersMainDataSaveDAO(CHL2Roleplayer* pPlayer,
-	const SFieldDTO& field, EPlayerDatabasePropType type)
+CPlayersMainDataSaveDAO::CPlayersMainDataSaveDAO(CBasePlayer* pPlayer,
+	const SUtlField& field, EPlayerDatabasePropType type)
 {
 	AddField(CreateRecord(pPlayer), field, type);
 }
 
-CRecordNodeDTO* CPlayersMainDataSaveDAO::CreateRecord(CHL2Roleplayer* pPlayer)
+CRecordNodeDTO* CPlayersMainDataSaveDAO::CreateRecord(CBasePlayer* pPlayer)
 {
 	return mSaveDatabase.CreateCollection(PLAYER_DAO_MAIN_COLLECTION_NAME)
 		->AddIndexField(IDTO_PRIMARY_COLUMN_NAME, pPlayer->GetSteamIDAsUInt64());
 }
 
-void CPlayersMainDataSaveDAO::AddField(CRecordNodeDTO* pMainData, const SFieldDTO& field, EPlayerDatabasePropType type)
+void CPlayersMainDataSaveDAO::AddField(CRecordNodeDTO* pMainData, const SUtlField& field, EPlayerDatabasePropType type)
 {
 	pMainData->AddNormalField(gPlayerDatabasePropNames[type], field);
 }
 
-CPlayersAmmunitionSaveDAO::CPlayersAmmunitionSaveDAO(CHL2Roleplayer* pPlayer, int index, int count)
+CPlayersAmmunitionSaveDAO::CPlayersAmmunitionSaveDAO(CBasePlayer* pPlayer, int index, int count)
 {
 	bool save = count > 0;
 	CRecordNodeDTO* pAmmoData = GetCorrectDatabase(save).CreateCollection(PLAYER_DAO_AMMO_COLLECTION_NAME)
@@ -270,7 +287,7 @@ CPlayersAmmunitionSaveDAO::CPlayersAmmunitionSaveDAO(CHL2Roleplayer* pPlayer, in
 	}
 }
 
-CPlayersWeaponsSaveDAO::CPlayersWeaponsSaveDAO(CHL2Roleplayer* pPlayer, CBaseCombatWeapon* pWeapon, bool save)
+CPlayersWeaponsSaveDAO::CPlayersWeaponsSaveDAO(CBasePlayer* pPlayer, CBaseCombatWeapon* pWeapon, bool save)
 {
 	CRecordNodeDTO* pWeaponData = GetCorrectDatabase(save).CreateCollection(PLAYER_DAO_WEAPON_COLLECTION_NAME)
 		->AddIndexField(PLAYER_DAO_ID_FOREIGN_COLUMN, pPlayer->GetSteamIDAsUInt64())

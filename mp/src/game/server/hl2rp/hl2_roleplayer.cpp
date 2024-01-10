@@ -2,8 +2,9 @@
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include <cbase.h>
 #include "hl2_roleplayer.h"
-#include <hl2rp_gamerules.h>
+#include "hl2rp_gamerules.h"
 #include <dal.h>
+#include <hl2rp_property_dao.h>
 #include <player_dao.h>
 #include <player_dialogs.h>
 #include <in_buttons.h>
@@ -26,7 +27,7 @@
 #define HL2_ROLEPLAYER_BEAM_RING_DURATION    0.2f
 #define HL2_ROLEPLAYER_BEAM_RING_WIDTH       3.0f
 
-extern ConVar gCopVIPSkinsAllowCVar;
+extern ConVar gCopVIPSkinsAllowCVar, gMaxHomeInactivityDays;
 
 #ifdef HL2RP_FULL
 IMPLEMENT_HL2RP_NETWORKCLASS(HL2Roleplayer)
@@ -126,6 +127,15 @@ void CHL2Roleplayer::OnDisconnect()
 	// NOTE: To prevent double load case upon listenserver retry, we don't clear the IsLoaded flag
 	mDatabaseIOFlags.SetBit(EPlayerDatabaseIOFlag::IsEquipmentSaveDisabled);
 
+	long curTime;
+	VCRHook_Time(&curTime);
+
+	FOR_EACH_DICT_FAST(mHomes, i)
+	{
+		mHomes[i]->mOwnerDisconnectTime = curTime;
+		DAL().AddDAO(new CPropertiesSaveDAO(mHomes[i]));
+	}
+
 	//ClearActiveWeapon(); // Under investigation - is it needed in rare cases?
 }
 
@@ -179,7 +189,7 @@ CBaseEntity* CHL2Roleplayer::EntSelectSpawnPoint()
 	return BaseClass::EntSelectSpawnPoint();
 }
 
-void CHL2Roleplayer::PrintWelcomeMessage()
+void CHL2Roleplayer::PrintWelcomeInfo()
 {
 	if (mDatabaseIOFlags.IsBitSet(EPlayerDatabaseIOFlag::IsNewCitizenPrintPending))
 	{
@@ -192,6 +202,11 @@ void CHL2Roleplayer::PrintWelcomeMessage()
 	}
 
 	Print(HUD_PRINTTALK, "#HL2RP_Player_Reloaded");
+
+	if (mHomes.Count() > 0)
+	{
+		Print(HUD_PRINTTALK, "#HL2RP_Owned_Houses_Info", CNumStr(mHomes.Count()));
+	}
 }
 
 void CHL2Roleplayer::NetworkVarChanged_m_iHealth()
@@ -257,6 +272,18 @@ bool CHL2Roleplayer::IsNetClient() const
 IResponseSystem* CHL2Roleplayer::GetResponseSystem()
 {
 	return HL2RPRules()->mpPlayerResponseSystem;
+}
+
+void CHL2Roleplayer::SetPlayerName(const char* pName)
+{
+	BaseClass::SetPlayerName(pName);
+	OnDatabasePropChanged(pName, EPlayerDatabasePropType::Name);
+	int index = HL2RPRules()->mPlayerNameBySteamIdNum.Find(GetSteamIDAsUInt64());
+
+	if (HL2RPRules()->mPlayerNameBySteamIdNum.IsValidIndex(index))
+	{
+		HL2RPRules()->mPlayerNameBySteamIdNum[index] = GetPlayerName();
+	}
 }
 
 void CHL2Roleplayer::SetModel(const char* pModel)
@@ -421,16 +448,46 @@ void CHL2Roleplayer::UpdateWeaponPosture()
 	}
 }
 
-void CHL2Roleplayer::PostThink()
+void CHL2Roleplayer::PlayerUse()
 {
-	BaseClass::PostThink();
+	bool allowDenySound = true, isAimingEntityNearby = false;
+
+	if (mhAimingEntity != NULL)
+	{
+		if (mAimingEntityDistance < PLAYER_USE_RADIUS)
+		{
+			isAimingEntityNearby = true;
+		}
+
+		CBaseToggle* pBaseToggle;
+		auto& propertyData = mhAimingEntity->mPropertyData;
+
+		// Try toggling sliding property door
+		if (FBitSet(m_afButtonPressed, IN_USE) && propertyData.IsValid() && propertyData->mpProperty->HasAccess(this)
+			&& (propertyData->mpProperty->mType > EHL2RP_PropertyType::Home || isAimingEntityNearby)
+			&& (pBaseToggle = dynamic_cast<CBaseToggle*>(mhAimingEntity.Get())) != NULL)
+		{
+			// Auto-unlock Combine doors, for players fluency
+			if (propertyData->mpProperty->mType == EHL2RP_PropertyType::Combine)
+			{
+				UTIL_SetDoorLockState(pBaseToggle, NULL, false, propertyData->mDatabaseId.IsValid());
+			}
+
+			TOGGLE_STATE oldToggleState = pBaseToggle->m_toggle_state;
+			pBaseToggle->AcceptInput(oldToggleState == TS_AT_TOP
+				|| oldToggleState == TS_GOING_UP ? "Close" : "Open", this, this);
+
+			if (pBaseToggle->m_toggle_state != oldToggleState)
+			{
+				allowDenySound = false; // Disable as we used the door (outside default)
+			}
+		}
+	}
 
 	// Handle special use
-	bool targetEntity = (mhAimingEntity != NULL && mAimingEntityDistance < PLAYER_USE_RADIUS);
-
 	if (FBitSet(m_afButtonPressed, IN_RELOAD))
 	{
-		if (targetEntity && mSpecialUseLastTime + HL2_ROLEPLAYER_DOUBLE_KEYPRESS_MAX_DELAY > gpGlobals->curtime)
+		if (isAimingEntityNearby && mSpecialUseLastTime + HL2_ROLEPLAYER_DOUBLE_KEYPRESS_MAX_DELAY > gpGlobals->curtime)
 		{
 			mhAimingEntity->Use(this, this, USE_SPECIAL1, 0.0f);
 		}
@@ -440,9 +497,21 @@ void CHL2Roleplayer::PostThink()
 	else if (FBitSet(m_nButtons, IN_RELOAD)
 		&& gpGlobals->curtime >= mSpecialUseLastTime + HL2_ROLEPLAYER_USE_SPECIAL2_HOLD_TIME)
 	{
-		targetEntity ? mhAimingEntity->Use(this, this, USE_SPECIAL2, 0.0f) : SendRootDialog(new CMainMenu(this));
+		isAimingEntityNearby ? mhAimingEntity->Use(this, this, USE_SPECIAL2, 0.0f) : SendRootDialog(new CMainMenu(this));
 		mSpecialUseLastTime = gpGlobals->curtime;
 	}
+
+	BaseClass::PlayerUse(); // Call late to be unaffected by possible IN_USE strip from pressed buttons
+
+	if (!allowDenySound)
+	{
+		m_bPlayUseDenySound = false;
+	}
+}
+
+void CHL2Roleplayer::PostThink()
+{
+	BaseClass::PostThink();
 
 	if (IsAlive())
 	{
@@ -509,13 +578,13 @@ void CHL2Roleplayer::SendMainHUD()
 	SendHUDMessage(EPlayerHUDType::Main, message, HL2RP_MAIN_HUD_DEFAULT_X_POS, HL2RP_MAIN_HUD_DEFAULT_Y_POS,
 		(mCrime > 0) ? HL2RP_MAIN_HUD_DEFAULT_CRIMINAL_TEXT_COLOR : HL2RP_MAIN_HUD_DEFAULT_NORMAL_TEXT_COLOR);
 }
+#endif // HL2RP_LEGACY
 
 void CHL2Roleplayer::SendAimingEntityHUD()
 {
 	if (mhAimingEntity != NULL && mAimingEntityDistance < PLAYER_USE_RADIUS)
 	{
-		localizebuf_t message;
-		*message = '\0';
+		localizebuf_t message{};
 		mhAimingEntity->GetHUDInfo(this, message, sizeof(message));
 
 		if (*message != '\0')
@@ -526,7 +595,6 @@ void CHL2Roleplayer::SendAimingEntityHUD()
 		}
 	}
 }
-#endif // HL2RP_LEGACY
 
 void CHL2Roleplayer::Print(int type, const char* pText, const char* pArg1, const char* pArg2)
 {
@@ -583,8 +651,9 @@ void CHL2Roleplayer::HUDThink()
 
 		for (int i = ARRAYSIZE(mZonesWithin); --i >= 0;)
 		{
-			if (mZonesWithin[i] != NULL && SendZoneHUD(i))
+			if (mZonesWithin[i] != NULL)
 			{
+				SendZoneHUD(i);
 				break;
 			}
 		}
@@ -599,43 +668,47 @@ void CHL2Roleplayer::HUDThink()
 	SetNextThink(gpGlobals->curtime + HL2_ROLEPLAYER_HUD_THINK_PERIOD, HL2_ROLEPLAYER_HUD_THINK_CONTEXT);
 }
 
-bool CHL2Roleplayer::SendZoneHUD(int index)
+void CHL2Roleplayer::SendZoneHUD(int type)
 {
-	// Send City Zone HUD, except for polices inside an automatic crime zone (unneeded)
-	if (mFaction == EFaction::Citizen || index != ECityZoneType::AutoCrime)
+	CLocalizeFmtStr<> message(this);
+
+	if (type == ECityZoneType::NoKill)
 	{
-		CLocalizeFmtStr<> message(this);
+		message.Format("%t: %t", CCityZone::sTypeTokens[type],
+			IsDamageProtected() ? "#HL2RP_Zone_NoKill_Protected" : "#HL2RP_Zone_NoKill_Unprotected");
+	}
+	else
+	{
+		message.Localize("#HL2RP_Zone_Notice");
+		const char* pToken = CCityZone::sTypeTokens[type], * pArg = "";
+		CHL2RP_Property* pProperty = mZonesWithin[type]->mpProperty;
 
-		if (index == ECityZoneType::NoKill)
+		if (pProperty != NULL)
 		{
-			message.Format("%t: %t", CCityZone::sTypeTokens[index], IsDamageProtected() ?
-				"#HL2RP_Zone_NoKill_Protected" : "#HL2RP_Zone_NoKill_Unprotected");
-		}
-		else
-		{
-			const char* pNamePrefix = "[", * pNameSuffix = "]", * pName = STRING(mZonesWithin[index]->GetEntityName());
-
-			if (index == ECityZoneType::Home && *pName != '\0')
+			if (*pProperty->mName != '\0')
 			{
-				pNamePrefix = pNameSuffix = "'";
-			}
-			else
-			{
-				pName = gHL2RPLocalizer.Localize(this, CCityZone::sTypeTokens[index]);
+				message.Format(" '%s'", pProperty->mName);
 			}
 
-			message.Localize("#HL2RP_Zone_Notice", pNamePrefix, pName, pNameSuffix);
+			if (pProperty->IsOwner(this))
+			{
+				pToken = "#HL2RP_Zone_Home_Owned_Self";
+			}
+			else if (pProperty->HasOwner())
+			{
+				pToken = "#HL2RP_Zone_Home_Owned_Other";
+				pArg = HL2RPRules()->mPlayerNameBySteamIdNum.GetElementOrDefault(pProperty->mOwnerSteamIdNumber, "");
+			}
 		}
 
-		SendHUDMessage(EPlayerHUDType::Zone, message, HL2RP_CENTER_HUD_SPECIAL_POS,
-			HL2RP_ZONE_HUD_DEFAULT_Y_POS, HL2RP_ZONE_HUD_DEFAULT_COLOR);
-		return true;
+		message.Format(" [%t]", pToken, pArg);
 	}
 
-	return false;
+	SendHUDMessage(EPlayerHUDType::Zone, message, HL2RP_CENTER_HUD_SPECIAL_POS,
+		HL2RP_ZONE_HUD_DEFAULT_Y_POS, HL2RP_ZONE_HUD_DEFAULT_COLOR);
 }
 
-void CHL2Roleplayer::SendHUDHint(EPlayerHUDHintType type, const char* pToken)
+void CHL2Roleplayer::SendHUDHint(EPlayerHUDHintType type, const char* pToken, const char* pArg1, const char* pArg2)
 {
 	if (!mLearnedHUDHints.IsBitSet(type))
 	{
@@ -645,10 +718,14 @@ void CHL2Roleplayer::SendHUDHint(EPlayerHUDHintType type, const char* pToken)
 		UserMessageBegin(filter, HL2RP_KEY_HINT_USER_MESSAGE);
 		WRITE_LONG(type);
 		WRITE_STRING(pToken);
+		WRITE_STRING(pArg1);
+		WRITE_STRING(pArg2);
 		MessageEnd();
 #else
-		SendHUDMessage(EPlayerHUDType::Alert, pToken, HL2RP_CENTER_HUD_SPECIAL_POS,
-			HL2RP_ALERT_HUD_DEFAULT_Y_POS, HL2RP_ALERT_HUD_DEFAULT_COLOR, HL2_ROLEPLAYER_ALERT_HUD_HOLD_TIME);
+		CLocalizeFmtStr<> text(this);
+		SendHUDMessage(EPlayerHUDType::Alert, StringFuncs<char>::ToUpper((char*)text.Localize(pToken, pArg1, pArg2)),
+			HL2RP_CENTER_HUD_SPECIAL_POS, HL2RP_ALERT_HUD_DEFAULT_Y_POS,
+			HL2RP_ALERT_HUD_DEFAULT_COLOR, HL2_ROLEPLAYER_ALERT_HUD_HOLD_TIME);
 #endif // HL2RP_FULL
 
 		mLearnedHUDHints.SetBit(type);
@@ -676,7 +753,6 @@ void CHL2Roleplayer::OnPreSendHUDMessage(bf_write* pWriter)
 void CHL2Roleplayer::SendHUDMessage(EPlayerHUDType type, const char* pMessage,
 	float xPos, float yPos, const Color& color, float holdTime)
 {
-	CLocalizeFmtStr<> localizedMessage(this);
 	hudtextparms_t params{};
 	params.channel = type;
 
@@ -691,12 +767,6 @@ void CHL2Roleplayer::SendHUDMessage(EPlayerHUDType type, const char* pMessage,
 		}
 	}
 
-	// Auto localize
-	if (*pMessage == '#')
-	{
-		pMessage = localizedMessage.Localize(pMessage);
-	}
-
 	params.x = xPos;
 	params.y = yPos;
 	params.r1 = color.r();
@@ -706,7 +776,7 @@ void CHL2Roleplayer::SendHUDMessage(EPlayerHUDType type, const char* pMessage,
 	params.holdTime = holdTime;
 	FixHUDChannel(params.channel);
 	HL2RPRules()->mHUDMsgInterceptor.Pause();
-	UTIL_HudMessage(this, params, pMessage);
+	UTIL_HudMessage(this, params, gHL2RPLocalizer.Localize(this, pMessage));
 	HL2RPRules()->mHUDMsgInterceptor.Resume();
 	mHUDExpireTimers[params.channel].Set(type, holdTime);
 }
@@ -895,18 +965,20 @@ void CHL2Roleplayer::Event_Killed(const CTakeDamageInfo& info)
 
 	BaseClass::Event_Killed(info);
 	SetArmorValue(0);
-	mhAimingEntity = NULL;
+	mhAimingEntity.Term();
 }
 
-void CHL2Roleplayer::OnDatabasePropChanged(const SFieldDTO& field, EPlayerDatabasePropType type)
+void CHL2Roleplayer::OnDatabasePropChanged(const SUtlField& field, EPlayerDatabasePropType type)
 {
 	if (mDatabaseIOFlags.IsBitSet(EPlayerDatabaseIOFlag::IsLoaded))
 	{
-		return DAL().AddDAO(new CPlayersMainDataSaveDAO(this, field, type));
+		DAL().AddDAO(new CPlayersMainDataSaveDAO(this, field, type));
 	}
-
-	// Set to update main data once player loads
-	mDatabaseIOFlags.SetBit(EPlayerDatabaseIOFlag::UpdateMainDataOnLoaded);
+	// Set to update main data once player loads (except from default health change)
+	else if (type != EPlayerDatabasePropType::Health || field.mInt != 100)
+	{
+		mDatabaseIOFlags.SetBit(EPlayerDatabaseIOFlag::UpdateMainDataOnLoaded);
+	}
 }
 
 void CHL2Roleplayer::LoadFromDatabase()

@@ -17,10 +17,17 @@
 class IPhysicsFluidController;
 
 
-class CFuncMoveLinear : public CBaseToggle
+class CFuncMoveLinear : public DOOR_BASECLASS(CBaseToggle)
 {
+#ifdef HL2RP
+	void InputLock(inputdata_t&);
+	void InputUnlock(inputdata_t&);
+
+	bool m_bLocked;
+#endif // HL2RP
+
 public:
-	DECLARE_CLASS( CFuncMoveLinear, CBaseToggle );
+	DECLARE_CLASS( CFuncMoveLinear, DOOR_BASECLASS(CBaseToggle) );
 
 	void		Spawn( void );
 	void		Precache( void );

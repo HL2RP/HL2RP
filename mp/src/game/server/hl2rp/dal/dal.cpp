@@ -5,7 +5,6 @@
 #include "idao.h"
 #include "keyvalues_driver.h"
 #include <filesystem.h>
-#include <smartptr.h>
 
 // This should approximately match a realistic max. amount of concurrent
 // most-derived DAO classes that may be instantiated, for input hash map

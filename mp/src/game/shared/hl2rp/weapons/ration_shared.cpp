@@ -92,7 +92,7 @@ void CRation::ItemPostFrame()
 			if (FBitSet(pPlayer->m_afButtonPressed, IN_ATTACK))
 			{
 				SendWeaponAnim(ACT_VM_PULLBACK);
-				pPlayer->LocalDisplayHUDHint(EPlayerHUDHintType::RationThrowing, "#HL2RP_RationThrowingHint");
+				pPlayer->LocalDisplayHUDHint(EPlayerHUDHintType::RationThrowing, "#HL2RP_Hint_RationThrowing");
 				m_flNextPrimaryAttack = gpGlobals->curtime + GetViewModelSequenceDuration(); // Available throw time
 				mPOVState = EPOVState::HaulingBackForThrow;
 			}
@@ -123,7 +123,7 @@ void CRation::ItemPostFrame()
 			}
 			else
 			{
-				pPlayer->LocalDisplayHUDHint(EPlayerHUDHintType::RationDeployed, "#HL2RP_RationDeployedHint");
+				pPlayer->LocalDisplayHUDHint(EPlayerHUDHintType::RationDeployed, "#HL2RP_Hint_RationDeployed");
 			}
 
 			return RevertExcessClip1();
@@ -219,6 +219,6 @@ void CRation::OnPickedUp(CBaseCombatCharacter* pNewOwner)
 	if (mhParentDispenser != NULL)
 	{
 		mhParentDispenser->OnContainedRationPickup();
-		mhParentDispenser = NULL;
+		mhParentDispenser.Term();
 	}
 }

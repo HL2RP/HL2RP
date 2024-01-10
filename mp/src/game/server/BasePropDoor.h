@@ -32,11 +32,11 @@ struct opendata_t
 };
 
 
-abstract_class CBasePropDoor : public CDynamicProp
+abstract_class CBasePropDoor : public DOOR_BASECLASS(CDynamicProp)
 {
 public:
 
-	DECLARE_CLASS( CBasePropDoor, CDynamicProp );
+	DECLARE_CLASS( CBasePropDoor, DOOR_BASECLASS(CDynamicProp) );
 	DECLARE_SERVERCLASS();
 
 	CBasePropDoor( void );

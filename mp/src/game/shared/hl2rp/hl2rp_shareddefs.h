@@ -2,8 +2,6 @@
 #define HL2RP_SHAREDDEFS_H
 #pragma once
 
-#include <generic.h>
-
 #ifdef HL2RP_FULL
 #define DECLARE_HL2RP_SERVERCLASS()  DECLARE_SERVERCLASS()
 #define DECLARE_HL2RP_NETWORKCLASS() DECLARE_NETWORKCLASS()
@@ -54,6 +52,10 @@
 #define HL2RP_REGION_HUD_HEADER_DEFAULT_COLOR      Color(255, 150, 150, 255)
 #define HL2RP_REGION_HUD_PLAYERS_DEFAULT_COLOR     Color(255, 100, 100, 255)
 
+#define HL2RP_ENTITY_SEARCH_RADIUS_SQR (0.5f * 0.5f) // To be used during e.g. data loading
+
+#define HL2RP_MAP_ALIAS_FIELD_NAME "mapAlias"
+
 #define HL2RP_KEY_HINT_USER_MESSAGE "HL2RPKeyHintText"
 
 #define HL2RP_LEARNED_HUD_HINTS_FIELD_NAME        "learnedHUDHints"
@@ -61,6 +63,9 @@
 
 #define NETWORK_DIALOG_REWIND_SOUND "Buttons.snd9"
 #define NETWORK_MENU_ITEM_SOUND     "Buttons.snd37"
+
+#define HL2RP_PROPERTY_DOOR_LOCK_SOUND   "Buttons.snd28"
+#define HL2RP_PROPERTY_DOOR_UNLOCK_SOUND "Buttons.snd21"
 
 SCOPED_ENUM(EFaction, // NOTE: Don't change order
 	Citizen,

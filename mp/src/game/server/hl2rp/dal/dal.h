@@ -4,6 +4,7 @@
 
 #include "idao.h"
 #include <typeinfo>
+#include <utlhashtable.h>
 #include <UtlSortVector.h>
 
 class CDatabaseConnection;
@@ -11,7 +12,7 @@ class CDatabaseConnection;
 // Data Access Layer - A multi-threaded processor for user-level database I/O requests
 class CDAL : CAutoGameSystemPerFrame, CThread
 {
-	class CDAOList : public CAutoPurgeAdapter<CUtlLinkedList<IDAO*>>
+	class CDAOList : public CAutoDeleteAdapter<CUtlLinkedList<IDAO*>>
 	{
 	public:
 		CThreadFastMutex mMutex;

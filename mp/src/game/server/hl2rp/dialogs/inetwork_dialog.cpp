@@ -1,6 +1,7 @@
 #include <cbase.h>
 #include "inetwork_dialog.h"
 #include <hl2_roleplayer.h>
+#include <hl2rp_gamerules.h>
 
 #define NETWORK_DIALOG_MAX_TIME 200
 
@@ -10,8 +11,8 @@
 
 #define NETWORK_MENU_MSG_LINE_MAX_SIZE 34 // Max. displayable line size before overflow from default panel layout
 
-INetworkDialog::INetworkDialog(CHL2Roleplayer* pPlayer, const char* pTitleToken, const char* pMessage, bool isAdminOnly)
-	: mpPlayer(pPlayer), mpTitleToken(pTitleToken), mIsAdminOnly(isAdminOnly)
+INetworkDialog::INetworkDialog(CHL2Roleplayer* pPlayer, const char* pTitleToken, const char* pMessage, bool isAdminOnly,
+	int action) : mpPlayer(pPlayer), mpTitleToken(pTitleToken), mIsAdminOnly(isAdminOnly), mAction(action)
 {
 	V_strcpy_safe(mMessage, pMessage);
 }
@@ -27,11 +28,11 @@ void INetworkDialog::Think()
 void INetworkDialog::InitSendData(KeyValues* pData)
 {
 	CLocalizeFmtStr<> localizedMessage(mpPlayer);
-	localizedMessage.Localize(mMessage);
+	localizedMessage.Localize(mMessage, mMessageArg.ToString().Get());
 
 	// HACK: Fix overflow from default panel layout by replacing rightmost line spaces with new line characters
-	for (char* pEnd = localizedMessage + localizedMessage.mLength,
-		*pCurLine = localizedMessage, *pNewLineChar; pCurLine < pEnd; pCurLine = pNewLineChar + 1)
+	for (char* pEnd = localizedMessage.mDest + localizedMessage.mLength,
+		*pCurLine = localizedMessage.mDest, *pNewLineChar; pCurLine < pEnd; pCurLine = pNewLineChar + 1)
 	{
 		if ((pNewLineChar = strchr(pCurLine, '\n')) == NULL)
 		{
@@ -63,19 +64,19 @@ void INetworkDialog::InitSendData(KeyValues* pData)
 	mIsFirstDisplay = false;
 }
 
-void INetworkDialog::RewindAndNoticeParent(int action, const char* pInfo)
+void INetworkDialog::RewindAndNoticeParent(int action, const SUtlField& info)
 {
 	int count = mpPlayer->mDialogStack.Size();
 
 	if (count > 1)
 	{
-		mpPlayer->mDialogStack[count - 2]->HandleChildNotice(action, pInfo);
+		mpPlayer->mDialogStack[count - 2]->HandleChildNotice(action, info);
 		mpPlayer->RewindCurrentDialog(); // NOTE: Assumes dialog stack hasn't changed, which would make this wrong
 	}
 }
 
-CNetworkEntryBox::CNetworkEntryBox(CHL2Roleplayer* pPlayer, const char* pTitleToken, const char* pMessage, int action,
-	bool isAdminOnly) : INetworkDialog(pPlayer, pTitleToken, pMessage, isAdminOnly), mAction(action)
+CNetworkEntryBox::CNetworkEntryBox(CHL2Roleplayer* pPlayer, const char* pTitleToken, const char* pMessage,
+	int action, bool isAdminOnly) : INetworkDialog(pPlayer, pTitleToken, pMessage, isAdminOnly, action)
 {
 
 }
@@ -112,37 +113,33 @@ CNetworkMenu::CPageInfo::CPageInfo(CNetworkMenu* pMenu, int pageItemIndex)
 	}
 }
 
+CNetworkMenu::CItem::CItem(int action, const SUtlField& info, const char* pDisplay) : mAction(action), mInfo(info)
+{
+	V_strcpy_safe(mDisplay, pDisplay);
+	*mDisplay = toupper(*mDisplay); // Fix casing from e.g. cached KeyValues
+}
+
 bool CNetworkMenu::CItem::CLess::Less(CItem* const& pLeft, CItem* const& pRight, void*)
 {
 	return (pLeft->mAction <= pRight->mAction);
 }
 
-CNetworkMenu::CNetworkMenu(CHL2Roleplayer* pPlayer, const char* pTitleToken, const char* pMessage, bool isAdminOnly)
-	: INetworkDialog(pPlayer, pTitleToken, pMessage, isAdminOnly)
+CNetworkMenu::CNetworkMenu(CHL2Roleplayer* pPlayer, const char* pTitleToken, const char* pMessage, bool isAdminOnly,
+	int action, bool rewindIfEmpty) : INetworkDialog(pPlayer, pTitleToken, pMessage, isAdminOnly, action),
+	mRewindIfEmpty(rewindIfEmpty)
 {
 
 }
 
-void CNetworkMenu::AddItem(int action, const char* pDisplay, const char* pInfo)
+void CNetworkMenu::AddItem(int action, const char* pDisplay, const SUtlField& info)
 {
-	CItem* pItem = new CItem;
-	pItem->mAction = action;
-	pItem->mInfo = pInfo;
-	V_strcpy_safe(pItem->mDisplay, pDisplay);
-	*pItem->mDisplay = toupper(*pItem->mDisplay); // Fix casing from e.g. cached KeyValues
-	mItems.Insert(pItem);
+	mItems.Insert(new CItem(action, info, pDisplay));
 }
 
 void CNetworkMenu::RemoveItem(int index)
 {
 	delete mItems[index];
 	mItems.Remove(index);
-
-	// Try returning to previous page
-	if (mCurPageItemIndex > 0 && mCurPageItemIndex + 2 > mItems.Size())
-	{
-		mCurPageItemIndex -= CPageInfo(this, mCurPageItemIndex - NETWORK_MENU_PAGE_MAX_ITEMS).mMaxPageItems;
-	}
 }
 
 void CNetworkMenu::RemoveItemByAction(int action)
@@ -159,30 +156,36 @@ void CNetworkMenu::RemoveItemByAction(int action)
 void CNetworkMenu::RemoveAllItems()
 {
 	mItems.PurgeAndDeleteElements();
-	mCurPageItemIndex = 0;
 }
 
 void CNetworkMenu::Send()
 {
-	int oldPageItemIndex = mCurPageItemIndex;
 	UpdateItems();
+	CPageInfo info(this, mCurPageItemIndex);
 
-	if (mItems.IsEmpty() || (mIsAdminOnly && !mpPlayer->IsAdmin()))
+	if ((mRewindIfEmpty && mItems.IsEmpty()) || (mIsAdminOnly && !mpPlayer->IsAdmin()))
 	{
 		return mpPlayer->RewindCurrentDialog(); // Since there aren't items, try moving to parent
 	}
-	else if (oldPageItemIndex < mItems.Size())
+	// Shift current page to the last page if overflowed due to item count changes
+	else if (mCurPageItemIndex > 0 && mCurPageItemIndex + 2 > mItems.Size())
 	{
-		mCurPageItemIndex = oldPageItemIndex; // Return to previous page (items may have been removed)
+		mCurPageItemIndex = 0;
+		info = { this, 0 };
+
+		for (int nextMaxPageItems = info.mMaxPageItems - 1;
+			mCurPageItemIndex + info.mMaxPageItems < mItems.Size(); info.mMaxPageItems = nextMaxPageItems)
+		{
+			mCurPageItemIndex += info.mMaxPageItems;
+		}
 	}
 
 	mSecretToken = rand();
 	KeyValuesAD data("");
 	InitSendData(data);
-	CPageInfo info(this, mCurPageItemIndex);
-	int end = Min(mCurPageItemIndex + info.mMaxPageItems, mItems.Size());
+	int pageEndIndex = Min(mCurPageItemIndex + info.mMaxPageItems, mItems.Size());
 
-	for (int i = mCurPageItemIndex; i < end; ++i)
+	for (int i = mCurPageItemIndex; i < pageEndIndex; ++i)
 	{
 		AddItemSendData(data, i, mItems[i]->mDisplay);
 	}
@@ -192,7 +195,7 @@ void CNetworkMenu::Send()
 		AddItemSendData(data, NETWORK_MENU_PAGE_PREV_INDEX, "#HL2RP_Menu_Item_Prev");
 	}
 
-	if (end < mItems.Size())
+	if (pageEndIndex < mItems.Size())
 	{
 		AddItemSendData(data, NETWORK_MENU_PAGE_NEXT_INDEX, "#HL2RP_Menu_Item_Next");
 	}
@@ -202,13 +205,15 @@ void CNetworkMenu::Send()
 		AddItemSendData(data, NETWORK_MENU_PAGE_BACK_INDEX, "#HL2RP_Menu_Item_Back");
 	}
 
+	OnPreSendDialog(pageEndIndex, data);
 	return UTIL_SendDialog(mpPlayer, data, DIALOG_MENU);
 }
 
 void CNetworkMenu::AddItemSendData(KeyValues* pData, int index, const char* pDisplay)
 {
 	KeyValues* pItemData = pData->CreateNewKey();
-	pItemData->SetString("msg", gHL2RPLocalizer.Localize(mpPlayer, pDisplay));
+	pItemData->SetString("msg", (mShowItemNumbers && index >= 0) ? CLocalizeFmtStr<>(mpPlayer)
+		.Format("%s. %t", index - mCurPageItemIndex + 1, pDisplay) : gHL2RPLocalizer.Localize(mpPlayer, pDisplay));
 	pItemData->SetString("command", UTIL_VarArgs("dialogcmd %i %i", index, mSecretToken));
 }
 
@@ -258,10 +263,97 @@ void CNetworkMenu::HandleCommand(const CCommand& args)
 	}
 }
 
+void CNetworkMenu::SelectItem(CItem* pItem)
+{
+	RewindAndNoticeParent(mAction > NETWORK_MENU_ACTION_FROM_ITEM ? mAction : pItem->mAction,
+		pItem->mInfo.mType == SUtlField::EType::Null ? pItem->mDisplay : pItem->mInfo);
+}
+
 void CNetworkMenu::PlayItemSound() // NOTE: Call before a Send to safely access player (handler may delete menu)
 {
 	CSingleUserRecipientFilter filter(mpPlayer);
 	mpPlayer->EmitSound(filter, mpPlayer->GetSoundSourceIndex(), NETWORK_MENU_ITEM_SOUND);
+}
+
+void CNetworkMenu::AddMapLinkItems(const char* pMapAlias, int mapLinkAction, int groupLinkAction)
+{
+	uint minMapGroupsCount = 1;
+
+	if (pMapAlias != STRING(gpGlobals->mapname))
+	{
+		AddItem(mapLinkAction, "#HL2RP_Menu_LinkToMap");
+		minMapGroupsCount = 2;
+	}
+
+	if (HL2RPRules()->mMapGroups.Count() >= minMapGroupsCount)
+	{
+		AddItem(groupLinkAction, "#HL2RP_Menu_LinkToMapGroup");
+	}
+}
+
+CPlayerListMenu::CPlayerListMenu(CHL2Roleplayer* pPlayer, const char* pTitleToken, const char* pMessage, int action,
+	bool showMissingPlayers, bool isAdminOnly) : CNetworkMenu(pPlayer, pTitleToken, pMessage, isAdminOnly, action),
+	mShowMissingPlayers(showMissingPlayers)
+{
+	mShowItemNumbers = true;
+}
+
+void CPlayerListMenu::UpdateItems()
+{
+	RemoveAllItems();
+
+	if (mShowMissingPlayers)
+	{
+		FOR_EACH_DICT_FAST(mSteamIdNumbers, i)
+		{
+			CBasePlayer* pPlayer;
+			const char* pPlayerName = "";
+			int index = HL2RPRules()->mPlayerNameBySteamIdNum.Find(mSteamIdNumbers[i]);
+
+			if (HL2RPRules()->mPlayerNameBySteamIdNum.IsValidIndex(index))
+			{
+				pPlayerName = HL2RPRules()->mPlayerNameBySteamIdNum[index];
+			}
+			else if ((pPlayer = UTIL_PlayerBySteamID(mSteamIdNumbers[i])) != NULL)
+			{
+				pPlayerName = pPlayer->GetPlayerName();
+			}
+
+			AddItem(0, pPlayerName, mSteamIdNumbers[i]);
+		}
+
+		return;
+	}
+
+	ForEachRoleplayer([&](CBasePlayer* pPlayer)
+	{
+		uint64 steamIdNumber = pPlayer->GetSteamIDAsUInt64();
+
+		if (mSteamIdNumbers.HasElement(steamIdNumber))
+		{
+			AddItem(0, pPlayer->GetPlayerName(), steamIdNumber);
+		}
+	});
+}
+
+void CPlayerListMenu::OnPreSendDialog(int pageEndIndex, KeyValues* pSendData)
+{
+	CLocalizeFmtStr<> localizedMessage(mpPlayer);
+	localizedMessage += pSendData->GetString("msg");
+
+	if (localizedMessage.mLength > 0)
+	{
+		localizedMessage += "\n\n";
+	}
+
+	localizedMessage.Localize("#HL2RP_Menu_PlayerList_Msg_Header");
+
+	for (int i = mCurPageItemIndex; i < pageEndIndex; ++i)
+	{
+		localizedMessage.Format("\n%s. %s", i - mCurPageItemIndex + 1, mItems[i]->mInfo.ToString().Get());
+	}
+
+	pSendData->SetString("msg", localizedMessage);
 }
 
 CON_COMMAND_F(dialogcmd, "", FCVAR_HIDDEN | FCVAR_SERVER_CAN_EXECUTE)

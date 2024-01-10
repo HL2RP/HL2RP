@@ -3,7 +3,8 @@
 #pragma once
 
 SCOPED_ENUM(ECityZoneType, // Prioritized in ascending order
-	None,
+	None = -1,
+	Generic,
 	AutoCrime, // Adds some crime up automatically each second to citizens
 	NoCrime,   // Prevents players from acquiring crime at all
 	NoKill,    // Prevents players from killing each other ("safe zone")
@@ -29,6 +30,7 @@ public:
 	bool IsPointWithin(const Vector&);
 
 	ECityZoneType mType;
+	CHL2RP_Property* mpProperty;
 };
 
 #endif // !TRIGGER_CITY_ZONE_H

@@ -131,14 +131,15 @@ void CMySQLPreparedStatement::Execute(CRecordListDTO* pDestResults)
 
 				switch (pField->type)
 				{
+				case MYSQL_TYPE_NEWDECIMAL:
 				case MYSQL_TYPE_BLOB:
 				case MYSQL_TYPE_STRING:
 				case MYSQL_TYPE_VAR_STRING:
 				case MYSQL_TYPE_VARCHAR:
 				{
-					// Set remaining to delay buffer allocation until retrieving actual field length at mysql_stmt_fetch()
+					// Set remaining to delay buffer allocation until retrieving actual field length at mysql_stmt_fetch
 					resultBinds[i].buffer = NULL;
-					resultBinds[i].buffer_length = 0; // Must be zero even when buffer is NULL to safely call function
+					resultBinds[i].buffer_length = 0; // NOTE: Must be zero even when buffer is NULL to safely call function
 					resultBinds[i].length = &resultBinds[i].length_value;
 					continue;
 				}
@@ -160,47 +161,48 @@ void CMySQLPreparedStatement::Execute(CRecordListDTO* pDestResults)
 			{
 				CFieldDictionaryDTO& destResult = pDestResults->CreateRecord();
 
-				FOR_EACH_VEC(resultBinds, j)
+				FOR_EACH_VEC(resultBinds, i)
 				{
-					if (!resultBinds[j].is_null_value)
+					if (!resultBinds[i].is_null_value)
 					{
+						const char* pFieldName = mysql_fetch_field_direct(pResultMetadata, i)->name;
+
 						// Check to allocate and fill pending string column buffer for the current field. By providing
-						// an extra length slot for the null terminator, mysql_stmt_fetch_column() will initialize it.
-						if (resultBinds[j].buffer == NULL)
+						// an extra length slot for the null terminator, mysql_stmt_fetch_column will initialize it.
+						if (resultBinds[i].buffer == NULL)
 						{
-							resultBuffers[j].SetLength(resultBinds[j].length_value + 1);
-							resultBinds[j].buffer = resultBuffers[j].Get();
-							resultBinds[j].buffer_length = resultBuffers[j].Length();
-							mysql_stmt_fetch_column(mpStmt, resultBinds.Base() + j, j, 0);
+							resultBuffers[i].SetLength(resultBinds[i].length_value + 1);
+							resultBinds[i].buffer = resultBuffers[i].Get();
+							resultBinds[i].buffer_length = resultBuffers[i].Length();
+							mysql_stmt_fetch_column(mpStmt, resultBinds.Base() + i, i, 0);
+							destResult.Insert(pFieldName, (char*)resultBinds[i].buffer);
+							resultBinds[i].buffer = NULL; // Allow fetching next string-like value
+							continue;
 						}
 
-						const char* pFieldName = mysql_fetch_field_direct(pResultMetadata, j)->name;
-
-						switch (resultBinds[j].buffer_type)
+						switch (resultBinds[i].buffer_type)
 						{
 						case MYSQL_TYPE_LONG:
 						{
-							destResult.Insert(pFieldName, *(int32*)resultBinds[j].buffer);
-							continue;
+							destResult.Insert(pFieldName, *(int*)resultBinds[i].buffer);
+							break;
 						}
 						case MYSQL_TYPE_LONGLONG:
 						{
-							destResult.Insert(pFieldName, *(uint64*)resultBinds[j].buffer);
-							continue;
+							destResult.Insert(pFieldName, *(uint64*)resultBinds[i].buffer);
+							break;
 						}
 						case MYSQL_TYPE_FLOAT:
 						{
-							destResult.Insert(pFieldName, *(float32*)resultBinds[j].buffer);
-							continue;
+							destResult.Insert(pFieldName, *(float*)resultBinds[i].buffer);
+							break;
 						}
 						case MYSQL_TYPE_DOUBLE:
 						{
-							destResult.Insert(pFieldName, (float)*(float64*)resultBinds[j].buffer);
-							continue;
+							destResult.Insert(pFieldName, (float)*(double*)resultBinds[i].buffer);
+							break;
 						}
 						}
-
-						destResult.Insert(pFieldName, (char*)resultBinds[j].buffer);
 					}
 				}
 			}

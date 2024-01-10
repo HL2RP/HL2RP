@@ -11,6 +11,7 @@
 #define LOCCHAR_T wchar_t
 #endif // GAME_DLL
 
+#define HL2RP_LOCALIZER_TOKEN_SIZE  64
 #define HL2RP_LOCALIZER_BUFFER_SIZE 512
 
 using localizebuf_t = LOCCHAR_T[HL2RP_LOCALIZER_BUFFER_SIZE];
@@ -25,7 +26,7 @@ class CHL2RPLocalizer : CAutoGameSystemPerFrame
 	void AddLocalizationFromFile(const char* pBasePath, const char* pLanguage = "%language%");
 	template<typename... T>
 	void AddLocalizationFromFileEx(const char* pBasePath, const char* pLanguage, T... tokenPrefixes); // Filtering version
-	const char* LocalizeAsUTF8(CBasePlayer*, const char*);
+	const char* LocalizeAsUTF8(CBasePlayer*, const char* pToken, char* pAuxDest, int maxLen);
 	int Format(CBasePlayer*, char* pDest, int maxLen, bool colorize, const char* pFormat,
 		const char* args[], int argsCount, bool& closeArgColor);
 	int Format(CBasePlayer*, wchar_t* pDest, int maxLen, bool colorize, const char* pFormat,
@@ -48,30 +49,30 @@ class CHL2RPLocalizer : CAutoGameSystemPerFrame
 	}
 
 #ifdef GAME_DLL
-	CUtlStaticKeyStringDictionary* CreateLocalization(const char* pLanguage);
+	CUtlPooledStringMap<>* CreateLocalization(const char* pLanguage);
 
-	CAutoLessFuncAdapter<CUtlMap<const char*, CUtlStaticKeyStringDictionary*>> mLocalizationByLanguage;
+	CAutoLessFuncAdapter<CUtlMap<const char*, CUtlPooledStringMap<>*>> mLocalizationByLanguage;
 #else
 	void PostInit() OVERRIDE;
 
 	const wchar_t* LocalizeAsWideString(const char*);
 #endif // GAME_DLL
 
-	CDefaultGetAdapter<CUtlStaticKeyStringDictionary> mVariables;
+	CUtlPooledStringMap<> mVariables;
 
 public:
 	int SetCVarColorVariable(ConVar*);
 
 	template<typename T = char>
-	const T* Localize(CBasePlayer* pPlayer, const char* pToken)
+	const T* Localize(CBasePlayer* pPlayer, const char* pToken, char* pAuxDest = NULL, int maxLen = 0)
 	{
-		return LocalizeAsUTF8(pPlayer, pToken);
+		return LocalizeAsUTF8(pPlayer, pToken, pAuxDest, maxLen);
 	}
 };
 
 #ifdef CLIENT_DLL
 template<>
-inline const wchar_t* CHL2RPLocalizer::Localize(CBasePlayer*, const char* pToken)
+inline const wchar_t* CHL2RPLocalizer::Localize(CBasePlayer*, const char* pToken, char*, int)
 {
 	return LocalizeAsWideString(pToken);
 }
@@ -116,7 +117,7 @@ public:
 		}
 	}
 
-	operator LC* ()
+	operator const LC* ()
 	{
 		return mpDest;
 	}
@@ -145,11 +146,11 @@ public:
 template<typename LC = LOCCHAR_T>
 class CLocalizeFmtStr : public CBaseLocalizeFmtStr<LC>
 {
-	LC mDest[HL2RP_LOCALIZER_BUFFER_SIZE];
-
 public:
 	CLocalizeFmtStr(CBasePlayer* pPlayer = NULL, bool colorize = false)
 		: CBaseLocalizeFmtStr<LC>(pPlayer, mDest, colorize) {}
+
+	LC mDest[HL2RP_LOCALIZER_BUFFER_SIZE];
 };
 
 #endif // !HL2RP_LOCALIZER_H

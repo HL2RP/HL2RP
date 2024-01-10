@@ -3546,7 +3546,13 @@ BEGIN_DATADESC(CBasePropDoor)
 	DEFINE_KEYFIELD(m_ls.sLockedSound, FIELD_SOUNDNAME, "soundlockedoverride"),
 	DEFINE_KEYFIELD(m_ls.sUnlockedSound, FIELD_SOUNDNAME, "soundunlockedoverride"),
 	DEFINE_KEYFIELD(m_SlaveName, FIELD_STRING, "slavename" ),
+
+#ifdef HL2RP
+	DEFINE_KEYFIELD_NOT_SAVED(m_bLocked, FIELD_BOOLEAN, "locked"),
+#else
 	DEFINE_FIELD(m_bLocked, FIELD_BOOLEAN),
+#endif // HL2RP
+
 	//DEFINE_KEYFIELD(m_flBlockDamage, FIELD_FLOAT, "dmg"),
 	DEFINE_KEYFIELD( m_bForceClosed, FIELD_BOOLEAN, "forceclosed" ),
 	DEFINE_FIELD(m_eDoorState, FIELD_INTEGER),
@@ -3866,6 +3872,7 @@ void CBasePropDoor::SetDoorBlocker( CBaseEntity *pBlocker )
 		m_bFirstBlocked = false;
 	}
 }
+
 //-----------------------------------------------------------------------------
 // Purpose: Called when the player uses the door.
 // Input  : pActivator - 
@@ -3875,6 +3882,13 @@ void CBasePropDoor::SetDoorBlocker( CBaseEntity *pBlocker )
 //-----------------------------------------------------------------------------
 void CBasePropDoor::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value)
 {
+#ifdef HL2RP
+	if (useType >= USE_SPECIAL1)
+	{
+		return UTIL_SpecialUsePropertyDoor(this, pActivator, useType, IsDoorLocked());
+	}
+#endif // HL2RP
+
 	if ( GetMaster() != NULL )
 	{
 		// Tell our owner we've been used

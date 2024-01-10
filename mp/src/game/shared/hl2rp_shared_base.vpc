@@ -5,7 +5,7 @@ $Configuration
 	$Compiler
 	{
 		$AdditionalIncludeDirectories	"$BASE,hl2rp,$SHARED_SRCDIR,$SHARED_SRCDIR\weapons"
-		$PreprocessorDefinitions		"$BASE;MOVE_CONSTRUCTOR_SUPPORT;HL2RP"
+		$PreprocessorDefinitions		"$BASE;HL2RP"
 	}
 }
 

@@ -50,7 +50,13 @@ BEGIN_DATADESC( CBaseDoor )
 //	DEFINE_FIELD( m_isChaining, FIELD_BOOLEAN ),
 	DEFINE_KEYFIELD( m_ls.sLockedSound, FIELD_SOUNDNAME, "locked_sound" ),
 	DEFINE_KEYFIELD( m_ls.sUnlockedSound, FIELD_SOUNDNAME, "unlocked_sound" ),
-	DEFINE_FIELD( m_bLocked, FIELD_BOOLEAN ),
+
+#ifdef HL2RP
+	DEFINE_KEYFIELD_NOT_SAVED(m_bLocked, FIELD_BOOLEAN, "locked"),
+#else
+	DEFINE_FIELD(m_bLocked, FIELD_BOOLEAN),
+#endif // HL2RP
+
 	DEFINE_KEYFIELD( m_flWaveHeight, FIELD_FLOAT, "WaveHeight" ),
 	DEFINE_KEYFIELD( m_flBlockDamage, FIELD_FLOAT, "dmg" ),
 	DEFINE_KEYFIELD( m_eSpawnPosition, FIELD_INTEGER, "spawnpos" ),
@@ -721,6 +727,13 @@ void CBaseDoor::UpdateAreaPortals( bool isOpen )
 //-----------------------------------------------------------------------------
 void CBaseDoor::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
 {
+#ifdef HL2RP
+	if (useType >= USE_SPECIAL1)
+	{
+		return UTIL_SpecialUsePropertyDoor(this, pActivator, useType, m_bLocked);
+	}
+#endif // HL2RP
+
 	m_hActivator = pActivator;
 
 	if( m_ChainTarget != NULL_STRING )

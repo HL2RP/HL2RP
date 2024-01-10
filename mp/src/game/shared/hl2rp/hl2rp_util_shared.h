@@ -2,7 +2,18 @@
 #define HL2RP_UTIL_SHARED_H
 #pragma once
 
-#include <generic.h>
+class CUtlPooledString
+{
+	const char* mpString;
+
+public:
+	CUtlPooledString(const char* = "");
+
+	operator const char* ();
+};
+
+template<typename K = const char*>
+using CUtlPooledStringMap = CAutoLessFuncAdapter<CUtlMap<K, CUtlPooledString>>;
 
 // Numeric container with a minimum value of zero and few non-overflowing operations
 template<typename T>
@@ -92,31 +103,6 @@ public:
 		return this->Get();
 	}
 };
-
-template<class T = CUtlDict<const char*>>
-class CUtlStringDictionary : public CDefaultGetAdapter<CAutoPurgeAdapter<T>>
-{
-public:
-	int Insert(const char* pKey, const char* pValue)
-	{
-		return T::Insert(pKey, V_strdup(pValue));
-	}
-
-	void Remove(const char* pKey)
-	{
-		int index = T::Find(pKey);
-
-		if (T::IsValidIndex(index))
-		{
-			delete T::Element(index);
-			T::RemoveAt(index);
-		}
-	}
-};
-
-// For cases when all keys are externally allocated (e.g. global strings).
-// NOTE: Calling InsertOrReplace won't re-allocate the string value, and may be unsafe on destruction.
-using CUtlStaticKeyStringDictionary = CUtlStringDictionary<CAutoLessFuncAdapter<CUtlMap<const char*, const char*>>>;
 
 struct SRelativeTime
 {

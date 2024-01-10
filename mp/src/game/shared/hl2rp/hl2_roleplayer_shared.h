@@ -91,7 +91,9 @@ SCOPED_ENUM(EPlayerDatabasePropType,
 SCOPED_ENUM(EPlayerHUDHintType,
 	StickyWalking,
 	RationDeployed,
-	RationThrowing
+	RationThrowing,
+	PropertyDoorMenu,
+	PropertyDoorAll // Menu + door (un)locking
 )
 
 SCOPED_ENUM(EPlayerAccessFlag, // NOTE: Don't change order
@@ -114,7 +116,7 @@ class CBaseHL2Roleplayer : public CHL2RPCharacter<CHL2MP_Player>
 	void Precache() OVERRIDE;
 
 #ifdef GAME_DLL
-	virtual void OnDatabasePropChanged(const SFieldDTO&, EPlayerDatabasePropType) = 0;
+	virtual void OnDatabasePropChanged(const SUtlField&, EPlayerDatabasePropType) = 0;
 #else
 	void OnDatabasePropChanged(...) {}
 #endif // GAME_DLL
@@ -122,7 +124,7 @@ class CBaseHL2Roleplayer : public CHL2RPCharacter<CHL2MP_Player>
 public:
 	bool IsAdmin();
 	bool HasCombineGrants(bool extraCombineCheck = true);
-	bool IsWithinDistance(CBaseEntity*, float maxDistance, bool fromEye = false);
+	bool IsWithinDistance(CBaseEntity*, float maxDistance, bool fromEye = true);
 	CBaseEntity* GetAimingEntity(float& distance);
 	void GetPlayersInRegion(CUtlVector<CBasePlayer*>&);
 	int ComputeRegionHUD(const CUtlVector<CBasePlayer*>&, CLocalizeFmtStr<>&); // Returns the player lines count

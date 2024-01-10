@@ -45,10 +45,10 @@ enum FuncDoorSpawnPos_t
 };
 
 
-class CBaseDoor : public CBaseToggle
+class CBaseDoor : public DOOR_BASECLASS(CBaseToggle)
 {
 public:
-	DECLARE_CLASS( CBaseDoor, CBaseToggle );
+	DECLARE_CLASS( CBaseDoor, DOOR_BASECLASS(CBaseToggle) );
 
 	DECLARE_SERVERCLASS();
 

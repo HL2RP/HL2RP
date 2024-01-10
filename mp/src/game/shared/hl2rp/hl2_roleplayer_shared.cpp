@@ -38,6 +38,8 @@ void CBaseHL2Roleplayer::Precache()
 	PrecacheModel(HL2_ROLEPLAYER_BEAMS_PATH);
 	PrecacheScriptSound(NETWORK_DIALOG_REWIND_SOUND);
 	PrecacheScriptSound(NETWORK_MENU_ITEM_SOUND);
+	PrecacheScriptSound(HL2RP_PROPERTY_DOOR_LOCK_SOUND);
+	PrecacheScriptSound(HL2RP_PROPERTY_DOOR_UNLOCK_SOUND);
 }
 
 bool CBaseHL2Roleplayer::IsAdmin()
@@ -70,7 +72,7 @@ void CHL2Roleplayer::HandleWalkChanges(int)
 					if (mStickyWalkChanceTimer.Expired())
 					{
 						mStickyWalkChanceTimer.Set(HL2_ROLEPLAYER_DOUBLE_KEYPRESS_MAX_DELAY);
-						return LocalDisplayHUDHint(EPlayerHUDHintType::StickyWalking, "#HL2RP_StickyWalkHint");
+						return LocalDisplayHUDHint(EPlayerHUDHintType::StickyWalking, "#HL2RP_Hint_StickyWalking");
 					}
 
 					mIsInStickyWalkMode = true;
@@ -126,7 +128,7 @@ void CBaseHL2Roleplayer::GetPlayersInRegion(CUtlVector<CBasePlayer*>& players)
 			CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_PlayerByIndex(i));
 
 			if (pPlayer != NULL && pPlayer != this && pPlayer->mMiscFlags.IsBitSet(EPlayerMiscFlag::IsRegionListEnabled)
-				&& pPlayer->IsAlive() && IsWithinDistance(pPlayer, gRegionMaxRadiusCVar.GetFloat()))
+				&& pPlayer->IsAlive() && IsWithinDistance(pPlayer, gRegionMaxRadiusCVar.GetFloat(), false))
 			{
 				if (players.AddToTail(pPlayer) >= HL2_ROLEPLAYER_REGION_MAX_PLAYERS)
 				{

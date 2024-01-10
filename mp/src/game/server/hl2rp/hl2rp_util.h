@@ -2,7 +2,47 @@
 #define HL2RP_UTIL_H
 #pragma once
 
+#include <generic.h>
+#include <string_t.h>
+#include <utlmap.h>
 #include <utlpair.h>
+#include <utlstring.h>
+
+struct SUtlField
+{
+	enum class EType
+	{
+		Null, // For SQL NULL values saving (e.g. FK fields reset)
+		Int,
+		UInt64,
+		Float,
+		String
+	};
+
+	SUtlField() : mType(EType::Null) {}
+	SUtlField(int value) : mUInt64(value), mType(EType::Int) {}
+	SUtlField(uint64 value) : mUInt64(value), mType(EType::UInt64) {}
+	SUtlField(float value) : mFloat(value), mType(EType::Float) {}
+	SUtlField(const char* pValue) : mString(pValue), mType(EType::String) {}
+	SUtlField(const string_t& value) : SUtlField(STRING(value)) {}
+
+	operator const char* () const;
+
+	CUtlString ToString() const;
+
+	union
+	{
+		int mInt;
+		uint64 mUInt64;
+		float mFloat;
+	};
+
+	CUtlConstString mString;
+	EType mType;
+};
+
+#ifdef GAME_DLL
+class CHL2Roleplayer;
 
 class CPlayerEquipment
 {
@@ -23,5 +63,11 @@ protected:
 const char* UTIL_GetCommandIssuerName();
 void UTIL_ReplyToCommand(int type, const char* pText, const char* pArg1 = "", const char* pArg2 = "");
 void UTIL_SendDialog(CBasePlayer*, KeyValues* pData, DIALOG_TYPE);
+CUtlString& UTIL_TrimQuotableString(CUtlString&&);
+bool UTIL_IsPropertyDoor(CBaseEntity*);
+bool UTIL_IsDoorLocked(CBaseEntity*);
+void UTIL_SetDoorLockState(CBaseEntity*, CHL2Roleplayer* pActivator, bool lock, bool save);
+void UTIL_SpecialUsePropertyDoor(CBaseEntity*, CBaseEntity* pActivator, USE_TYPE, bool isLocked);
+#endif // GAME_DLL
 
 #endif // !HL2RP_UTIL_H

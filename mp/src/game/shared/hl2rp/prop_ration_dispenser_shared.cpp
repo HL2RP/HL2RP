@@ -62,7 +62,7 @@ int CRationDispenserProp::ObjectCaps()
 void CRationDispenserProp::OnContainedRationPickup()
 {
 	mNextTimeAvailable = gpGlobals->curtime + RATION_DISPENSER_USE_COOLDOWN;
-	mhContainedRation = NULL;
+	mhContainedRation.Term();
 
 	if (!IsSequenceFinished())
 	{
@@ -80,7 +80,7 @@ void CRationDispenserProp::GetHUDInfo(CHL2Roleplayer* pPlayer, LOCCHAR_T* pDest,
 		if (mIsLocked)
 		{
 			message.Format("%t\n%t", "#HL2RP_Dispenser_Locked",
-				pPlayer->HasCombineGrants(!!FBitSet(m_spawnflags, RATION_DISPENSER_SF_COMBINE_CONTROLLED)) ?
+				pPlayer->HasCombineGrants(FBitSet(m_spawnflags, RATION_DISPENSER_SF_COMBINE_CONTROLLED) > 0) ?
 				"#HL2RP_Dispenser_Unlock" : "#HL2RP_Dispenser_LockedEx");
 		}
 		else if (mNextTimeAvailable > gpGlobals->curtime)
@@ -98,7 +98,7 @@ void CRationDispenserProp::GetHUDInfo(CHL2Roleplayer* pPlayer, LOCCHAR_T* pDest,
 				message.Format("\n%t", "#HL2RP_Dispenser_UseHint");
 			}
 
-			if (pPlayer->HasCombineGrants(!!FBitSet(m_spawnflags, RATION_DISPENSER_SF_COMBINE_CONTROLLED)))
+			if (pPlayer->HasCombineGrants(FBitSet(m_spawnflags, RATION_DISPENSER_SF_COMBINE_CONTROLLED) > 0))
 			{
 				int timeLeft = mNextTimeAvailable + RATION_DISPENSER_LOCK_COOLDOWN - gpGlobals->curtime;
 

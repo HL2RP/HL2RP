@@ -21,6 +21,15 @@
 #include "shareddefs.h"
 #include "engine/ivmodelinfo.h"
 
+#ifdef HL2RP
+#include <hl2rp_property.h>
+#include <smartptr.h>
+
+#define DOOR_BASECLASS(Base) CHL2RP_PropertyDoor<Base>
+#else
+#define DOOR_BASECLASS(Base) Base
+#endif // HL2RP
+
 class CDamageModifier;
 class CDmgAccumulator;
 
@@ -636,7 +645,7 @@ public:
 
 	// handles an input (usually caused by outputs)
 	// returns true if the the value in the pass in should be set, false if the input is to be ignored
-	virtual bool AcceptInput( const char *szInputName, CBaseEntity *pActivator, CBaseEntity *pCaller, variant_t Value, int outputID );
+	virtual bool AcceptInput( const char *szInputName, CBaseEntity *pActivator, CBaseEntity *pCaller, variant_t Value = {}, int outputID = 0 );
 
 	//
 	// Input handlers.
@@ -1154,6 +1163,7 @@ public:
 	CBasePlayer* UTIL_GetLocalPlayer();
 
 	CNetworkVarForDerived(int, m_iHealth, virtual);
+	CPlainAutoPtr<CHL2RP_PropertyDoorData> mPropertyData;
 #else
 	CNetworkVarForDerived( int, m_iHealth );
 #endif // HL2RP

@@ -99,11 +99,11 @@ abstract_class CKeyValuesDTOHandler : public CNodeDTOHandler
 {
 	virtual void OnIndexLessCollectionStarted(const char*); // Collection without index fields is visited
 
-	// Called when a loaded record matches the identifiers of a local one (leaf).
-	// Returns whether it fully matches from the concrete handler consideration.
-	virtual bool OnLoadedRecordMatching(KeyValues* pFileData, KeyValues* pLoadedRecord, CRecordNodeDTO*) = 0;
+// Called when a loaded record matches the identifiers of a local one (leaf).
+// Returns whether it fully matches from the concrete handler consideration.
+virtual bool OnLoadedRecordMatching(KeyValues* pFileData, KeyValues* pLoadedRecord, CRecordNodeDTO*) = 0;
 
-	bool FindMatchingLocalRecord(KeyValues* pFileData, KeyValues* pLoadedRecord, CRecordNodeDTO*, int depth);
+bool FindMatchingLocalRecord(KeyValues* pFileData, KeyValues* pLoadedRecord, CRecordNodeDTO*, int depth);
 
 public:
 	virtual void HandleLoadedFileData(KeyValues* pFileData, const char* pBaseFileName);
@@ -122,12 +122,28 @@ protected:
 class CLoadDAO : public IDAO
 {
 	bool MustBeRemovedOnLevelShutdown() OVERRIDE;
+
+protected:
 	void ExecuteIO(CKeyValuesDriver*) OVERRIDE;
 	void ExecuteIO(ISQLDriver*) OVERRIDE;
 
-protected:
 	CDatabaseNodeDTO mQueryDatabase;
 	CLinearDatabaseDTO mResultDatabase;
+};
+
+class CLevelLoadDAO : public CLoadDAO
+{
+	void AddCollection(const char*);
+
+protected:
+	template<typename... T>
+	CLevelLoadDAO(T... collections)
+	{
+		for (auto pCollection : { collections... })
+		{
+			AddCollection(pCollection);
+		}
+	}
 };
 
 class CSaveDAO : public IDAO

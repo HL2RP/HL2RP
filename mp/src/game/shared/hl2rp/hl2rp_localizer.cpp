@@ -77,7 +77,7 @@ void CHL2RPLocalizer::LevelInitPostEntity()
 
 void CHL2RPLocalizer::LevelShutdownPostEntity()
 {
-	mVariables.PurgeAndDeleteElements();
+	mVariables.Purge();
 
 #ifdef GAME_DLL
 	mLocalizationByLanguage.PurgeAndDeleteElements();
@@ -127,7 +127,7 @@ void CHL2RPLocalizer::AddLocalizationFromFileEx(const char* pBasePath, const cha
 
 				if (pLanguageTokens != NULL)
 				{
-					CUtlStaticKeyStringDictionary* pPhraseByToken = CreateLocalization(pLanguage);
+					CUtlPooledStringMap<>* pPhraseByToken = CreateLocalization(pLanguage);
 					const char* prefixesBuffer[] = { tokenPrefixes... };
 					int prefixLengths[] = { Q_strlen(tokenPrefixes)... };
 
@@ -152,40 +152,38 @@ void CHL2RPLocalizer::AddLocalizationFromFileEx(const char* pBasePath, const cha
 }
 
 #ifdef GAME_DLL
-CUtlStaticKeyStringDictionary* CHL2RPLocalizer::CreateLocalization(const char* pLanguage)
+CUtlPooledStringMap<>* CHL2RPLocalizer::CreateLocalization(const char* pLanguage)
 {
 	int index = mLocalizationByLanguage.Find(pLanguage);
 
 	if (!mLocalizationByLanguage.IsValidIndex(index))
 	{
-		index = mLocalizationByLanguage.Insert(pLanguage, new CUtlStaticKeyStringDictionary);
+		index = mLocalizationByLanguage.Insert(pLanguage, new CUtlPooledStringMap<>);
 	}
 
 	return mLocalizationByLanguage[index];
 }
 
-const char* CHL2RPLocalizer::LocalizeAsUTF8(CBasePlayer* pPlayer, const char* pToken)
+const char* CHL2RPLocalizer::LocalizeAsUTF8(CBasePlayer* pPlayer, const char* pToken, char*, int)
 {
-	if (*pToken != '#')
+	if (*pToken == '#') // Check if token is localizable, for reusability
 	{
-		return pToken; // Abstract away requests which may not be localizable, for reusability
-	}
+		++pToken;
+		const char* pLanguage = (pPlayer != NULL && !pPlayer->IsBot()) ?
+			engine->GetClientConVarValue(pPlayer->entindex(), "cl_language") : HL2RP_LOCALIZER_DEFAULT_LANGUAGE;
 
-	++pToken;
-	const char* pLanguage = (pPlayer != NULL && !pPlayer->IsBot()) ?
-		engine->GetClientConVarValue(pPlayer->entindex(), "cl_language") : HL2RP_LOCALIZER_DEFAULT_LANGUAGE;
-
-	for (int i = 0; i < 2; pLanguage = HL2RP_LOCALIZER_DEFAULT_LANGUAGE, ++i)
-	{
-		int localizationIndex = mLocalizationByLanguage.Find(pLanguage);
-
-		if (mLocalizationByLanguage.IsValidIndex(localizationIndex))
+		for (int i = 0; i < 2; pLanguage = HL2RP_LOCALIZER_DEFAULT_LANGUAGE, ++i)
 		{
-			const char* pText = mLocalizationByLanguage[localizationIndex]->GetElementOrDefault(pToken, "");
+			int localizationIndex = mLocalizationByLanguage.Find(pLanguage);
 
-			if (*pText != '\0')
+			if (mLocalizationByLanguage.IsValidIndex(localizationIndex))
 			{
-				return pText;
+				const char* pText = mLocalizationByLanguage[localizationIndex]->GetElementOrDefault(pToken, "");
+
+				if (*pText != '\0')
+				{
+					return pText;
+				}
 			}
 		}
 	}
@@ -200,9 +198,17 @@ void CHL2RPLocalizer::PostInit()
 	AddLocalizationFromFile("hl2rp_client_legacy");
 }
 
-const char* CHL2RPLocalizer::LocalizeAsUTF8(CBasePlayer*, const char* pToken)
+const char* CHL2RPLocalizer::LocalizeAsUTF8(CBasePlayer*, const char* pToken, char* pAuxDest, int maxLen)
 {
-	return g_pVGuiLocalize->FindAsUTF8(pToken);
+	const char* pText = g_pVGuiLocalize->FindAsUTF8(pToken);
+
+	if (pAuxDest != NULL)
+	{
+		Copy(pAuxDest, pText, maxLen);
+		return pAuxDest;
+	}
+
+	return pText;
 }
 
 const wchar_t* CHL2RPLocalizer::LocalizeAsWideString(const char* pToken)
@@ -284,8 +290,7 @@ int CHL2RPLocalizer::InternalFormat(CBasePlayer* pPlayer, LC* pDest, int maxLen,
 				if (*pFormat == '}')
 				{
 					// Resolve and copy variable
-					char varName[32];
-					*varName = '\0';
+					char varName[32]{};
 					V_strcat_safe(varName, pCurToken + 1, pFormat - pCurToken - 1);
 					len += (*varName == '+') ? AppendButtonVariable(pPlayer, pDest + len, varName, maxLen - len)
 						: Copy(pDest + len, mVariables.GetElementOrDefault(varName, ""), maxLen - len);
@@ -309,8 +314,11 @@ int CHL2RPLocalizer::InternalFormat(CBasePlayer* pPlayer, LC* pDest, int maxLen,
 
 					if (num > 0 && num <= argsCount)
 					{
+						// NOTE: We use a buffer for the new format to prevent conflicts with FindAsUTF8's static buffer
+						char auxFormat[HL2RP_LOCALIZER_BUFFER_SIZE];
 						len += InternalFormat(pPlayer, pDest + len, maxLen - len, colorize,
-							Localize(pPlayer, args[num - 1]), args + num, argsCount - num, closeArgColor);
+							Localize(pPlayer, args[num - 1], auxFormat, sizeof(auxFormat)),
+							args + num, argsCount - num, closeArgColor);
 					}
 
 					continue;

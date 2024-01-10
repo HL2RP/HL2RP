@@ -147,6 +147,51 @@ public:
 };
 #endif // HL2RP_LEGACY
 
+class CPropertyDoorMenu : public CNetworkMenu
+{
+	SCOPED_ENUM(EItemAction,
+		CreateProperty,
+		SetPropertyName,
+		LinkZone,
+		UnlinkZone,
+		LinkNewDoor,
+		UnlinkDoor,
+		LinkToMap,
+		LinkToMapGroup,
+		BuyHouse,
+		SellHouse,
+		SetDoorName,
+		GiveKey,
+		ViewOrTakeKeys,
+		LockDoor,
+		UnlockDoor,
+		SelectDoor,
+		DeleteProperty
+	);
+
+	void UpdateItems() OVERRIDE;
+	void Think() OVERRIDE;
+	void SelectItem(CItem*) OVERRIDE;
+	void HandleChildNotice(int, const SUtlField&) OVERRIDE;
+
+	bool ValidateProperty();
+	bool IsDoorSaved();
+	void LinkToMapAlias(const char*);
+
+	CHL2RP_Property* mpProperty = NULL;
+	EHANDLE mhDoor;
+	SDatabaseIdDTO mPropertyId, mDoorId;
+
+public:
+	CPropertyDoorMenu(CHL2Roleplayer*, CBaseEntity*);
+};
+
+class CMapGroupMenu : public CNetworkMenu
+{
+public:
+	CMapGroupMenu(CHL2Roleplayer*, int action);
+};
+
 class CAdminMenu : public CNetworkMenu
 {
 	SCOPED_ENUM(EItemAction,
@@ -179,29 +224,16 @@ class CDispensersMenu : public CNetworkMenu
 	void UpdateItems() OVERRIDE;
 	void Think() OVERRIDE;
 	void SelectItem(CItem*) OVERRIDE;
-	void HandleChildNotice(int, const char*) OVERRIDE;
+	void HandleChildNotice(int, const SUtlField&) OVERRIDE;
 
 	void LinkToMapAlias(const char*);
 
 	CHandle<CRationDispenserProp> mhDispenser;
 	SDatabaseIdDTO mDispenserId; // For detecting DB insertion finish
-	bool mAllowManageOthers = true;
+	bool mAllowCreationAsAdmin = true;
 
 public:
-	SCOPED_ENUM(EChildAction,
-		SetRations,
-		LinkToMapGroup
-	);
-
 	CDispensersMenu(CHL2Roleplayer*, CRationDispenserProp*);
-};
-
-class CDispenserMapGroupMenu : public CNetworkMenu
-{
-	void SelectItem(CItem*) OVERRIDE;
-
-public:
-	CDispenserMapGroupMenu(CHL2Roleplayer*);
 };
 
 #endif // !PLAYER_DIALOGS_H

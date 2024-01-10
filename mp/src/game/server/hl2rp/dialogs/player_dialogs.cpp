@@ -4,11 +4,15 @@
 #include "player_dialogs.h"
 #include <hl2_roleplayer.h>
 #include <hl2rp_gamerules.h>
+#include <hl2rp_property.h>
 #include <dal.h>
+#include <hl2rp_property_dao.h>
 #include <prop_ration_dispenser.h>
 #include <ration_dispenser_dao.h>
 
 #define DISPENSER_MANAGE_MOVE_STEP_DIST 1.0f
+
+extern ConVar gMaxMapPlayerHomesCVar, gMaxHomeKeysCVar;
 
 CMainMenu::CMainMenu(CHL2Roleplayer* pPlayer) : CNetworkMenu(pPlayer, "#HL2RP_Menu_Main_Title")
 {
@@ -441,6 +445,471 @@ void CHUDHintsClearMenu::SelectItem(CItem* pItem)
 }
 #endif // HL2RP_LEGACY
 
+CPropertyDoorMenu::CPropertyDoorMenu(CHL2Roleplayer* pPlayer, CBaseEntity* pDoor)
+	: CNetworkMenu(pPlayer, "#HL2RP_ManagePropertyDoor"), mhDoor(pDoor)
+{
+	if (pDoor->mPropertyData.IsValid())
+	{
+		mpProperty = pDoor->mPropertyData->mpProperty;
+		mPropertyId = mpProperty->mDatabaseId;
+		mDoorId = pDoor->mPropertyData->mDatabaseId;
+	}
+}
+
+void CPropertyDoorMenu::UpdateItems()
+{
+	*mMessage = '\0';
+	RemoveAllItems();
+	AddItem(EItemAction::SelectDoor, "#HL2RP_Menu_Property_SelectDoor");
+
+	if (ValidateProperty())
+	{
+		CBaseLocalizeFmtStr<> message(mpPlayer, mMessage);
+		message.Format("%t\n\n- %t: %s", "#HL2RP_Menu_Property_Msg",
+			"#HL2RP_Menu_Msg_LinkedMapAlias", mpProperty->mpMapAlias);
+
+		if (mpPlayer->IsAdmin())
+		{
+			AddItem(EItemAction::SetPropertyName, "#HL2RP_Menu_Property_SetName");
+			AddItem(EItemAction::LinkNewDoor, "#HL2RP_Menu_Property_LinkNewDoor");
+			AddItem(EItemAction::DeleteProperty, "#HL2RP_Menu_Property_Delete");
+			AddMapLinkItems(mpProperty->mpMapAlias, EItemAction::LinkToMap, EItemAction::LinkToMapGroup);
+
+			if (mpProperty->mhZone.IsValid())
+			{
+				AddItem(EItemAction::UnlinkZone, "#HL2RP_Menu_Property_UnlinkZone");
+
+				if (mpProperty->mhZone != NULL && mpProperty->mhZone->GetEntityName() != NULL_STRING)
+				{
+					message.Format("\n- %t: %s", "#HL2RP_Menu_Property_Msg_LinkedZone",
+						STRING(mpProperty->mhZone->GetEntityName()));
+				}
+			}
+			else
+			{
+				AddItem(EItemAction::LinkZone, "#HL2RP_Menu_Property_LinkZone");
+			}
+		}
+
+		if (mpProperty->HasOwner())
+		{
+			if (mpProperty->HasAccess(mpPlayer, false))
+			{
+				AddItem(EItemAction::SellHouse, "#HL2RP_Menu_Property_SellHouse");
+
+				if (mpProperty->IsOwner(mpPlayer)
+					&& (int)mpProperty->mGrantedSteamIdNumbers.Count() < gMaxHomeKeysCVar.GetInt())
+				{
+					AddItem(EItemAction::GiveKey, "#HL2RP_Menu_Property_GiveKey");
+				}
+			}
+
+			if (mpProperty->mGrantedSteamIdNumbers.Count() > 0)
+			{
+				AddItem(EItemAction::ViewOrTakeKeys, "#HL2RP_Menu_Property_ViewOrTakeKeys");
+			}
+
+			message.Format("\n- %t: %s", "#HL2RP_Menu_Property_Msg_OwnerID", mpProperty->mOwnerSteamIdNumber);
+		}
+		else if (mpProperty->mType == EHL2RP_PropertyType::Home
+			&& mpPlayer->mDatabaseIOFlags.IsBitSet(EPlayerDatabaseIOFlag::IsLoaded) // Ensure homes list is set
+			&& (int)mpPlayer->mHomes.Count() < gMaxMapPlayerHomesCVar.GetInt())
+		{
+			AddItem(EItemAction::BuyHouse, "#HL2RP_Menu_Property_BuyHouse");
+		}
+	}
+
+	if (mhDoor != NULL)
+	{
+		if (mhDoor->mPropertyData.IsValid())
+		{
+			if (mhDoor->mPropertyData->mDatabaseId.IsValid())
+			{
+				CHL2RP_Property* pProperty = mhDoor->mPropertyData->mpProperty;
+
+				if (pProperty->HasAccess(mpPlayer, false))
+				{
+					if (pProperty == mpProperty && pProperty->mDoors.Count() > 1 && mpPlayer->IsAdmin())
+					{
+						AddItem(EItemAction::UnlinkDoor, "#HL2RP_Menu_Property_UnlinkDoor");
+					}
+
+					AddItem(EItemAction::SetDoorName, "#HL2RP_Menu_Property_SetDoorName");
+				}
+
+				if (pProperty->HasAccess(mpPlayer))
+				{
+					UTIL_IsDoorLocked(mhDoor) ? AddItem(EItemAction::UnlockDoor, "#HL2RP_Menu_Property_UnlockDoor")
+						: AddItem(EItemAction::LockDoor, "#HL2RP_Menu_Property_LockDoor");
+				}
+			}
+		}
+		else if (mpPlayer->IsAdmin())
+		{
+			AddItem(EItemAction::CreateProperty, "#HL2RP_Menu_Property_Create");
+		}
+	}
+}
+
+void CPropertyDoorMenu::Think()
+{
+	if (!mPropertyId.IsValid() && ValidateProperty())
+	{
+		mPropertyId = mpProperty->mDatabaseId;
+		Send();
+	}
+
+	if (mhDoor != NULL)
+	{
+		if (!mDoorId.IsValid() && IsDoorSaved())
+		{
+			mDoorId = mhDoor->mPropertyData->mDatabaseId;
+			Send();
+		}
+
+		mpPlayer->SendBeam(mhDoor->WorldSpaceCenter(), HL2RP_HUD_COLOR_GREEN, HL2_ROLEPLAYER_SMALL_BEAMS_WIDTH);
+	}
+}
+
+void CPropertyDoorMenu::SelectItem(CItem* pItem)
+{
+	switch (pItem->mAction)
+	{
+	case EItemAction::CreateProperty:
+	{
+		CNetworkMenu* pMenu = new CNetworkMenu(mpPlayer, "#HL2RP_Menu_Property_Type_Title", "", true, pItem->mAction);
+		pMenu->AddItem(0, "#HL2RP_Menu_Property_Type_Public", EHL2RP_PropertyType::Public);
+		pMenu->AddItem(0, "#HL2RP_Menu_Property_Type_Home", EHL2RP_PropertyType::Home);
+		pMenu->AddItem(0, "#HL2RP_Faction_Combine", EHL2RP_PropertyType::Combine);
+		pMenu->AddItem(0, "#HL2RP_Admin", EHL2RP_PropertyType::Admin);
+		return mpPlayer->PushAndSendDialog(pMenu);
+	}
+	case EItemAction::SetPropertyName:
+	{
+		return mpPlayer->PushAndSendDialog(new CNetworkEntryBox(mpPlayer,
+			"#HL2RP_Menu_Property_SetName", "", pItem->mAction, true));
+	}
+	case EItemAction::LinkZone:
+	{
+		if (mpPlayer->IsAdmin() && ValidateProperty() && !mpProperty->mhZone.IsValid())
+		{
+			for (int i = ARRAYSIZE(mpPlayer->mZonesWithin); --i >= 0;)
+			{
+				if (mpPlayer->mZonesWithin[i] != NULL)
+				{
+					if (mpPlayer->mZonesWithin[i]->mpProperty == NULL)
+					{
+						mpProperty->LinkZone(mpPlayer->mZonesWithin[i], mpPlayer->GetAbsOrigin());
+						DAL().AddDAO(new CPropertiesSaveDAO(mpProperty));
+					}
+
+					// Stop at the highest existing zone regardless of its linked property,
+					// to be consistent with the property load DAO's zone search criteria
+					break;
+				}
+			}
+		}
+
+		break;
+	}
+	case EItemAction::UnlinkZone:
+	{
+		if (mpPlayer->IsAdmin() && ValidateProperty() && mpProperty->mhZone.IsValid())
+		{
+			mpProperty->UnlinkZone();
+			DAL().AddDAO(new CPropertiesSaveDAO(mpProperty));
+		}
+
+		break;
+	}
+	case EItemAction::LinkNewDoor:
+	{
+		CBaseEntity* pEntity = mpPlayer->mhAimingEntity;
+
+		if (UTIL_IsPropertyDoor(pEntity) && !pEntity->mPropertyData.IsValid() && mpPlayer->IsAdmin()
+			&& ValidateProperty() && mpPlayer->IsWithinDistance(pEntity, HL2_ROLEPLAYER_USE_KEEP_MAX_DIST))
+		{
+			mhDoor = pEntity;
+			mDoorId = IDTO_INVALID_DATABASE_ID;
+			mpProperty->LinkDoor(pEntity);
+			DAL().AddDAO(new CPropertyDoorInsertDAO(pEntity));
+		}
+
+		break;
+	}
+	case EItemAction::UnlinkDoor:
+	{
+		if (IsDoorSaved() && mhDoor->mPropertyData->mpProperty == mpProperty && mpPlayer->IsAdmin())
+		{
+			if (mpProperty->mDoors.Count() < 2)
+			{
+				mpPlayer->Print(HUD_PRINTTALK, "#HL2RP_Property_UnlinkDoor_Deny");
+				break;
+			}
+
+			DAL().AddDAO(new CPropertyDoorsSaveDAO(mhDoor, false));
+			mpProperty->mDoors.Remove(mhDoor);
+			mhDoor->mPropertyData.Delete();
+			mhDoor.Term();
+		}
+
+		break;
+	}
+	case EItemAction::LinkToMap:
+	{
+		LinkToMapAlias(STRING(gpGlobals->mapname));
+		break;
+	}
+	case EItemAction::LinkToMapGroup:
+	{
+		if (HL2RPRules()->mMapGroups.Count() > 1)
+		{
+			return mpPlayer->PushAndSendDialog(new CMapGroupMenu(mpPlayer, pItem->mAction));
+		}
+
+		LinkToMapAlias(HL2RPRules()->mMapGroups[0]);
+		break;
+	}
+	case EItemAction::BuyHouse:
+	{
+		if ((int)mpPlayer->mHomes.Count() < gMaxMapPlayerHomesCVar.GetInt() && ValidateProperty()
+			&& mpProperty->mType == EHL2RP_PropertyType::Home && !mpProperty->HasOwner())
+		{
+			mpPlayer->mHomes.Insert(mpProperty);
+			mpProperty->mOwnerSteamIdNumber = mpPlayer->GetSteamIDAsUInt64();
+			HL2RPRules()->mPlayerNameBySteamIdNum
+				.InsertOrReplace(mpProperty->mOwnerSteamIdNumber, mpPlayer->GetPlayerName());
+			DAL().AddDAO(new CPropertiesSaveDAO(mpProperty));
+		}
+
+		break;
+	}
+	case EItemAction::SellHouse:
+	{
+		if (ValidateProperty() && mpProperty->HasOwner() && mpProperty->HasAccess(mpPlayer, false))
+		{
+			mpProperty->Disown(mpPlayer, 50);
+		}
+
+		break;
+	}
+	case EItemAction::SetDoorName:
+	{
+		return mpPlayer->PushAndSendDialog(new CNetworkEntryBox(mpPlayer,
+			"#HL2RP_Menu_Property_SetDoorName", "", pItem->mAction));
+	}
+	case EItemAction::GiveKey:
+	{
+		if (ValidateProperty() && mpProperty->IsOwner(mpPlayer)
+			&& (int)mpProperty->mGrantedSteamIdNumbers.Count() < gMaxHomeKeysCVar.GetInt())
+		{
+			CPlayerListMenu* pMenu = new CPlayerListMenu(mpPlayer, "#HL2RP_Menu_Property_GiveKey",
+				"#HL2RP_Menu_Property_GiveKey_Msg", pItem->mAction);
+			pMenu->mMessageArg = gMaxHomeKeysCVar.GetInt() - (int)mpProperty->mGrantedSteamIdNumbers.Count();
+
+			ForEachRoleplayer([&](CHL2Roleplayer* pTarget)
+			{
+				if (!pTarget->IsBot() && *pTarget->GetNetworkIDString() != '\0' && !mpProperty->HasAccess(pTarget))
+				{
+					pMenu->mSteamIdNumbers.Insert(pTarget->GetSteamIDAsUInt64());
+				}
+			});
+
+			return mpPlayer->PushAndSendDialog(pMenu);
+		}
+
+		break;
+	}
+	case EItemAction::ViewOrTakeKeys:
+	{
+		if (ValidateProperty())
+		{
+			CPlayerListMenu* pMenu = new CPlayerListMenu(mpPlayer,
+				"#HL2RP_Menu_Property_ViewOrTakeKeys", "", pItem->mAction, true);
+			pMenu->mSteamIdNumbers.CopyFrom(mpProperty->mGrantedSteamIdNumbers);
+			return mpPlayer->PushAndSendDialog(pMenu);
+		}
+
+		break;
+	}
+	case EItemAction::LockDoor:
+	case EItemAction::UnlockDoor:
+	{
+		if (IsDoorSaved() && mhDoor->mPropertyData->mpProperty->HasAccess(mpPlayer))
+		{
+			if (mpPlayer->IsWithinDistance(mhDoor, HL2_ROLEPLAYER_USE_KEEP_MAX_DIST))
+			{
+				UTIL_SetDoorLockState(mhDoor, mpPlayer, pItem->mAction == EItemAction::LockDoor, true);
+				break;
+			}
+
+			mpPlayer->Print(HUD_PRINTTALK, "#HL2RP_Far_From_Entity");
+		}
+
+		break;
+	}
+	case EItemAction::SelectDoor:
+	{
+		CBaseEntity* pEntity = mpPlayer->mhAimingEntity;
+
+		if (pEntity != NULL && pEntity->mPropertyData.IsValid()
+			&& mpPlayer->IsWithinDistance(pEntity, HL2_ROLEPLAYER_USE_KEEP_MAX_DIST))
+		{
+			if (pEntity->mPropertyData->mpProperty != mpProperty)
+			{
+				mpProperty = pEntity->mPropertyData->mpProperty;
+				mPropertyId = mpProperty->mDatabaseId;
+				mpPlayer->Print(HUD_PRINTTALK, "#HL2RP_Property_ChangeNotice");
+			}
+
+			mhDoor = pEntity;
+			mDoorId = pEntity->mPropertyData->mDatabaseId;
+		}
+
+		break;
+	}
+	case EItemAction::DeleteProperty:
+	{
+		if (mpPlayer->IsAdmin() && ValidateProperty() && (!mpProperty->HasOwner() || mpProperty->Disown(mpPlayer, 100)))
+		{
+			FOR_EACH_DICT_FAST(mpProperty->mDoors, i)
+			{
+				if (mpProperty->mDoors[i] != NULL)
+				{
+					if (mpProperty->mDoors[i]->mPropertyData->mDatabaseId.IsValid())
+					{
+						DAL().AddDAO(new CPropertyDoorsSaveDAO(mpProperty->mDoors[i], false));
+					}
+
+					mpProperty->mDoors[i]->mPropertyData.Delete();
+				}
+			}
+
+			DAL().AddDAO(new CPropertiesSaveDAO(mpProperty, false));
+			HL2RPRules()->mProperties.Remove(mpProperty);
+			delete mpProperty;
+			mpProperty = NULL;
+			mDoorId = IDTO_INVALID_DATABASE_ID;
+		}
+
+		break;
+	}
+	}
+
+	Send();
+}
+
+void CPropertyDoorMenu::HandleChildNotice(int action, const SUtlField& info)
+{
+	switch (action)
+	{
+	case EItemAction::CreateProperty:
+	{
+		if (mhDoor != NULL && !mhDoor->mPropertyData.IsValid() && mpPlayer->IsAdmin())
+		{
+			mpProperty = new CHL2RP_Property(HL2RPRules()->GetIdealMapAlias(), info.mInt);
+			mpProperty->LinkDoor(mhDoor);
+			HL2RPRules()->mProperties.Insert(mpProperty);
+			mPropertyId = mDoorId = IDTO_INVALID_DATABASE_ID;
+			DAL().AddDAO(new CPropertyInsertDAO(mpProperty));
+		}
+
+		return;
+	}
+	case EItemAction::SetPropertyName:
+	{
+		if (mpPlayer->IsAdmin() && ValidateProperty())
+		{
+			V_strcpy_safe(mpProperty->mName, UTIL_TrimQuotableString(info.mString.Get()));
+			DAL().AddDAO(new CPropertiesSaveDAO(mpProperty));
+		}
+
+		return;
+	}
+	case EItemAction::SetDoorName:
+	{
+		if (IsDoorSaved() && mhDoor->mPropertyData->mpProperty->HasAccess(mpPlayer, false))
+		{
+			V_strcpy_safe(mhDoor->mPropertyData->mName, UTIL_TrimQuotableString(info.mString.Get()));
+			DAL().AddDAO(new CPropertyDoorsSaveDAO(mhDoor));
+		}
+
+		return;
+	}
+	case EItemAction::GiveKey:
+	{
+		CHL2Roleplayer* pTarget = ToHL2Roleplayer(UTIL_PlayerBySteamID(info.mUInt64));
+
+		if (pTarget != NULL && ValidateProperty() && mpProperty->IsOwner(mpPlayer)
+			&& (int)mpProperty->mGrantedSteamIdNumbers.Count() < gMaxHomeKeysCVar.GetInt())
+		{
+			mpProperty->mGrantedSteamIdNumbers.Insert(info.mUInt64);
+			HL2RPRules()->mPlayerNameBySteamIdNum.InsertOrReplace(info.mUInt64, pTarget->GetPlayerName());
+			DAL().AddDAO(new CPropertyGrantsSaveDAO(mpProperty, info.mUInt64, true));
+			mpPlayer->Print(HUD_PRINTTALK, "#HL2RP_Property_Key_Given", pTarget->GetPlayerName());
+			pTarget->Print(HUD_PRINTTALK, "#HL2RP_Property_Key_Received", mpProperty->mName, mpPlayer->GetPlayerName());
+		}
+
+		return;
+	}
+	case EItemAction::ViewOrTakeKeys:
+	{
+		if (ValidateProperty() && mpProperty->IsOwner(mpPlayer))
+		{
+			mpProperty->mGrantedSteamIdNumbers.Remove(info.mUInt64);
+			DAL().AddDAO(new CPropertyGrantsSaveDAO(mpProperty, info.mUInt64));
+			mpPlayer->Print(HUD_PRINTTALK, "#HL2RP_Property_Key_Taken_Issuer",
+				HL2RPRules()->mPlayerNameBySteamIdNum.GetElementOrDefault(info.mUInt64, ""));
+			CBasePlayer* pTarget = UTIL_PlayerBySteamID(info.mUInt64);
+
+			if (pTarget != NULL)
+			{
+				ToHL2Roleplayer(pTarget)->Print(HUD_PRINTTALK, "#HL2RP_Property_Key_Taken_Target",
+					mpPlayer->GetPlayerName(), mpProperty->mName);
+			}
+		}
+
+		return;
+	}
+	}
+
+	LinkToMapAlias(HL2RPRules()->mMapGroups.GetElementOrDefault(info.mString, "")); // EItemAction::LinkToMapGroup
+}
+
+bool CPropertyDoorMenu::ValidateProperty()
+{
+	if (HL2RPRules()->mProperties.HasElement(mpProperty))
+	{
+		return mpProperty->mDatabaseId.IsValid();
+	}
+
+	mpProperty = NULL;
+	return false;
+}
+
+bool CPropertyDoorMenu::IsDoorSaved()
+{
+	return (mhDoor != NULL && mhDoor->mPropertyData.IsValid() && mhDoor->mPropertyData->mDatabaseId.IsValid());
+}
+
+void CPropertyDoorMenu::LinkToMapAlias(const char* pAlias)
+{
+	if (mpPlayer->IsAdmin() && ValidateProperty())
+	{
+		V_swap(pAlias, mpProperty->mpMapAlias);
+		DAL().AddDAO(new CPropertiesSaveDAO(mpProperty, pAlias));
+	}
+}
+
+CMapGroupMenu::CMapGroupMenu(CHL2Roleplayer* pPlayer, int action)
+	: CNetworkMenu(pPlayer, "#HL2RP_Menu_LinkToMapGroup", "", true)
+{
+	FOR_EACH_DICT_FAST(HL2RPRules()->mMapGroups, i)
+	{
+		AddItem(action, HL2RPRules()->mMapGroups[i]);
+	}
+}
+
 CAdminMenu::CAdminMenu(CHL2Roleplayer* pPlayer) : CNetworkMenu(pPlayer, "#HL2RP_Menu_Admin", "", true)
 {
 	AddItem(EItemAction::ManageDispensers, "#HL2RP_Menu_Dispensers");
@@ -463,7 +932,7 @@ CDispensersMenu::CDispensersMenu(CHL2Roleplayer* pPlayer, CRationDispenserProp* 
 	if (pDispenser != NULL)
 	{
 		mDispenserId = pDispenser->mDatabaseId;
-		mAllowManageOthers = false;
+		mAllowCreationAsAdmin = false;
 	}
 }
 
@@ -472,7 +941,7 @@ void CDispensersMenu::UpdateItems()
 	*mMessage = '\0';
 	RemoveAllItems();
 
-	if (mpPlayer->IsAdmin() && mAllowManageOthers)
+	if (mpPlayer->IsAdmin() && mAllowCreationAsAdmin)
 	{
 		AddItem(EItemAction::Create, "#HL2RP_Menu_Dispenser_Create");
 		AddItem(EItemAction::SelectAiming, "#HL2RP_Menu_Dispenser_Select");
@@ -480,8 +949,8 @@ void CDispensersMenu::UpdateItems()
 
 	if (mhDispenser != NULL)
 	{
-		CBaseLocalizeFmtStr<>(mpPlayer, mMessage).Localize("#HL2RP_Menu_Dispenser_Msg_Active",
-			mhDispenser->mRationsAmmo, mhDispenser->mpMapAlias);
+		CBaseLocalizeFmtStr<>(mpPlayer, mMessage).Format("%t\n- %3t: %4s", "#HL2RP_Menu_Dispenser_Msg_Active",
+			mhDispenser->mRationsAmmo, "#HL2RP_Menu_Msg_LinkedMapAlias", mhDispenser->mpMapAlias);
 
 		if (mpPlayer->HasCombineGrants(mhDispenser->HasSpawnFlags(RATION_DISPENSER_SF_COMBINE_CONTROLLED)))
 		{
@@ -497,18 +966,7 @@ void CDispensersMenu::UpdateItems()
 				AddItem(EItemAction::MoveFront, "#HL2RP_Menu_Dispenser_MoveFront");
 				AddItem(EItemAction::MoveBack, "#HL2RP_Menu_Dispenser_MoveBack");
 				AddItem(EItemAction::Delete, "#HL2RP_Menu_Dispenser_Delete");
-				uint minMapGroupsCount = 1;
-
-				if (mhDispenser->mpMapAlias != STRING(gpGlobals->mapname))
-				{
-					AddItem(EItemAction::LinkToMap, "#HL2RP_Menu_Dispenser_LinkToMap");
-					minMapGroupsCount = 2;
-				}
-
-				if (HL2RPRules()->mMapGroups.Count() >= minMapGroupsCount)
-				{
-					AddItem(EItemAction::LinkToMapGroup, "#HL2RP_Menu_Dispenser_LinkToMapGroup");
-				}
+				AddMapLinkItems(mhDispenser->mpMapAlias, EItemAction::LinkToMap, EItemAction::LinkToMapGroup);
 			}
 		}
 	}
@@ -519,8 +977,8 @@ void CDispensersMenu::Think()
 	if (mhDispenser != NULL)
 	{
 		if (mpPlayer->HasCombineGrants(mhDispenser->HasSpawnFlags(RATION_DISPENSER_SF_COMBINE_CONTROLLED))
-			&& (mAllowManageOthers ? mpPlayer->IsAdmin()
-				: mpPlayer->IsWithinDistance(mhDispenser, HL2_ROLEPLAYER_USE_KEEP_MAX_DIST, true)))
+			&& (mAllowCreationAsAdmin ? mpPlayer->IsAdmin()
+				: mpPlayer->IsWithinDistance(mhDispenser, HL2_ROLEPLAYER_USE_KEEP_MAX_DIST)))
 		{
 			if (!mDispenserId.IsValid() && mhDispenser->mDatabaseId.IsValid())
 			{
@@ -528,11 +986,11 @@ void CDispensersMenu::Think()
 				Send();
 			}
 
-			return mpPlayer->SendBeam(mhDispenser->GetAbsOrigin(), Color(0, 255, 0),
-				HL2_ROLEPLAYER_SMALL_BEAMS_WIDTH);
+			return mpPlayer->SendBeam(mhDispenser->GetAbsOrigin(),
+				HL2RP_HUD_COLOR_GREEN, HL2_ROLEPLAYER_SMALL_BEAMS_WIDTH);
 		}
 	}
-	else if (mAllowManageOthers && mpPlayer->IsAdmin())
+	else if (mAllowCreationAsAdmin && mpPlayer->IsAdmin())
 	{
 		return;
 	}
@@ -564,7 +1022,7 @@ void CDispensersMenu::SelectItem(CItem* pItem)
 					pDispenser->mpMapAlias = HL2RPRules()->GetIdealMapAlias();
 					pDispenser->mIsLocked = true;
 					mhDispenser = pDispenser;
-					mDispenserId = pDispenser->mDatabaseId = IDTO_LOADING_DATABASE_ID;
+					mDispenserId = IDTO_INVALID_DATABASE_ID;
 					DAL().AddDAO(new CDispenserInsertDAO(pDispenser));
 				}
 			}
@@ -591,7 +1049,7 @@ void CDispensersMenu::SelectItem(CItem* pItem)
 		case EItemAction::SetRations:
 		{
 			return mpPlayer->PushAndSendDialog(new CNetworkEntryBox(mpPlayer, "#HL2RP_Menu_Dispenser_SetRations",
-				"#HL2RP_Menu_Dispenser_SetRations_Msg", EChildAction::SetRations, true));
+				"#HL2RP_Menu_Dispenser_SetRations_Msg", pItem->mAction, true));
 		}
 		case EItemAction::SetCC:
 		case EItemAction::UnsetCC:
@@ -631,7 +1089,7 @@ void CDispensersMenu::SelectItem(CItem* pItem)
 		{
 			if (HL2RPRules()->mMapGroups.Count() > 1)
 			{
-				return mpPlayer->PushAndSendDialog(new CDispenserMapGroupMenu(mpPlayer));
+				return mpPlayer->PushAndSendDialog(new CMapGroupMenu(mpPlayer, pItem->mAction));
 			}
 
 			LinkToMapAlias(HL2RPRules()->mMapGroups[0]);
@@ -641,7 +1099,7 @@ void CDispensersMenu::SelectItem(CItem* pItem)
 		{
 			DAL().AddDAO(new CDispensersSaveDAO(mhDispenser, false));
 			mhDispenser->Remove();
-			mhDispenser = NULL;
+			mhDispenser.Term();
 			break;
 		}
 		}
@@ -650,37 +1108,22 @@ void CDispensersMenu::SelectItem(CItem* pItem)
 	Send();
 }
 
-void CDispensersMenu::HandleChildNotice(int action, const char* pInfo)
+void CDispensersMenu::HandleChildNotice(int action, const SUtlField& info)
 {
 	if (mhDispenser != NULL)
 	{
-		if (action == EChildAction::SetRations)
+		if (action == EItemAction::SetRations)
 		{
-			mhDispenser->mRationsAmmo = Q_atoi(pInfo);
+			mhDispenser->mRationsAmmo = info.mInt;
 			return DAL().AddDAO(new CDispensersSaveDAO(mhDispenser));
 		}
 
-		LinkToMapAlias(HL2RPRules()->mMapGroups.GetElementOrDefault(pInfo, "")); // EChildAction::LinkToMapGroup
+		LinkToMapAlias(HL2RPRules()->mMapGroups.GetElementOrDefault(info.mString, "")); // EItemAction::LinkToMapGroup
 	}
 }
 
 void CDispensersMenu::LinkToMapAlias(const char* pAlias)
 {
-	const char* pOldAlias = mhDispenser->mpMapAlias;
-	mhDispenser->mpMapAlias = pAlias;
-	DAL().AddDAO(new CDispensersSaveDAO(mhDispenser, pOldAlias));
-}
-
-CDispenserMapGroupMenu::CDispenserMapGroupMenu(CHL2Roleplayer* pPlayer)
-	: CNetworkMenu(pPlayer, "#HL2RP_Menu_Dispenser_LinkToMapGroup", "", true)
-{
-	FOR_EACH_DICT_FAST(HL2RPRules()->mMapGroups, i)
-	{
-		AddItem(0, HL2RPRules()->mMapGroups[i]);
-	}
-}
-
-void CDispenserMapGroupMenu::SelectItem(CItem* pItem)
-{
-	RewindAndNoticeParent(CDispensersMenu::EChildAction::LinkToMapGroup, pItem->mDisplay);
+	V_swap(pAlias, mhDispenser->mpMapAlias);
+	DAL().AddDAO(new CDispensersSaveDAO(mhDispenser, pAlias));
 }

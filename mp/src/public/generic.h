@@ -18,31 +18,31 @@ template<class T>
 class CDefaultGetAdapter : public T
 {
 public:
-	template<typename S>
-	S GetElementOrDefault(const char* pName, S defaultValue = {})
+	template<typename K, typename V>
+	V GetElementOrDefault(K key, V defaultValue = {})
 	{
-		int index = this->Find(pName);
-		return (this->IsValidIndex(index) ? this->Element(index) : defaultValue);
+		int index = this->Find(key);
+		return (this->IsValidIndex(index) ? (V&&)this->Element(index) : defaultValue);
 	}
 };
 
 template<class T>
-class CAutoPurgeAdapter : public T
-{
-public:
-	~CAutoPurgeAdapter()
-	{
-		this->PurgeAndDeleteElements();
-	}
-};
-
-template<class T>
-class CAutoLessFuncAdapter : public T
+class CAutoLessFuncAdapter : public CDefaultGetAdapter<T>
 {
 public:
 	CAutoLessFuncAdapter()
 	{
 		SetDefLessFunc(*this);
+	}
+};
+
+template<class T>
+class CAutoDeleteAdapter : public CDefaultGetAdapter<T>
+{
+public:
+	~CAutoDeleteAdapter()
+	{
+		this->PurgeAndDeleteElements();
 	}
 };
 

@@ -4,7 +4,7 @@
 #include "idao.h"
 #include "dal.h"
 #include "keyvalues_driver.h"
-#include <smartptr.h>
+#include <hl2rp_gamerules.h>
 
 SCOPED_ENUM(ESQLRecordAppendFlag,
 	AppendNames = 1,
@@ -153,7 +153,11 @@ class CLoadKeyValuesDTOHandler : public CKeyValuesDTOHandler
 {
 	bool OnCollectionStarted(CRecordNodeDTO* pCollection, const char* pName) OVERRIDE
 	{
-		mResultDatabase.Insert(pName);
+		if (!mResultDatabase.HasElement(pName))
+		{
+			mResultDatabase.Insert(pName, new CRecordListDTO);
+		}
+
 		return CKeyValuesDTOHandler::OnCollectionStarted(pCollection, pName);
 	}
 
@@ -172,7 +176,7 @@ bool CLoadKeyValuesDTOHandler::OnLoadedRecordMatching(KeyValues*,
 	// Match also against all selected normal fields and create the result record on success
 	if (pMatchingRecord->mNormalFieldByName.FieldsEqual(pLoadedRecord))
 	{
-		CFieldDictionaryDTO& destResult = mResultDatabase[mResultDatabase.Count() - 1].CreateRecord();
+		CFieldDictionaryDTO& destResult = mResultDatabase[mResultDatabase.Count() - 1]->CreateRecord();
 
 		FOR_EACH_VALUE(pLoadedRecord, pField)
 		{
@@ -358,7 +362,7 @@ protected:
 		const char* pAutoDeducedValueFormat = NULL, int start = 0); // Returns updated separator
 	const char* AppendFieldAt(const CFieldDictionaryDTO&, int index, ESQLRecordAppendFlag,
 		const char* pSeparator = "", const char* pAutoDeducedValueFormat = NULL); // Returns updated separator
-	const char* AppendField(const SFieldDTO&, const char* pName, ESQLRecordAppendFlag,
+	const char* AppendField(const SUtlField&, const char* pName, ESQLRecordAppendFlag,
 		const char* pSeparator = "", const char* pAutoDeducedValueFormat = NULL); // Returns updated separator
 	void Execute(CRecordListDTO* pResults);
 
@@ -395,7 +399,7 @@ const char* CSQLDTOHandler::AppendFieldAt(const CFieldDictionaryDTO& fieldByName
 		flags, pSeparator, pAutoDeducedValueFormat);
 }
 
-const char* CSQLDTOHandler::AppendField(const SFieldDTO& field, const char* pName, ESQLRecordAppendFlag flags,
+const char* CSQLDTOHandler::AppendField(const SUtlField& field, const char* pName, ESQLRecordAppendFlag flags,
 	const char* pSeparator, const char* pAutoDeducedValueFormat)
 {
 	mQuery += pSeparator;
@@ -426,14 +430,14 @@ const char* CSQLDTOHandler::AppendField(const SFieldDTO& field, const char* pNam
 		{
 			mQuery.AppendFormat(pAutoDeducedValueFormat, pName);
 		}
-		else if (field.mType == SFieldDTO::EType::String)
+		else if (field.mType == SUtlField::EType::String)
 		{
 			mQuery += "?";
 			mStringValues.AddToTail(field);
 		}
 		else
 		{
-			mQuery += field.ToString();
+			mQuery += (field.mType == SUtlField::EType::Null) ? "NULL" : field.ToString();
 		}
 	}
 
@@ -484,13 +488,17 @@ protected:
 	}
 };
 
-void CFilteringSQLDTOHandler::AppendRecords(CRecordNodeDTO* pParent, const char* pSeparator, int depth)
+void CFilteringSQLDTOHandler::AppendRecords(CRecordNodeDTO* pNode, const char* pSeparator, int depth)
 {
-	if (pParent->Count() < 1)
+	if (pNode->Count() < 1)
 	{
-		AppendFields(pParent->mIndexFieldByName, ESQLRecordAppendFlag::FilterFields,
-			(depth > 0) ? " AND " : "", NULL, depth);
-		AppendFields(pParent->mNormalFieldByName, ESQLRecordAppendFlag::FilterFields);
+		if (depth > 0)
+		{
+			pSeparator = " AND ";
+		}
+
+		pSeparator = AppendFields(pNode->mIndexFieldByName, ESQLRecordAppendFlag::FilterFields, pSeparator, NULL, depth);
+		AppendFields(pNode->mNormalFieldByName, ESQLRecordAppendFlag::FilterFields, pSeparator);
 		return;
 	}
 	else if (depth > 0)
@@ -498,14 +506,14 @@ void CFilteringSQLDTOHandler::AppendRecords(CRecordNodeDTO* pParent, const char*
 		mQuery += " AND (";
 	}
 
-	CUtlHashtable<const char*, CUtlVector<SFieldDTO*>> groupableFieldsByName; // Groupable fields into 'IN' clauses
+	CUtlHashtable<const char*, CUtlVector<SUtlField*>> groupableFieldsByName; // Groupable fields into 'IN' clauses
 
-	FOR_EACH_DICT_FAST(*pParent, i)
+	FOR_EACH_DICT_FAST(*pNode, i)
 	{
-		CRecordNodeDTO* pChild = pParent->Element(i);
+		CRecordNodeDTO* pChild = pNode->Element(i);
 
 		// If record has siblings, is a leaf node and doesn't contain normal fields, then we can group it
-		if (pParent->Count() > 1 && pChild->Count() < 1 && pChild->mNormalFieldByName.Count() < 1)
+		if (pNode->Count() > 1 && pChild->Count() < 1 && pChild->mNormalFieldByName.Count() < 1)
 		{
 			const char* pFieldName = pChild->mIndexFieldByName.GetElementName(depth);
 			groupableFieldsByName[groupableFieldsByName.Insert(pFieldName)]
@@ -545,7 +553,14 @@ class CLoadSQLDTOHandler : public CFilteringSQLDTOHandler
 	{
 		mQuery.AppendFormat("SELECT * FROM `%s`", pName);
 		bool traverse = CFilteringSQLDTOHandler::OnCollectionStarted(pCollection, pName);
-		Execute(&mResultDatabase[mResultDatabase.Insert(pName)]);
+		int index = mResultDatabase.Find(pName);
+
+		if (!mResultDatabase.IsValidIndex(index))
+		{
+			index = mResultDatabase.Insert(pName, new CRecordListDTO);
+		}
+
+		Execute(mResultDatabase[index]);
 		return traverse;
 	}
 
@@ -628,6 +643,17 @@ void CLoadDAO::ExecuteIO(CKeyValuesDriver* pDriver)
 void CLoadDAO::ExecuteIO(ISQLDriver* pDriver)
 {
 	CLoadSQLDTOHandler(pDriver, mResultDatabase).TraverseAndHandleLeafRecords(mQueryDatabase);
+}
+
+void CLevelLoadDAO::AddCollection(const char* pCollectionName)
+{
+	CRecordNodeDTO* pCollection = mQueryDatabase.CreateCollection(pCollectionName);
+	pCollection->AddIndexField(HL2RP_MAP_ALIAS_FIELD_NAME, gpGlobals->mapname);
+
+	FOR_EACH_DICT_FAST(HL2RPRules()->mMapGroups, i)
+	{
+		pCollection->AddIndexField(HL2RP_MAP_ALIAS_FIELD_NAME, HL2RPRules()->mMapGroups[i]);
+	}
 }
 
 CSaveDAO::CSaveDAO(bool isFirstIndexWithinUniqueKey) : mIsFirstIndexWithinUniqueKey(isFirstIndexWithinUniqueKey)

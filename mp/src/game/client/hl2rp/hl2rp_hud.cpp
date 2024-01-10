@@ -123,7 +123,7 @@ void CHL2RPMainHUD::Paint()
 	CLocalizeFmtStr<> text;
 	GetLocalHL2Roleplayer()->ComputeMainHUD(text);
 	Color& color = (GetLocalHL2Roleplayer()->mCrime > 0) ? mCriminalTextColor : mTextColor;
-	BaseClass::Paint(text, color);
+	BaseClass::Paint(text.mDest, color);
 }
 
 class CHL2RPAimingEntityHUD : public CHL2RPHUD
@@ -162,8 +162,7 @@ void CHL2RPAimingEntityHUD::Paint()
 {
 	if (mhAimingEntity != NULL && mAimingEntityDistance < PLAYER_USE_RADIUS)
 	{
-		localizebuf_t text;
-		*text = '\0';
+		localizebuf_t text{};
 		mhAimingEntity->GetHUDInfo(GetLocalHL2Roleplayer(), text, sizeof(text));
 
 		if (*text != '\0')
@@ -216,7 +215,7 @@ void CHL2RPRegionHUD::Paint()
 	if (!mPlayers.IsEmpty())
 	{
 		int count = GetLocalHL2Roleplayer()->ComputeRegionHUD(mPlayers, text);
-		BaseClass::Paint(text, mHeaderTextColor, mTextColor, HL2_ROLEPLAYER_REGION_MAX_PLAYERS - count);
+		BaseClass::Paint(text.mDest, mHeaderTextColor, mTextColor, HL2_ROLEPLAYER_REGION_MAX_PLAYERS - count);
 	}
 }
 

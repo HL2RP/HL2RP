@@ -3,6 +3,9 @@
 #include <cbase.h>
 #include "hl2rp_util.h"
 #include "hl2_roleplayer.h"
+#include <dal.h>
+#include <hl2rp_property_dao.h>
+#include <player_dialogs.h>
 #include <inetchannel.h>
 #include <utlbuffer.h>
 
@@ -11,6 +14,32 @@
 #define NET_SETCONVAR    5
 #define NETMSG_TYPE_BITS 6
 #define SVC_MENU         29
+
+SUtlField::operator const char* () const
+{
+	return mString;
+}
+
+CUtlString SUtlField::ToString() const
+{
+	switch (mType)
+	{
+	case EType::Int:
+	{
+		return CNumStr(mInt).String();
+	}
+	case EType::UInt64:
+	{
+		return CNumStr(mUInt64).String();
+	}
+	case EType::Float:
+	{
+		return CNumStr(mFloat).String();
+	}
+	}
+
+	return mString.Get();
+}
 
 CPlayerEquipment::CPlayerEquipment(int health, int armor, bool allowClipsFallback) : mHealth(health),
 mArmor(armor), mAllowClipsFallback(allowClipsFallback), mClipsByWeaponClassName(CaselessStringLessThan)
@@ -138,5 +167,67 @@ void UTIL_SendDialog(CBasePlayer* pPlayer, KeyValues* pData, DIALOG_TYPE type)
 		msg.WriteWord(buffer.TellPut());
 		msg.WriteBytes(buffer.Base(), buffer.TellPut());
 		pNetChannel->SendData(msg);
+	}
+}
+
+CUtlString& UTIL_TrimQuotableString(CUtlString&& dest)
+{
+	dest.Trim("'\"\t\r\n ");
+	return dest;
+}
+
+bool UTIL_IsPropertyDoor(CBaseEntity* pEntity)
+{
+	return (pEntity != NULL && FBitSet(pEntity->ObjectCaps(), FCAP_HL2RP_PROPERTY_DOOR));
+}
+
+bool UTIL_IsDoorLocked(CBaseEntity* pDoor)
+{
+	char lockedValue[2];
+	return (pDoor->GetKeyValue("locked", lockedValue, sizeof(lockedValue)) && Q_atoi(lockedValue) > 0);
+}
+
+void UTIL_SetDoorLockState(CBaseEntity* pDoor, CHL2Roleplayer* pActivator, bool lock, bool save)
+{
+	const char* pInput = "Unlock", * pSound = HL2RP_PROPERTY_DOOR_UNLOCK_SOUND, * pToken = "#HL2RP_Property_Door_Unlock";
+
+	if (lock)
+	{
+		pInput = "Lock";
+		pSound = HL2RP_PROPERTY_DOOR_LOCK_SOUND;
+		pToken = "#HL2RP_Property_Door_Lock";
+	}
+
+	pDoor->AcceptInput(pInput, pActivator, pActivator);
+
+	if (pActivator != NULL)
+	{
+		pDoor->EmitSound(pSound);
+		pActivator->Print(HUD_PRINTTALK, pToken);
+	}
+
+	if (save)
+	{
+		DAL().AddDAO(new CPropertyDoorsSaveDAO(pDoor));
+	}
+}
+
+void UTIL_SpecialUsePropertyDoor(CBaseEntity* pDoor, CBaseEntity* pActivator, USE_TYPE type, bool isLocked)
+{
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(pActivator);
+
+	if (pPlayer != NULL)
+	{
+		if (type == USE_SPECIAL1)
+		{
+			if (pDoor->mPropertyData.IsValid() && pDoor->mPropertyData->mpProperty->HasAccess(pPlayer))
+			{
+				UTIL_SetDoorLockState(pDoor, pPlayer, !isLocked, pDoor->mPropertyData->mDatabaseId.IsValid());
+			}
+		}
+		else if (type == USE_SPECIAL2)
+		{
+			pPlayer->SendRootDialog(new CPropertyDoorMenu(pPlayer, pDoor));
+		}
 	}
 }

@@ -55,7 +55,7 @@ public:
 
 	int mRationsAmmo;
 	SDatabaseIdDTO mDatabaseId;
-	const char* mpMapAlias; // Linked map/group
+	const char* mpMapAlias = ""; // Linked map/group
 
 private:
 	void HandleAnimEvent(animevent_t*) OVERRIDE;

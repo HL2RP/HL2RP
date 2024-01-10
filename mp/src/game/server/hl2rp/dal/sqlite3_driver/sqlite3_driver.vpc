@@ -8,7 +8,7 @@ $Configuration
 {
 	$Compiler
 	{
-		$AdditionalIncludeDirectories "$BASE,$SQLITE3_SRCDIR,.."
+		$AdditionalIncludeDirectories "$BASE,$SRCDIR\game\server\hl2rp,$SQLITE3_SRCDIR,.."
 	}
 }
 

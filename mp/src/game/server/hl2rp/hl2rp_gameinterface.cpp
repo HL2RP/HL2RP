@@ -35,6 +35,7 @@ void LoadExportableEntsFile(const char* pFileName)
 					pEntity->KeyValue(pValue->GetName(), pValue->GetString());
 				}
 
+				pEntity->KeyValue(HL2RP_MAP_ALIAS_FIELD_NAME, pFileName);
 				DispatchSpawn(pEntity);
 				KeyValues* pSolids = pKey->FindKey("Solids");
 

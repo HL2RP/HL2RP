@@ -104,8 +104,7 @@ void CKeyValuesDriver::SaveToFile(KeyValues* pData, const char* pSubDirectory, c
 		throw CKeyValuesIOException("Couldn't create file '%s' to save current data", path.Get());
 	}
 
-	char permPath[MAX_PATH];
-	*permPath = '\0';
+	char permPath[MAX_PATH]{};
 	V_strcat_safe(permPath, path, len);
 
 	// Delete current permanent file before moving temporary, since Windows doesn't allow renaming to an existing file

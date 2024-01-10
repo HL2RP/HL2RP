@@ -17,8 +17,10 @@
 
 #define HL2RP_RULES_CONFIG_PATH "cfg/roleplay/"
 
+#define ONE_DAY_IN_SECONDS 86400
+
 extern SourceHook::ISourceHook* g_SHPtr;
-extern ConVar gRegionMaxRadiusCVar;
+extern ConVar gMaxHomeInactivityDays, gRegionMaxRadiusCVar;
 
 ConVar gPoliceWaveCountCVar("sv_police_wave_count", "5", FCVAR_ARCHIVE | FCVAR_NOTIFY,
 	"Amount of police NPCs to spawn or keep in each wave"),
@@ -308,6 +310,14 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 	}
 }
 
+CHL2RPRules::~CHL2RPRules()
+{
+	FOR_EACH_DICT_FAST(mProperties, i)
+	{
+		delete mProperties[i];
+	}
+}
+
 void CHL2RPRules::RegisterDownloadableFiles(CFmtStrN<MAX_PATH>& path, FileFindHandle_t findHandle,
 	INetworkStringTable* pDownloadables)
 {
@@ -404,7 +414,7 @@ const char* CHL2RPRules::GetChatFormat(bool teamOnly, CBasePlayer* pPlayer)
 // Called when request is team only
 bool CHL2RPRules::PlayerCanHearChat(CBasePlayer* pListener, CBasePlayer* pSpeaker)
 {
-	return ToHL2Roleplayer(pListener)->IsWithinDistance(pSpeaker, gRegionMaxRadiusCVar.GetFloat());
+	return ToHL2Roleplayer(pListener)->IsWithinDistance(pSpeaker, gRegionMaxRadiusCVar.GetFloat(), false);
 }
 
 bool CHL2RPRules::CanPlayerHearVoice(CBasePlayer* pListener, CBasePlayer* pSpeaker, bool allTalk)
@@ -427,9 +437,9 @@ Activity CHL2RPRules::GetBestTranslatedActivity(CBaseCombatCharacter* pCharacter
 	}
 	else if (mActivityFallbacksMap.IsValidIndex(index))
 	{
-		FOR_EACH_VEC(*mActivityFallbacksMap[index], i)
+		for (auto activity : *mActivityFallbacksMap[index])
 		{
-			if ((currentActivity = TranslateActivity(pCharacter, mActivityFallbacksMap[index]->Element(i),
+			if ((currentActivity = TranslateActivity(pCharacter, activity,
 				fallbackActivity, weaponActStrict, sequence)) > ACT_INVALID)
 			{
 				return currentActivity;
@@ -475,6 +485,22 @@ Activity CHL2RPRules::TranslateActivity(CBaseCombatCharacter* pCharacter,
 void CHL2RPRules::Think()
 {
 	BaseClass::Think();
+
+	if (gMaxHomeInactivityDays.GetInt() > 0)
+	{
+		long curTime;
+		VCRHook_Time(&curTime);
+		int maxInactivitySeconds = gMaxHomeInactivityDays.GetInt() * ONE_DAY_IN_SECONDS;
+
+		FOR_EACH_DICT_FAST(mProperties, i)
+		{
+			if (mProperties[i]->HasOwner() && curTime >= mProperties[i]->mOwnerDisconnectTime + maxInactivitySeconds
+				&& UTIL_PlayerBySteamID(mProperties[i]->mOwnerSteamIdNumber) == NULL)
+			{
+				mProperties[i]->Disown(NULL, 100);
+			}
+		}
+	}
 
 	if (mPoliceWaveTimer.Expired())
 	{

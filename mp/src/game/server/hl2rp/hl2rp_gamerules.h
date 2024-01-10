@@ -2,8 +2,8 @@
 #define HL2RP_GAMERULES_H
 #pragma once
 
-#include "hl2rp_util.h"
 #include <hl2rp_gamerules_shared.h>
+#include <hl2rp_util_shared.h>
 #include <hl2rp_shareddefs.h>
 #include "sourcehooks.h"
 #include <bitflags.h>
@@ -36,7 +36,7 @@ class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
 		EPlayerModelType mType;
 	};
 
-	class CPlayerModelsMap : public CAutoPurgeAdapter<CUtlMap<const char*, CPlayerModelDict*>>
+	class CPlayerModelsMap : public CAutoDeleteAdapter<CUtlMap<const char*, CPlayerModelDict*>>
 	{
 	public:
 		CUtlVector<int> mGroupIndices[EPlayerModelType::_Count];
@@ -49,6 +49,8 @@ class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
 	};
 
 	DECLARE_CLASS(CHL2RPRules, CBaseHL2RPRules)
+
+	~CHL2RPRules();
 
 	void LevelInitPostEntity() OVERRIDE;
 	void InitDefaultAIRelationships() OVERRIDE;
@@ -65,7 +67,7 @@ class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
 		Activity& fallbackActivity, bool weaponActStrict, int& sequence);
 
 	CUtlRBTree<const char*> mExcludedUploadExts;
-	CAutoPurgeAdapter<CAutoLessFuncAdapter<CUtlMap<Activity, CActivityList*>>> mActivityFallbacksMap;
+	CAutoLessFuncAdapter<CAutoDeleteAdapter<CUtlMap<Activity, CActivityList*>>> mActivityFallbacksMap;
 	CSimpleSimTimer mPoliceWaveTimer;
 
 public:
@@ -74,10 +76,12 @@ public:
 	const char* GetIdealMapAlias(); // Returns the unique map group, if possible, current map otherwise
 	Activity GetBestTranslatedActivity(CBaseCombatCharacter*, Activity, bool weaponActStrict, int& sequence);
 
-	CDefaultGetAdapter<CUtlRBTree<const char*>> mMapGroups;
 	CHUDMsgInterceptor mHUDMsgInterceptor;
 	IResponseSystem* mpPlayerResponseSystem;
-	CAutoPurgeAdapter<CUtlMap<const char*, CJobData*>> mJobByName[EFaction::_Count];
+	CDefaultGetAdapter<CUtlRBTree<const char*>> mMapGroups;
+	CAutoLessFuncAdapter<CUtlRBTree<CHL2RP_Property*>> mProperties;
+	CUtlPooledStringMap<uint64> mPlayerNameBySteamIdNum;
+	CAutoDeleteAdapter<CUtlMap<const char*, CJobData*>> mJobByName[EFaction::_Count];
 	CPlayerModelsMap mPlayerModelsByGroup;
 	CAutoLessFuncAdapter<CUtlRBTree<EHANDLE>> mWavePolices;
 };

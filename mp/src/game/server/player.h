@@ -369,7 +369,12 @@ public:
 
 	// returns the player name
 	const char *			GetPlayerName() { return m_szNetname; }
-	void					SetPlayerName( const char *name );
+
+#ifdef HL2RP
+	virtual void			SetPlayerName(const char*);
+#else
+	void					SetPlayerName(const char*);
+#endif // HL2RP
 
 	int						GetUserID() { return engine->GetPlayerUserId( edict() ); }
 	const char *			GetNetworkIDString(); 

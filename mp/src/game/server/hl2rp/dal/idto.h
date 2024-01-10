@@ -6,12 +6,9 @@
 #pragma once
 
 #include "isql_driver.h"
-#include <generic.h>
-#include <string_t.h>
+#include <hl2rp_util.h>
 #include <utldict.h>
-#include <utlhashtable.h>
 #include <utlmultilist.h>
-#include <utlstring.h>
 
 #define IDTO_PRIMARY_COLUMN_NAME "id"
 
@@ -21,44 +18,14 @@
 class CNodeDTOHandler;
 class KeyValues;
 
-struct SFieldDTO
-{
-	enum class EType
-	{
-		Int,
-		UInt64,
-		Float,
-		String
-	};
-
-	SFieldDTO(int value = 0) : mUInt64(value), mType(EType::Int) {}
-	SFieldDTO(uint64 value) : mUInt64(value), mType(EType::UInt64) {}
-	SFieldDTO(float value) : mFloat(value), mType(EType::Float) {}
-	SFieldDTO(const char* pValue) : mString(pValue), mType(EType::String) {}
-	SFieldDTO(const string_t& value) : SFieldDTO(STRING(value)) {}
-
-	operator const char* () const;
-	const char* ToString(CNumStr&& dest = {}) const;
-
-	union
-	{
-		int mInt;
-		uint64 mUInt64;
-		float mFloat;
-		double mDouble;
-	};
-
-	CUtlConstString mString;
-	EType mType;
-};
-
-class CFieldDictionaryDTO : public CDefaultGetAdapter<CUtlDict<SFieldDTO>>
+class CFieldDictionaryDTO : public CDefaultGetAdapter<CUtlDict<SUtlField>>
 {
 public:
 	int GetInt(const char*);
 	uint64 GetUInt64(const char*);
 	float GetFloat(const char*);
-	SFieldDTO GetField(const char*);
+	CUtlString GetString(const char*);
+	SUtlField GetField(const char*);
 	void MergeFrom(CFieldDictionaryDTO&);
 	void TransferDistinctFrom(CFieldDictionaryDTO&);
 	bool FieldsEqual(KeyValues*, int start = 0);
@@ -76,9 +43,13 @@ public:
 };
 
 // A dictionary mapping collection names to record lists
-using CLinearDatabaseDTO = CUtlStableHashtable<const char*, CRecordListDTO>;
+class CLinearDatabaseDTO : public CAutoDeleteAdapter<CUtlDict<CRecordListDTO*>>
+{
+public:
+	CRecordListDTO* GetList(const char* pCollection);
+};
 
-class CNodeDTO : public CAutoPurgeAdapter<CUtlDict<CRecordNodeDTO*>>
+class CNodeDTO : public CAutoDeleteAdapter<CUtlDict<CRecordNodeDTO*>>
 {
 public:
 	void TransferDistinctFrom(CNodeDTO&);
@@ -92,11 +63,11 @@ protected:
 class CRecordNodeDTO : public CNodeDTO
 {
 public:
-	CRecordNodeDTO* AddIndexField(const char* pName, const SFieldDTO&);
+	CRecordNodeDTO* AddIndexField(const char* pName, const SUtlField&);
 	void TransferDistinctFrom(CRecordNodeDTO*);
 	void TraverseAndHandleLeafRecords(CNodeDTOHandler*, const char* pCollection);
 
-	void AddNormalField(const char* pName, const SFieldDTO& field)
+	void AddNormalField(const char* pName, const SUtlField& field)
 	{
 		mNormalFieldByName.Insert(pName, field);
 	}
@@ -110,7 +81,8 @@ struct SDatabaseIdDTO
 	SDatabaseIdDTO(int id = IDTO_INVALID_DATABASE_ID);
 
 	operator int();
-	operator SFieldDTO();
+	operator SUtlField();
+
 	bool IsValid();
 	bool SetForLoading(); // Returns true if ID was fully invalid
 
@@ -119,7 +91,7 @@ private:
 };
 
 // A dictionary mapping collection names to record nodes
-class CDatabaseNodeDTO : public CDefaultGetAdapter<CNodeDTO>
+class CDatabaseNodeDTO : public CNodeDTO
 {
 public:
 	CRecordNodeDTO* GetCollection(const char* pName);
@@ -150,7 +122,7 @@ class CSQLTableSetupDTO
 	};
 
 	const char* mpTableName;
-	CAutoPurgeAdapter<CUtlMap<const char*, ISQLColumnDTO*>> mColumnByName;
+	CAutoDeleteAdapter<CUtlMap<const char*, ISQLColumnDTO*>> mColumnByName;
 	CAutoLessFuncAdapter<CUtlMap<const char*, SForeignKey>> mForeignKeyByColumnName;
 
 public:

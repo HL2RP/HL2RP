@@ -62,16 +62,19 @@ void CSQLite3PreparedStatement::Execute(CRecordListDTO* pDestResults)
 					case SQLITE_INTEGER:
 					{
 						destResult.Insert(pColumnName, (uint64)sqlite3_column_int64(mpStmt, i));
-						continue;
+						break;
 					}
 					case SQLITE_FLOAT:
 					{
 						destResult.Insert(pColumnName, (float)sqlite3_column_double(mpStmt, i));
-						continue;
+						break;
+					}
+					case SQLITE_TEXT:
+					{
+						destResult.Insert(pColumnName, (char*)sqlite3_column_text(mpStmt, i));
+						break;
 					}
 					}
-
-					destResult.Insert(pColumnName, (char*)sqlite3_column_text(mpStmt, i));
 				}
 			} while (sqlite3_step(mpStmt) == SQLITE_ROW);
 		}

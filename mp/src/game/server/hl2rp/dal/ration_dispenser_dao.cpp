@@ -13,7 +13,7 @@ public:
 	CSQLDispenserTableSetupDTO() : CSQLTableSetupDTO(RATION_DISPENSER_DAO_COLLECTION_NAME, true)
 	{
 		mPrimaryKeyColumnIndices.AddToTail(CreateIntColumn(IDTO_PRIMARY_COLUMN_NAME));
-		CreateVarCharColumn("map", MAX_MAP_NAME_SAVE);
+		CreateVarCharColumn(HL2RP_MAP_ALIAS_FIELD_NAME, MAX_PATH);
 		CreateIntColumn("spawnflags");
 		CreateIntColumn("rations");
 		CreateFloatColumn("x");
@@ -25,51 +25,47 @@ public:
 
 REGISTER_SQL_TABLE_SETUP_DTO_FACTORY(CSQLDispenserTableSetupDTO);
 
-class CDispensersLoadDAO : public CLoadDAO
+class CDispensersLoadDAO : public CLevelLoadDAO
 {
 	void HandleCompletion() OVERRIDE;
 
 public:
-	CDispensersLoadDAO()
-	{
-		CRecordNodeDTO* pCollection = mQueryDatabase.CreateCollection(RATION_DISPENSER_DAO_COLLECTION_NAME);
-		pCollection->AddIndexField("map", STRING(gpGlobals->mapname));
-
-		FOR_EACH_DICT_FAST(HL2RPRules()->mMapGroups, i)
-		{
-			pCollection->AddIndexField("map", HL2RPRules()->mMapGroups[i]);
-		}
-	}
+	CDispensersLoadDAO() : CLevelLoadDAO(RATION_DISPENSER_DAO_COLLECTION_NAME) {}
 };
 
 void CDispensersLoadDAO::HandleCompletion()
 {
-	CRecordListDTO* pDispensersData = mResultDatabase.GetPtr(RATION_DISPENSER_DAO_COLLECTION_NAME);
+	CAutoLessFuncAdapter<CUtlRBTree<int>> dispenserIds;
 
-	for (auto& dispenserData : *pDispensersData)
+	for (auto& dispenserData : *mResultDatabase.GetList(RATION_DISPENSER_DAO_COLLECTION_NAME))
 	{
-		Vector origin(dispenserData.GetFloat("x"), dispenserData.GetFloat("y"), dispenserData.GetFloat("z"));
-		QAngle angles(0.0f, dispenserData.GetFloat("yaw"), 0.0f);
-		CRationDispenserProp* pDispenser = static_cast<CRationDispenserProp*>
-			(CBaseEntity::CreateNoSpawn("prop_ration_dispenser", origin, angles));
+		int index = dispenserIds.InsertIfNotFound(dispenserData.GetInt(IDTO_PRIMARY_COLUMN_NAME));
 
-		if (pDispenser != NULL)
+		if (dispenserIds.IsValidIndex(index))
 		{
-			pDispenser->mDatabaseId = dispenserData.GetInt(IDTO_PRIMARY_COLUMN_NAME);
-			pDispenser->mpMapAlias = HL2RPRules()->mMapGroups
-				.GetElementOrDefault(dispenserData.GetField("map"), STRING(gpGlobals->mapname));
-			pDispenser->AddSpawnFlags(dispenserData.GetInt("spawnflags"));
-			pDispenser->mRationsAmmo = dispenserData.GetInt("rations");
-			DispatchSpawn(pDispenser);
+			Vector origin(dispenserData.GetFloat("x"), dispenserData.GetFloat("y"), dispenserData.GetFloat("z"));
+			QAngle angles(0.0f, dispenserData.GetFloat("yaw"), 0.0f);
+			CRationDispenserProp* pDispenser = static_cast<CRationDispenserProp*>
+				(CBaseEntity::CreateNoSpawn("prop_ration_dispenser", origin, angles));
+
+			if (pDispenser != NULL)
+			{
+				pDispenser->mDatabaseId = dispenserIds[index];
+				pDispenser->mpMapAlias = HL2RPRules()->mMapGroups.GetElementOrDefault(dispenserData
+					.GetString(HL2RP_MAP_ALIAS_FIELD_NAME), STRING(gpGlobals->mapname));
+				pDispenser->AddSpawnFlags(dispenserData.GetInt("spawnflags"));
+				pDispenser->mRationsAmmo = dispenserData.GetInt("rations");
+				DispatchSpawn(pDispenser);
+			}
 		}
 	}
 }
 
-REGISTER_LEVEL_INIT_DAO_FACTORY(CDispensersLoadDAO, ELevelInitDAOType::Load);
+REGISTER_LEVEL_INIT_DAO_FACTORY(CDispensersLoadDAO, ELevelInitDAOType::Load)
 
 CRecordNodeDTO* CDispenserDAO::AddFields(CRationDispenserProp* pDispenser, CRecordNodeDTO* pCollection, bool save)
 {
-	CRecordNodeDTO* pDispenserData = pCollection->AddIndexField("map", pDispenser->mpMapAlias);
+	CRecordNodeDTO* pDispenserData = pCollection->AddIndexField(HL2RP_MAP_ALIAS_FIELD_NAME, pDispenser->mpMapAlias);
 
 	if (save)
 	{
@@ -106,9 +102,10 @@ CDispensersSaveDAO::CDispensersSaveDAO(CRationDispenserProp* pDispenser, bool sa
 }
 
 CDispensersSaveDAO::CDispensersSaveDAO(CRationDispenserProp* pDispenser, const char* pOldMapAlias)
-	: CDispensersSaveDAO(pDispenser, true)
+	: CDispensersSaveDAO(pDispenser)
 {
 	// Set for deletion to ensure old record is erased from the initial map/group file under KeyValues
-	mDeleteDatabase.CreateCollection(RATION_DISPENSER_DAO_COLLECTION_NAME)->AddIndexField("map", pOldMapAlias)
+	mDeleteDatabase.CreateCollection(RATION_DISPENSER_DAO_COLLECTION_NAME)
+		->AddIndexField(HL2RP_MAP_ALIAS_FIELD_NAME, pOldMapAlias)
 		->AddIndexField(IDTO_PRIMARY_COLUMN_NAME, pDispenser->mDatabaseId);
 }

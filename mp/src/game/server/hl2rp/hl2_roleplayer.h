@@ -3,9 +3,7 @@
 #pragma once
 
 #include <hl2_roleplayer_shared.h>
-#include <hl2rp_util.h>
 #include <trigger_city_zone.h>
-#include <smartptr.h>
 
 #define HL2_ROLEPLAYER_HUD_THINK_PERIOD    1.0f
 #define HL2_ROLEPLAYER_HUD_EXTRA_HOLD_TIME 0.1f // Simple way to fix flickering due to networking inaccuracy
@@ -82,13 +80,14 @@ class CHL2Roleplayer : public CBaseHL2Roleplayer
 	IMPLEMENT_NETWORK_ARRAY_FOR_DERIVED_EX(m_hMyWeapons);
 	IMPLEMENT_NETWORK_ARRAY_FOR_DERIVED_EX(m_iAmmo);
 	void OnWeaponChanged(CBaseCombatWeapon*, bool) OVERRIDE;
-	bool IsBot() const OVERRIDE;
 	bool IsFakeClient() const OVERRIDE;
 	bool IsNetClient() const OVERRIDE;
 	IResponseSystem* GetResponseSystem() OVERRIDE;
+	void SetPlayerName(const char*) OVERRIDE;
 	void SetModel(const char*) OVERRIDE;
 	void HandleWalkChanges(int) OVERRIDE;
 	void UpdateWeaponPosture() OVERRIDE;
+	void PlayerUse() OVERRIDE;
 	void PostThink() OVERRIDE;
 	void ModifyOrAppendCriteria(AI_CriteriaSet&) OVERRIDE;
 	int OnTakeDamage(const CTakeDamageInfo&) OVERRIDE;
@@ -99,7 +98,7 @@ class CHL2Roleplayer : public CBaseHL2Roleplayer
 	void HUDThink();
 	void ComputeMainHUD(CLocalizeFmtStr<>&);
 	void SendMainHUD() HL2RP_LEGACY_FUNCTION;
-	void SendAimingEntityHUD() HL2RP_LEGACY_FUNCTION;
+	void SendAimingEntityHUD();
 	bool FixHUDChannel(int&);
 
 	float mAimingEntityDistance, mSpecialUseLastTime;
@@ -108,11 +107,12 @@ class CHL2Roleplayer : public CBaseHL2Roleplayer
 public:
 	CHL2Roleplayer();
 
+	bool IsBot() const OVERRIDE;
 	void ChangeTeam(int = TEAM_INVALID) OVERRIDE;
 	void SetAnimation(PLAYER_ANIM) OVERRIDE;
-	void OnDatabasePropChanged(const SFieldDTO&, EPlayerDatabasePropType) OVERRIDE;
+	void OnDatabasePropChanged(const SUtlField&, EPlayerDatabasePropType) OVERRIDE;
 
-	void PrintWelcomeMessage();
+	void PrintWelcomeInfo();
 	void OnDisconnect();
 	void LoadFromDatabase();
 	bool IsDamageProtected();
@@ -125,8 +125,8 @@ public:
 	void LocalPrint(int type, const char* pText, const char* pArg = "") HL2RP_LEGACY_FUNCTION;
 	void LocalDisplayHUDHint(EPlayerHUDHintType, const char*) HL2RP_LEGACY_FUNCTION;
 	void Print(int type, const char* pText, const char* pArg1 = "", const char* pArg2 = "");
-	void SendHUDHint(EPlayerHUDHintType, const char*);
-	bool SendZoneHUD(int index);
+	void SendHUDHint(EPlayerHUDHintType, const char* pToken, const char* pArg1 = "", const char* pArg2 = "");
+	void SendZoneHUD(int type);
 	void OnPreSendHUDMessage(bf_write*);
 	void SendHUDMessage(EPlayerHUDType, const char* pMessage, float xPos, float yPos,
 		const Color&, float holdTime = HL2_ROLEPLAYER_HUD_THINK_PERIOD + HL2_ROLEPLAYER_HUD_EXTRA_HOLD_TIME);
@@ -143,6 +143,7 @@ public:
 	CPlayerDatabaseProp(CBitFlags<>, mLearnedHUDHints, EPlayerDatabasePropType::LearnedHUDHints);
 	CPlainAutoPtr<CRestorablePlayerEquipment> mRestorableEquipment;
 	EHANDLE mhAimingEntity;
+	CAutoLessFuncAdapter<CUtlRBTree<CHL2RP_Property*>> mHomes;
 	CHandle<CCityZone> mZonesWithin[ECityZoneType::_Count];
 	int mLastDialogLevel = INT_MAX;
 	CUtlVectorAutoPurge<INetworkDialog*> mDialogStack;

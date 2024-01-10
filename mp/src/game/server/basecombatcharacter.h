@@ -29,7 +29,6 @@
 #include "ai_hull.h"
 #include "ai_utils.h"
 #include "physics_impact_damage.h"
-#include <generic.h>
 
 class CNavArea;
 class CScriptedTarget;

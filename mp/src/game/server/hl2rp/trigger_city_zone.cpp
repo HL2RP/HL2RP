@@ -34,7 +34,7 @@ void CCityZone::Think()
 
 	ForEachRoleplayer([&](CHL2Roleplayer* pPlayer)
 	{
-		if (!pPlayer->mZonesWithin[mType])
+		if (pPlayer->mZonesWithin[mType] == NULL)
 		{
 			if (IsEntityWithin(pPlayer))
 			{
@@ -44,7 +44,7 @@ void CCityZone::Think()
 		}
 		else if (pPlayer->mZonesWithin[mType] == this && !IsEntityWithin(pPlayer))
 		{
-			pPlayer->mZonesWithin[mType] = NULL;
+			pPlayer->mZonesWithin[mType].Term();
 		}
 	});
 }
