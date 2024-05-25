@@ -67,6 +67,9 @@ void CHL2GameMovement::SwallowUseKey()
 class CReservePlayerSpot : public CBaseEntity
 {
 	DECLARE_CLASS( CReservePlayerSpot, CBaseEntity )
+
+	void Think() OVERRIDE;
+
 public:
 	static CReservePlayerSpot *ReserveSpot( CBasePlayer *owner, const Vector& org, const Vector& mins, const Vector& maxs, bool& validspot );
 
@@ -125,16 +128,34 @@ CReservePlayerSpot *CReservePlayerSpot::ReserveSpot(
 void CReservePlayerSpot::Spawn()
 {
 	BaseClass::Spawn();
-
+	SetNextThink(TICK_INTERVAL);
 	SetSolid( SOLID_BBOX );
 	SetMoveType( MOVETYPE_NONE );
 	// Make entity invisible
 	AddEffects( EF_NODRAW );
 }
 
+void CReservePlayerSpot::Think()
+{
+	(GetOwnerEntity() != NULL) ? SetNextThink(TICK_INTERVAL) : Remove();
+}
+
 LINK_ENTITY_TO_CLASS( reserved_spot, CReservePlayerSpot );
 
 #endif
+
+void LadderMove_t::StopForcedMove()
+{
+	m_hForceLadder.Term();
+	m_bForceLadderMove = false;
+
+#ifdef GAME_DLL
+	// Remove "reservation entity"
+	UTIL_Remove(m_hReservedSpot);
+	m_hReservedSpot.Term();
+#endif // GAME_DLL
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : mounting - 
@@ -883,10 +904,10 @@ bool CHL2GameMovement::CheckLadderAutoMount( CFuncLadder *ladder, const Vector& 
 //-----------------------------------------------------------------------------
 bool CHL2GameMovement::LadderMove( void )
 {
-
-	if ( player->GetMoveType() == MOVETYPE_NOCLIP )
+	if ( player->pl.deadflag || player->GetMoveType() == MOVETYPE_NOCLIP )
 	{
 		SetLadder( NULL );
+		GetLadderMove()->StopForcedMove();
 		return false;
 	}
 

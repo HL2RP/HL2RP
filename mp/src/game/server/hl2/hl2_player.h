@@ -96,6 +96,7 @@ public:
 
 	virtual void		Precache( void );
 	virtual void		Spawn(void);
+	void				ForceRespawn() OVERRIDE;
 	virtual void		Activate( void );
 	virtual void		CheatImpulseCommands( int iImpulse );
 	virtual void		PlayerRunCommand( CUserCmd *ucmd, IMoveHelper *moveHelper);

@@ -32,6 +32,8 @@ struct LadderMove_t
 {
 	DECLARE_SIMPLE_DATADESC();
 
+	void StopForcedMove(); // Forcefully quits ladder mounting, removing reserved spot
+
 	//	Are we forcing player movement during mount/dismount
 	bool		m_bForceLadderMove;
 	// Is the forced move getting on or off the ladder

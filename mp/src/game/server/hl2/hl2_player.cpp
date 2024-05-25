@@ -1140,6 +1140,12 @@ void CHL2_Player::Spawn(void)
 	SetFlashlightPowerDrainScale( 1.0f );
 }
 
+void CHL2_Player::ForceRespawn()
+{
+	BaseClass::ForceRespawn();
+	GetLadderMove()->StopForcedMove();
+}
+
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void CHL2_Player::UpdateLocatorPosition( const Vector &vecPosition )
