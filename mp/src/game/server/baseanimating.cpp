@@ -3362,7 +3362,7 @@ void CBaseAnimating::RefreshCollisionBounds( void )
 //-----------------------------------------------------------------------------
 void CBaseAnimating::Ignite( float flFlameLifetime, bool bNPCOnly, float flSize, bool bCalledByLevelDesigner )
 {
-	if( IsOnFire() )
+	if ( IsOnFire() || GetTeamNumber() == TEAM_SPECTATOR )
 		return;
 
 	bool bIsNPC = IsNPC();
