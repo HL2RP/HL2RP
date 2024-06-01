@@ -237,20 +237,33 @@ void CEntityFlame::FlameThink( void )
 	{
 		if ( m_hEntAttached->GetFlags() & FL_TRANSRAGDOLL )
 		{
-			SetRenderColorA( 0 );
-			return;
+			return SetRenderColorA( 0 );
 		}
 	
 		CAI_BaseNPC *pNPC = m_hEntAttached->MyNPCPointer();
+
 		if ( pNPC && !pNPC->IsAlive() )
 		{
-			UTIL_Remove( this );
 			// Notify the NPC that it's no longer burning!
 			pNPC->Extinguish();
-			return;
-		}
 
-		if( m_hEntAttached->GetWaterLevel() > 0 )
+			return Remove();
+		}
+		// See if we're done burning, or our attached ent is spectating
+		else if ( GetRemainingLife() <= 0.0f || m_hEntAttached->GetTeamNumber() == TEAM_SPECTATOR )
+		{
+			// Notify anything we're attached to
+			CBaseCombatCharacter *pAttachedCC = m_hEntAttached->MyCombatCharacterPointer();
+
+			if ( pAttachedCC )
+			{
+				// Notify the NPC that it's no longer burning!
+				pAttachedCC->Extinguish();
+			}
+
+			return Remove();
+		}
+		else if ( m_hEntAttached->GetWaterLevel() > WL_NotInWater)
 		{
 			Vector mins, maxs;
 
@@ -261,68 +274,36 @@ void CEntityFlame::FlameThink( void )
 			maxs.x += 32;
 			maxs.y += 32;
 			
-			mins.z -= 32;
-			mins.x -= 32;
-			mins.y -= 32;
+			mins -= 32;
 
 			UTIL_Bubbles( mins, maxs, 12 );
 		}
-	}
-	else
-	{
-		UTIL_Remove( this );
-		return;
-	}
 
-	// See if we're done burning, or our attached ent has vanished
-	if ( m_flLifetime < gpGlobals->curtime || m_hEntAttached == NULL )
-	{
-		EmitSound( "General.StopBurning" );
-		m_bPlayingSound = false;
-		SetThink( &CEntityFlame::SUB_Remove );
-		SetNextThink( gpGlobals->curtime + 0.5f );
-
-		// Notify anything we're attached to
-		if ( m_hEntAttached )
-		{
-			CBaseCombatCharacter *pAttachedCC = m_hEntAttached->MyCombatCharacterPointer();
-
-			if( pAttachedCC )
-			{
-				// Notify the NPC that it's no longer burning!
-				pAttachedCC->Extinguish();
-			}
-		}
-
-		return;
-	}
-
-	if ( m_hEntAttached )
-	{
 		// Do radius damage ignoring the entity I'm attached to. This will harm things around me.
-		RadiusDamage( CTakeDamageInfo( this, this, 4.0f, DMG_BURN ), GetAbsOrigin(), m_flSize/2, CLASS_NONE, m_hEntAttached );
+		RadiusDamage( CTakeDamageInfo( this, this, FLAME_RADIUS_DAMAGE, DMG_BURN ),
+			GetAbsOrigin(), m_flSize/2, CLASS_NONE, m_hEntAttached );
 
 		// Directly harm the entity I'm attached to. This is so we can precisely control how much damage the entity
 		// that is on fire takes without worrying about the flame's position relative to the bodytarget (which is the
 		// distance that the radius damage code uses to determine how much damage to inflict)
 		m_hEntAttached->TakeDamage( CTakeDamageInfo( this, this, FLAME_DIRECT_DAMAGE, DMG_BURN | DMG_DIRECT ) );
 
-		if( !m_hEntAttached->IsNPC() && hl2_episodic.GetBool() )
+		if ( !m_hEntAttached->IsNPC() && hl2_episodic.GetBool() )
 		{
 			const float ENTITYFLAME_MOVE_AWAY_DIST = 24.0f;
+
 			// Make a sound near my origin, and up a little higher (in case I'm on the ground, so NPC's still hear it)
-			CSoundEnt::InsertSound( SOUND_MOVE_AWAY, GetAbsOrigin(), ENTITYFLAME_MOVE_AWAY_DIST, 0.1f, this, SOUNDENT_CHANNEL_REPEATED_DANGER );
-			CSoundEnt::InsertSound( SOUND_MOVE_AWAY, GetAbsOrigin() + Vector( 0, 0, 48.0f ), ENTITYFLAME_MOVE_AWAY_DIST, 0.1f, this, SOUNDENT_CHANNEL_REPEATING );
+			CSoundEnt::InsertSound( SOUND_MOVE_AWAY, GetAbsOrigin(),
+				ENTITYFLAME_MOVE_AWAY_DIST, 0.1f, this, SOUNDENT_CHANNEL_REPEATED_DANGER );
+			CSoundEnt::InsertSound( SOUND_MOVE_AWAY, GetAbsOrigin() + Vector( 0, 0, 48.0f ),
+				ENTITYFLAME_MOVE_AWAY_DIST, 0.1f, this, SOUNDENT_CHANNEL_REPEATING );
 		}
-	}
-	else
-	{
-		RadiusDamage( CTakeDamageInfo( this, this, FLAME_RADIUS_DAMAGE, DMG_BURN ), GetAbsOrigin(), m_flSize/2, CLASS_NONE, NULL );
+
+		return FireSystem_AddHeatInRadius( GetAbsOrigin(), m_flSize/2, 2.0f );
 	}
 
-	FireSystem_AddHeatInRadius( GetAbsOrigin(), m_flSize/2, 2.0f );
-
-}  
+	Remove();
+}
 
 
 //-----------------------------------------------------------------------------
