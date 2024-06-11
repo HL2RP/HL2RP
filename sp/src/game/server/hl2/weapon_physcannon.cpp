@@ -1561,6 +1561,7 @@ void CWeaponPhysCannon::OnRestore()
 //-----------------------------------------------------------------------------
 void CWeaponPhysCannon::UpdateOnRemove(void)
 {
+	DetachObject(false);
 	DestroyEffects( );
 	BaseClass::UpdateOnRemove();
 }
@@ -3324,7 +3325,7 @@ void CWeaponPhysCannon::ItemPostFrame()
 		}
 	}
 	
-	if (( pOwner->m_nButtons & IN_ATTACK2 ) == 0 )
+	if (( pOwner->m_nButtons & IN_ATTACK2 ) == 0 && gpGlobals->curtime >= m_flNextSecondaryAttack)
 	{
 		m_nAttack2Debounce = 0;
 	}
