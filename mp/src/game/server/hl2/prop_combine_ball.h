@@ -116,7 +116,7 @@ public:
 	CBaseEntity *GetOriginalOwner() { return m_hOriginalOwner; }
 
 private:
-
+	bool OnAttemptPhysGunPickup(CBasePlayer*, PhysGunPickup_t) OVERRIDE;
 	void SetPlayerLaunched( CBasePlayer *pOwner );
 
 	float GetBallHoldDissolveTime();
