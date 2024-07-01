@@ -611,6 +611,8 @@ void CWeaponShotgun::ItemHolsterFrame( void )
 		GetOwner()->RemoveAmmo( ammoFill, GetPrimaryAmmoType() );
 		m_iClip1 += ammoFill;
 	}
+
+	m_bInReload = false;
 }
 
 //==================================================
