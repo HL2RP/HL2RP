@@ -146,7 +146,7 @@ void CBaseHL2MPBludgeonWeapon::Hit( trace_t &traceHit, Activity nHitActivity )
 		VectorNormalize( hitDirection );
 
 #ifndef CLIENT_DLL
-		CTakeDamageInfo info( GetOwner(), GetOwner(), GetDamageForActivity( nHitActivity ), DMG_CLUB );
+		CTakeDamageInfo info( GetOwner(), GetOwner(), this, GetDamageForActivity( nHitActivity ), DMG_CLUB );
 
 		if( pPlayer && pHitEntity->IsNPC() )
 		{

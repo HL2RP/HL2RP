@@ -870,11 +870,12 @@ int CItem_AmmoCrate::OnTakeDamage( const CTakeDamageInfo &info )
 {
 	// if it's the player hitting us with a crowbar, open up
 	CBasePlayer *player = ToBasePlayer(info.GetAttacker());
+
 	if (player)
 	{
-		CBaseCombatWeapon *weapon = player->GetActiveWeapon();
+		CBaseEntity *weapon = info.GetWeapon();
 
-		if (weapon && !stricmp(weapon->GetName(), "weapon_crowbar"))
+		if (weapon && FClassnameIs(weapon, "weapon_crowbar"))
 		{
 			// play the normal use sound
 			player->EmitSound( "HL2Player.Use" );
