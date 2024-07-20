@@ -1361,7 +1361,6 @@ void CWeaponRPG::Precache( void )
 	PrecacheScriptSound( "Missile.Accelerate" );
 
 	// Laser dot...
-	PrecacheModel( "sprites/redglow1.vmt" );
 	PrecacheModel( RPG_LASER_SPRITE );
 	PrecacheModel( RPG_BEAM_SPRITE );
 	PrecacheModel( RPG_BEAM_SPRITE_NOZ );
@@ -1436,6 +1435,10 @@ void CWeaponRPG::PrimaryAttack( void )
 
 	// Can't be reloading
 	if ( GetActivity() == ACT_VM_RELOAD )
+		return;
+
+	// Must have created laser
+	if (m_bInitialStateUpdate)
 		return;
 
 	Vector vecOrigin;
@@ -1829,7 +1832,7 @@ bool CWeaponRPG::Reload( void )
 	if ( pOwner == NULL )
 		return false;
 
-	if ( pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0 )
+	if ( pOwner->GetActiveWeapon() != this || pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0 )
 		return false;
 
 	WeaponSound( RELOAD );
