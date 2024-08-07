@@ -16,6 +16,10 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#define TRIPMINE_MODEL "models/weapons/w_slam.mdl"
+
+#define TRIPMINE_POWERUP_DELAY 2.0f
+
 extern const char* g_pModelNameLaser;
 
 ConVar    sk_plr_dmg_tripmine		( "sk_plr_dmg_tripmine","0");
@@ -27,7 +31,6 @@ LINK_ENTITY_TO_CLASS( npc_tripmine, CTripmineGrenade );
 BEGIN_DATADESC( CTripmineGrenade )
 
 	DEFINE_FIELD( m_hOwner,		FIELD_EHANDLE ),
-	DEFINE_FIELD( m_flPowerUp,	FIELD_TIME ),
 	DEFINE_FIELD( m_vecDir,		FIELD_VECTOR ),
 	DEFINE_FIELD( m_vecEnd,		FIELD_POSITION_VECTOR ),
 	DEFINE_FIELD( m_flBeamLength, FIELD_FLOAT ),
@@ -36,8 +39,7 @@ BEGIN_DATADESC( CTripmineGrenade )
 	DEFINE_FIELD( m_angleOwner,	FIELD_VECTOR ),
 
 	// Function Pointers
-	DEFINE_THINKFUNC( WarningThink ),
-	DEFINE_THINKFUNC( PowerupThink ),
+	DEFINE_THINKFUNC( PowerUp ),
 	DEFINE_THINKFUNC( BeamBreakThink ),
 	DEFINE_THINKFUNC( DelayDeathThink ),
 
@@ -57,7 +59,7 @@ void CTripmineGrenade::Spawn( void )
 	// motor
 	SetMoveType( MOVETYPE_FLY );
 	SetSolid( SOLID_BBOX );
-	SetModel( "models/Weapons/w_slam.mdl" );
+	SetModel( TRIPMINE_MODEL );
 
     IPhysicsObject *pObject = VPhysicsInitNormal( SOLID_BBOX, GetSolidFlags() | FSOLID_TRIGGER, true );
 	pObject->EnableMotion( false );
@@ -73,10 +75,8 @@ void CTripmineGrenade::Spawn( void )
 	
 	UTIL_SetSize(this, Vector( -4, -4, -2), Vector(4, 4, 2));
 
-	m_flPowerUp = gpGlobals->curtime + 2.0;
-	
-	SetThink( &CTripmineGrenade::PowerupThink );
-	SetNextThink( gpGlobals->curtime + 0.2 );
+	SetThink(&ThisClass::PowerUp);
+	SetNextThink(gpGlobals->curtime + TRIPMINE_POWERUP_DELAY);
 
 	m_takedamage		= DAMAGE_YES;
 
@@ -98,33 +98,21 @@ void CTripmineGrenade::Spawn( void )
 
 void CTripmineGrenade::Precache( void )
 {
-	PrecacheModel("models/Weapons/w_slam.mdl"); 
+	PrecacheModel(TRIPMINE_MODEL);
 
 	PrecacheScriptSound( "TripmineGrenade.Place" );
 	PrecacheScriptSound( "TripmineGrenade.Activate" );
 }
 
 
-void CTripmineGrenade::WarningThink( void  )
+void CTripmineGrenade::PowerUp( void  )
 {
-	// set to power up
-	SetThink( &CTripmineGrenade::PowerupThink );
-	SetNextThink( gpGlobals->curtime + 1.0f );
-}
+	MakeBeam( );
+	RemoveSolidFlags( FSOLID_NOT_SOLID );
+	m_bIsLive			= true;
 
-
-void CTripmineGrenade::PowerupThink( void  )
-{
-	if (gpGlobals->curtime > m_flPowerUp)
-	{
-		MakeBeam( );
-		RemoveSolidFlags( FSOLID_NOT_SOLID );
-		m_bIsLive			= true;
-
-		// play enabled sound
-		EmitSound( "TripmineGrenade.Activate" );
-	}
-	SetNextThink( gpGlobals->curtime + 0.1f );
+	// play enabled sound
+	EmitSound( "TripmineGrenade.Activate" );
 }
 
 
@@ -141,12 +129,7 @@ void CTripmineGrenade::KillBeam( void )
 void CTripmineGrenade::MakeBeam( void )
 {
 	trace_t tr;
-
 	UTIL_TraceLine( GetAbsOrigin(), m_vecEnd, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
-
-	m_flBeamLength = tr.fraction;
-
-
 
 	// If I hit a living thing, send the beam through me so it turns on briefly
 	// and then blows the living thing up
@@ -154,15 +137,14 @@ void CTripmineGrenade::MakeBeam( void )
 	CBaseCombatCharacter *pBCC  = ToBaseCombatCharacter( pEntity );
 
 	// Draw length is not the beam length if entity is in the way
-	float drawLength = tr.fraction;
 	if (pBCC)
 	{
 		SetOwnerEntity( pBCC );
 		UTIL_TraceLine( GetAbsOrigin(), m_vecEnd, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
-		m_flBeamLength = tr.fraction;
 		SetOwnerEntity( NULL );
-		
 	}
+
+	m_flBeamLength = tr.fraction;
 
 	// set to follow laser spot
 	SetThink( &CTripmineGrenade::BeamBreakThink );
@@ -171,10 +153,8 @@ void CTripmineGrenade::MakeBeam( void )
 	// to appear if person right in front of it
 	SetNextThink( gpGlobals->curtime + 1.0f );
 
-	Vector vecTmpEnd = GetLocalOrigin() + m_vecDir * 2048 * drawLength;
-
 	m_pBeam = CBeam::BeamCreate( g_pModelNameLaser, 0.35 );
-	m_pBeam->PointEntInit( vecTmpEnd, this );
+	m_pBeam->PointEntInit( tr.endpos, this );
 	m_pBeam->SetColor( 255, 55, 52 );
 	m_pBeam->SetScrollRate( 25.6 );
 	m_pBeam->SetBrightness( 64 );
