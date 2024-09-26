@@ -27,7 +27,7 @@ RecvPropInt(RECVINFO(mMiscFlags)),
 RecvPropBool(RECVINFO(mIsInStickyWalkMode)),
 RecvPropString(RECVINFO(mJobName)),
 RecvPropArray(RecvPropEHandle(RECVINFO(mZonesWithin[0]), RecvProxy_ZoneWithin), mZonesWithin),
-END_NETWORK_TABLE()
+END_RECV_TABLE()
 
 // Simulates server-side UserMessages on client, for direct display (no networking)
 class CLocalUserMessenger : public CUtlBuffer

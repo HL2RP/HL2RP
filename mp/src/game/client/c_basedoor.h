@@ -39,6 +39,12 @@ class C_FuncMoveLinear : public DOOR_BASECLASS(C_BaseEntity)
 	DECLARE_CLASS(C_FuncMoveLinear, DOOR_BASECLASS(C_BaseEntity))
 	DECLARE_CLIENTCLASS()
 };
+
+class C_BaseButton : public DOOR_BASECLASS(C_BaseEntity)
+{
+	DECLARE_CLASS(C_BaseButton, DOOR_BASECLASS(C_BaseEntity))
+	DECLARE_CLIENTCLASS()
+};
 #endif // HL2RP
 
 #endif // C_BASEDOOR_H

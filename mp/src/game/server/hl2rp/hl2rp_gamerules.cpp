@@ -506,7 +506,7 @@ void CHL2RPRules::Think()
 		mPoliceWaveTimer.Set(gPoliceWavePeriodCVar.GetInt());
 		CUtlVector<CBaseEntity*> spawnPoints;
 		CBaseEntity* pSpawnPoint = NULL;
-		for (; (pSpawnPoint = gEntList.FindEntityByClassname(pSpawnPoint, "info_player_police")) != NULL;
+		for (; (pSpawnPoint = gEntList.FindEntityByClassname(pSpawnPoint, "info_police_start")) != NULL;
 			spawnPoints.AddToTail(pSpawnPoint));
 
 		if (!spawnPoints.IsEmpty())

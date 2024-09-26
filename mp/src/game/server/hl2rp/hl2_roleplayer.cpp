@@ -11,6 +11,8 @@
 #include <player_dialogs.h>
 #include <in_buttons.h>
 
+#define HL2RP_SPAWN_POINT_SF_AI_ONLY 1
+
 #define HL2_ROLEPLAYER_INITIAL_SUICIDE_DELAY 5.0f // Delay since first spawn to allow unforced suicides
 
 #define HL2_ROLEPLAYER_WEAPON_IDLE_DELAY      10.0f
@@ -48,11 +50,11 @@ SendPropInt(SENDINFO(mMiscFlags)),
 SendPropBool(SENDINFO(mIsInStickyWalkMode)),
 SendPropStringT(SENDINFO(mJobName)),
 SendPropArray(SendPropInt(SENDINFO_ARRAY(mZonesWithin), -1, 0, SendProxy_ZoneWithin), mZonesWithin),
-END_NETWORK_TABLE()
+END_SEND_TABLE()
 #endif // HL2RP_FULL
 
-LINK_ENTITY_TO_CLASS(info_player_citizen, CServerOnlyEntity)
-LINK_ENTITY_TO_CLASS(info_player_police, CServerOnlyEntity)
+LINK_ENTITY_TO_CLASS(info_citizen_start, CServerOnlyEntity)
+LINK_ENTITY_TO_CLASS(info_police_start, CServerOnlyEntity)
 
 const char* gPlayerDatabasePropNames[EPlayerDatabasePropType::_Count] =
 {
@@ -208,10 +210,17 @@ void CHL2Roleplayer::Spawn()
 
 CBaseEntity* CHL2Roleplayer::EntSelectSpawnPoint()
 {
-	const char* pClassName = (mFaction == EFaction::Citizen) ? "info_player_citizen" : "info_player_police";
 	CUtlVector<CBaseEntity*> spawnPoints;
-	for (CBaseEntity* pSpawnPoint = NULL; (pSpawnPoint = gEntList.FindEntityByClassname(pSpawnPoint, pClassName))
-		!= NULL; spawnPoints.AddToTail(pSpawnPoint));
+	const char* pClassName = (mFaction == EFaction::Citizen) ? "info_citizen_start" : "info_police_start";
+
+	for (CBaseEntity* pSpawnPoint = NULL;
+		(pSpawnPoint = gEntList.FindEntityByClassname(pSpawnPoint, pClassName)) != NULL; )
+	{
+		if (!pSpawnPoint->HasSpawnFlags(HL2RP_SPAWN_POINT_SF_AI_ONLY))
+		{
+			spawnPoints.AddToTail(pSpawnPoint);
+		}
+	}
 
 	if (!spawnPoints.IsEmpty())
 	{

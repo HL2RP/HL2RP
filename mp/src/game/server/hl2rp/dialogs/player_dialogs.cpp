@@ -468,8 +468,8 @@ void CPropertyDoorMenu::UpdateItems()
 	if (ValidateProperty())
 	{
 		CBaseLocalizeFmtStr<> message(mpPlayer, mMessage);
-		message.Format("%t\n\n- %t: %s", "#HL2RP_Menu_Property_Msg",
-			"#HL2RP_Menu_Msg_LinkedMapAlias", mpProperty->mpMapAlias);
+		message.Format("%t\n\n- ID: %s\n- %t: %s", "#HL2RP_Menu_Property_Msg",
+			(int)mpProperty->mDatabaseId, "#HL2RP_Menu_Msg_LinkedMapAlias", mpProperty->mpMapAlias);
 
 		if (mpPlayer->IsAdmin())
 		{

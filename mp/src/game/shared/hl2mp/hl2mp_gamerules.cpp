@@ -133,8 +133,8 @@ static const char *s_PreserveEnts[] =
 	"point_devshot_camera",
 
 #ifdef HL2RP
-	"info_player_citizen",
-	"info_player_police",
+	"info_citizen_start",
+	"info_police_start",
 	"info_player_start",
 	"prop_ration_dispenser",
 	"ration",
