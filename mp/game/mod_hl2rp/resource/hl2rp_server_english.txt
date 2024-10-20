@@ -38,7 +38,7 @@
 		"HL2RP_Menu_Lock"						"Lock"
 		"HL2RP_Menu_Main_Title"					"Main Menu"
 		"HL2RP_Menu_Model_Group"				"Choose Model Group"
-		"HL2RP_Menu_Msg_LinkedMapAlias"			"Linked map/group"
+		"HL2RP_Menu_Msg_LinkedMapAlias"			"Linked map/group: %1"
 		"HL2RP_Menu_PlayerList_Msg_Header"		"<Player #>. <SteamID64>"
 		"HL2RP_Menu_Property_BuyHouse"			"Buy House"
 		"HL2RP_Menu_Property_Create"			"Create Property"

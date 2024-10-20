@@ -468,7 +468,7 @@ void CPropertyDoorMenu::UpdateItems()
 	if (ValidateProperty())
 	{
 		CBaseLocalizeFmtStr<> message(mpPlayer, mMessage);
-		message.Format("%t\n\n- ID: %s\n- %t: %s", "#HL2RP_Menu_Property_Msg",
+		message.Format("%t\n\n- ID: %s\n- %t", "#HL2RP_Menu_Property_Msg",
 			(int)mpProperty->mDatabaseId, "#HL2RP_Menu_Msg_LinkedMapAlias", mpProperty->mpMapAlias);
 
 		if (mpPlayer->IsAdmin())
@@ -970,7 +970,7 @@ void CDispensersMenu::UpdateItems()
 
 	if (mhDispenser != NULL)
 	{
-		CBaseLocalizeFmtStr<>(mpPlayer, mMessage).Format("%t\n- %3t: %4s", "#HL2RP_Menu_Dispenser_Msg_Active",
+		CBaseLocalizeFmtStr<>(mpPlayer, mMessage).Format("%t\n- %3t", "#HL2RP_Menu_Dispenser_Msg_Active",
 			mhDispenser->mRationsAmmo, "#HL2RP_Menu_Msg_LinkedMapAlias", mhDispenser->mpMapAlias);
 
 		if (mpPlayer->HasCombineGrants(mhDispenser->HasSpawnFlags(RATION_DISPENSER_SF_COMBINE_CONTROLLED)))

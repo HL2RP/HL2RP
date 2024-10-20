@@ -38,7 +38,7 @@
 		"HL2RP_Menu_Lock"						"Bloquear"
 		"HL2RP_Menu_Main_Title"					"Menú Principal"
 		"HL2RP_Menu_Model_Group"				"Elige Grupo de Modelos"
-		"HL2RP_Menu_Msg_LinkedMapAlias"			"Mapa/grupo enlazado"
+		"HL2RP_Menu_Msg_LinkedMapAlias"			"Mapa/grupo enlazado: %1"
 		"HL2RP_Menu_PlayerList_Msg_Header"		"<Nº Jugador/a>. <SteamID64>"
 		"HL2RP_Menu_Property_BuyHouse"			"Comprar Casa"
 		"HL2RP_Menu_Property_Create"			"Crear Propiedad"

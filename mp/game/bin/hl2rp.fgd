@@ -12,7 +12,7 @@
 
 	spawnflags(flags) =
 	[
-		512 : "Combine controlled (not public)"
+		512 : "Combine controlled (not public)" : 0
 	]
 ]
 
@@ -26,20 +26,20 @@
 	]
 ]
 
-@BaseClass base(PlayerClass, Angles, ExportableEntity) studio("models/editor/playerstart.mdl") = HL2RPSpawnPoint
+@BaseClass base(PlayerClass, Angles, ExportableEntity) = HL2RPSpawnPoint
 [
 	spawnflags(flags) =
 	[
-		1 : "NPCs only"
+		1 : "NPCs only" : 0
 	]
 ]
 
-@PointClass base(HL2RPSpawnPoint) = info_citizen_start
+@PointClass base(HL2RPSpawnPoint) studio("models/editor/playerstart.mdl") = info_citizen_start
 [
 	
 ]
 
-@PointClass base(HL2RPSpawnPoint) = info_police_start
+@PointClass base(HL2RPSpawnPoint) studio("models/editor/playerstart.mdl") = info_police_start
 [
 	
 ]
