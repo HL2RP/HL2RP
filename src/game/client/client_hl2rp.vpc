@@ -1,0 +1,30 @@
+$Macro GAMENAME "mod_hl2rp"
+
+$Include "client_hl2mp.vpc"
+$Include "..\shared\hl2rp_shared_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$PreprocessorDefinitions "$BASE;HL2RP_FULL;HL2RP_CLIENT_OR_LEGACY"
+	}
+}
+
+$Project "Client (HL2RP)"
+{
+	$Folder "Source Files"
+	{
+		$Folder "HL2RP"
+		{
+			$File "hl2rp\c_hl2_roleplayer.cpp"
+			$File "hl2rp\c_hl2_roleplayer.h"
+			$File "hl2rp\c_hl2rp_gamerules.cpp"
+			$File "hl2rp\c_hl2rp_gamerules.h"
+			$File "hl2rp\c_hl2rp_npc_police.cpp"
+			$File "hl2rp\hl2rp_configuration.cpp"
+			$File "hl2rp\hl2rp_configuration.h"
+			$File "hl2rp\hl2rp_hud.cpp"
+		}
+	}
+}

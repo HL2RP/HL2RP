@@ -535,7 +535,7 @@ void CUtlString::TrimRight( char cTarget )
 	if ( nIndex < nLastCharIndex )
 	{
 		m_pString[nIndex + 1] = 0;
-		SetLength( nIndex + 2 );
+		SetLength( nIndex + 1 );
 	}
 }
 
@@ -568,7 +568,7 @@ void CUtlString::TrimRight( const char *szTargets )
 	if ( i < nLastCharIndex )
 	{
 		m_pString[i + 1] = 0;
-		SetLength( i + 2 );
+		SetLength( i + 1 );
 	}
 }
 

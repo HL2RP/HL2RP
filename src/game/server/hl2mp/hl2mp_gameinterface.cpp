@@ -28,7 +28,8 @@ void CServerGameClients::GetPlayerLimits( int& minplayers, int& maxplayers, int 
 // Mod-specific CServerGameDLL implementation.
 // -------------------------------------------------------------------------------------------- //
 
+#ifndef HL2RP
 void CServerGameDLL::LevelInit_ParseAllEntities( const char *pMapEntities )
 {
 }
-
+#endif

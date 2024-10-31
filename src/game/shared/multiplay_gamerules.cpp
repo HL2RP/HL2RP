@@ -764,7 +764,9 @@ ConVarRef suitcharger( "sk_suitcharger" );
 	//=========================================================
 	void CMultiplayRules::PlayerKilled( CBasePlayer *pVictim, const CTakeDamageInfo &info )
 	{
+#ifndef HL2RP_FULL // NOTE: We call this in CHL2RPCharacter
 		DeathNotice( pVictim, info );
+#endif // !HL2RP_FULL
 
 		// Find the killer & the scorer
 		CBaseEntity *pInflictor = info.GetInflictor();
@@ -816,7 +818,7 @@ ConVarRef suitcharger( "sk_suitcharger" );
 	//=========================================================
 	// Deathnotice. 
 	//=========================================================
-	void CMultiplayRules::DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &info )
+	void CMultiplayRules::DeathNotice( CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info )
 	{
 		// Work out what killed the player, and send a message to all clients about it
 		const char *killer_weapon_name = "world";		// by default, the player is killed by the world
@@ -886,7 +888,7 @@ ConVarRef suitcharger( "sk_suitcharger" );
 		IGameEvent * event = gameeventmanager->CreateEvent( "player_death" );
 		if ( event )
 		{
-			event->SetInt("userid", pVictim->GetUserID() );
+			event->SetInt("userid", ToBasePlayer(pVictim)->GetUserID() );
 			event->SetInt("attacker", killer_ID );
 			event->SetInt("customkill", info.GetDamageCustom() );
 			event->SetInt("priority", 7 );	// HLTV event priority, not transmitted

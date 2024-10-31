@@ -3575,6 +3575,10 @@ BEGIN_DATADESC(CBasePropDoor)
 END_DATADESC()
 
 IMPLEMENT_SERVERCLASS_ST(CBasePropDoor, DT_BasePropDoor)
+#ifdef HL2RP_FULL
+SendPropDataTable(SENDINFO_DT(mPropertyDoorData), &REFERENCE_SEND_TABLE(DT_HL2RP_PropertyDoorData)),
+SendPropBool(SENDINFO(m_bLocked))
+#endif // HL2RP_FULL
 END_SEND_TABLE()
 
 CBasePropDoor::CBasePropDoor( void )
@@ -3861,6 +3865,7 @@ void CBasePropDoor::SetDoorBlocker( CBaseEntity *pBlocker )
 		m_bFirstBlocked = false;
 	}
 }
+
 //-----------------------------------------------------------------------------
 // Purpose: Called when the player uses the door.
 // Input  : pActivator - 
@@ -3870,6 +3875,13 @@ void CBasePropDoor::SetDoorBlocker( CBaseEntity *pBlocker )
 //-----------------------------------------------------------------------------
 void CBasePropDoor::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value)
 {
+#ifdef HL2RP
+	if (useType >= USE_SPECIAL1)
+	{
+		return mPropertyDoorData.SpecialUse(this, pActivator, useType, IsDoorLocked());
+	}
+#endif // HL2RP
+
 	if ( GetMaster() != NULL )
 	{
 		// Tell our owner we've been used

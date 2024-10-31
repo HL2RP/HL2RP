@@ -1,0 +1,73 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<style>
+		body {
+			background-color: black;
+			color: #FFB000;
+			font-family: Verdana, Tahoma;
+		}
+
+		.center {
+			text-align: center;
+			width: 100%;
+		}
+
+		#bigSloganQuote {
+			font-size: 80px;
+		}
+
+		#slogan {
+			color: white;
+			font-family: 'Times New Roman';
+			line-height: 50px;
+		}
+
+		.code {
+			background-color: white;
+			color: black;
+			font-family: Consolas;
+			font-weight: bold;
+		}
+	</style>
+</head>
+
+<body>
+	<h1 class="center">Bienvenido a Half-Life 2: Roleplay</h1>
+
+	<h2 class="center" id="slogan">
+		<span id="bigSloganQuote">&ldquo;</span><br />
+		Este proyecto pretende crear una experiencia entretenida ambientada en el mundo de Half-Life 2,
+		enfocada a las facciones Ciudadano y La Alianza&rdquo;
+	</h2>
+
+	<h3>Instrucciones importantes</h3>
+
+	<p>
+		Este mod emplea di&aacute;logos personalizados que el servidor te env&iacute;a (como men&uacute;s).<br />
+		Estos se requieren para interactuar con los aspectos m&aacute;s fundamentales del mod.
+	</p>
+
+	<h4>Controles</h4>
+
+	<ul>
+		<li><code class="code">&lt;RECARGAR&gt;</code> (Mant&eacute;n durante aprox. <b>1</b> segundo)
+			= Abrir tu Men&uacute; Principal / Men&uacute; de la Entidad Observada</li>
+		<li><code class="code">&lt;RECARGAR&gt;</code> (Pulsa dos veces) = Bloquear/Desbloquear Entidad Observada</li>
+		<li><code class="code">&lt;CAMINAR&gt;</code> (Pulsa dos veces) = Activar Caminar Asistido.
+			Pulsa la tecla de nuevo para abandonar el modo y moverte de forma normal.</li>
+	</ul>
+
+	<h4>
+		<u>Informaci&oacute;n para jugadores de Half-Life 2: Deathmatch</u>
+	</h4>
+
+	<p>
+		Por seguridad, los di&aacute;logos referidos arriba est&aacute;n desactivados por defecto en el juego.<br />
+		Por tanto, deber&iacute;as activarlos. Para ello, copia y pega el siguiente comando en tu consola:
+		<code class="code">cl_showpluginmessages 1</code>
+	</p>
+</body>
+
+</html>

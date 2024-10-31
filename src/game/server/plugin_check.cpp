@@ -10,6 +10,10 @@
 #include "cbase.h"
 #include "eiface.h"
 
+#ifdef HL2RP
+#include <hl2_roleplayer.h>
+#endif // HL2RP
+
 //-----------------------------------------------------------------------------
 // Purpose: An implementation 
 //-----------------------------------------------------------------------------
@@ -24,6 +28,15 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CPluginHelpersCheck, IPluginHelpersCheck, INTE
 
 bool CPluginHelpersCheck::CreateMessage( const char *plugin, edict_t *pEntity, DIALOG_TYPE type, KeyValues *data )
 {
+#ifdef HL2RP
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(CBaseEntity::Instance(pEntity));
+
+	if (pPlayer != NULL)
+	{
+		data->SetInt("level", --pPlayer->mLastDialogLevel); // Just force our next level
+	}
+#endif // HL2RP
+
 	// return false here to disallow a plugin from running this command on this client
 	return true;
 }

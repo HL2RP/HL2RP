@@ -32,6 +32,9 @@ extern ConVar hl2_episodic;
 #define		FCAP_USE_IN_RADIUS			0x00000200
 #define		FCAP_SAVE_NON_NETWORKABLE	0x00000400
 
+#define		FCAP_HL2RP_USE_BEHIND_ANY	0x00001000	// Can be used behind any world brush
+#define		FCAP_HL2RP_USE_BEHIND_TRANS	0x00002000	// Can be used behind a non-opaque world brush
+
 #define		FCAP_MASTER					0x10000000		// Can be used to "master" other entities (like multisource)
 #define		FCAP_WCEDIT_POSITION		0x40000000		// Can change position and update Hammer in edit mode
 #define		FCAP_DONT_SAVE				0x80000000		// Don't save this

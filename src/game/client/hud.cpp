@@ -418,7 +418,13 @@ void CHud::Init( void )
 	KeyValues *kv = new KeyValues( "layout" );
 	if ( kv )
 	{
-		if ( kv->LoadFromFile( filesystem, "scripts/HudLayout.res" ) )
+#ifdef HL2RP
+		const char* pHUDLayoutScriptPath = "scripts/hl2rp_hudlayout.res";
+#else
+		const char* pHUDLayoutScriptPath = "scripts/HudLayout.res";
+#endif // HL2RP
+
+		if ( kv->LoadFromFile( filesystem, pHUDLayoutScriptPath ) )
 		{
 			int numelements = m_HudList.Size();
 
@@ -438,7 +444,8 @@ void CHud::Init( void )
 				if ( !key )
 				{
 					Assert( false );
-					Msg( "Hud element '%s' doesn't have an entry '%s' in scripts/HudLayout.res\n", m_HudList[i]->GetName(), pPanel->GetName() );
+					Msg( "Hud element '%s' doesn't have an entry '%s' in %s\n",
+						m_HudList[i]->GetName(), pPanel->GetName(), pHUDLayoutScriptPath );
 				}
 
 				// Note:  When a panel is parented to the module root, it's "parent" is returned as NULL.

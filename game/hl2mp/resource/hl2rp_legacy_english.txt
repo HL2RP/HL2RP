@@ -1,0 +1,14 @@
+"Lang"
+{
+	"Language" "English"
+
+	"Tokens"
+	{
+		"HL2RP_Hint_PropertyDoorAll"	"%1t\n{+reload} (X2) = (UN)LOCK DOOR"
+		"HL2RP_Hint_PropertyDoorMenu"	"{+reload} (HOLD) = %1t"
+		"HL2RP_Hint_RationDeployed"		"<ATTACK> (HOLD) = PREPARE THROW\n<ATTACK2> = HEAL"
+		"HL2RP_Hint_RationThrowing"		"<ATTACK> (RELEASE) = THROW\n{+reload} = ADD UNIT (FROM AMMO)\n<ATTACK2> = CANCEL THROW"
+		"HL2RP_Hint_StickyWalking"		"<WALK> (X2) = STICKY WALKING"
+		"HL2RP_Menu_HiddenWeapons"		"Hidden weapons"
+	}
+}

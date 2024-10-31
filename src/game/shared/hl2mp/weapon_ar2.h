@@ -77,6 +77,14 @@ protected:
 	
 #ifndef CLIENT_DLL
 	DECLARE_ACTTABLE();
+
+#ifdef HL2RP
+	int CapabilitiesGet() OVERRIDE;
+	void Operator_HandleAnimEvent(animevent_t*, CBaseCombatCharacter*) OVERRIDE;
+
+	void FireNPCPrimaryAttack(CBaseCombatCharacter*, bool useWeaponAngles);
+	void FireNPCSecondaryAttack(CBaseCombatCharacter*, bool useWeaponAngles);
+#endif // HL2RP
 #endif
 };
 

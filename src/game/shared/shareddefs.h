@@ -26,6 +26,12 @@
 #endif
 #define ANIMATION_CYCLE_MINFRAC		(1.0f / (1<<ANIMATION_CYCLE_BITS))
 
+#ifdef HL2RP
+#define DOOR_BASECLASS(Base) CHL2RP_PropertyDoor<Base>
+#else
+#define DOOR_BASECLASS(Base) Base
+#endif // HL2RP
+
 // Each mod defines these for itself.
 class CViewVectors
 {
@@ -558,7 +564,9 @@ typedef enum
 	USE_OFF = 0, 
 	USE_ON = 1, 
 	USE_SET = 2, 
-	USE_TOGGLE = 3
+	USE_TOGGLE = 3,
+	USE_SPECIAL1,
+	USE_SPECIAL2
 } USE_TYPE;
 
 // basic team colors

@@ -4008,9 +4008,9 @@ void C_BaseAnimating::FireEvent( const Vector& origin, const QAngle& angles, int
 		}
 		break;
 
+#if (!defined HL2MP || defined HL2RP)
 	case CL_EVENT_FOOTSTEP_LEFT:
 		{
-#ifndef HL2MP
 			char pSoundName[256];
 			if ( !options || !options[0] )
 			{
@@ -4030,13 +4030,11 @@ void C_BaseAnimating::FireEvent( const Vector& origin, const QAngle& angles, int
 				Q_snprintf( pSoundName, 256, "%s.FootstepLeft", options );
 			}
 			EmitSound( pSoundName );
-#endif
 		}
 		break;
 
 	case CL_EVENT_FOOTSTEP_RIGHT:
 		{
-#ifndef HL2MP
 			char pSoundName[256];
 			if ( !options || !options[0] )
 			{
@@ -4055,9 +4053,9 @@ void C_BaseAnimating::FireEvent( const Vector& origin, const QAngle& angles, int
 				Q_snprintf( pSoundName, 256, "%s.FootstepRight", options );
 			}
 			EmitSound( pSoundName );
-#endif
 		}
 		break;
+#endif // (!defined HL2MP || defined HL2RP)
 
 	case CL_EVENT_MFOOTSTEP_LEFT:
 		{

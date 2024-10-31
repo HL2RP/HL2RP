@@ -1,0 +1,17 @@
+// Client localization only
+
+"Lang"
+{
+	"Language" "English"
+
+	"Tokens"
+	{
+		"HL2RP_GameExperience"			"Game experience"
+		"HL2RP_Hint_PropertyDoorAll"	"%1t %%+reload%% (X2) (UN)LOCK DOOR"
+		"HL2RP_Hint_PropertyDoorMenu"	"%%+reload%% (HOLD) %1t"
+		"HL2RP_Hint_RationDeployed"		"%%+attack%% (HOLD) PREPARE THROW %%+attack2%% HEAL"
+		"HL2RP_Hint_RationThrowing"		"%%+attack%% (RELEASE) THROW %%+reload%% ADD UNIT (FROM AMMO) %%+attack2%% CANCEL THROW"
+		"HL2RP_Hint_StickyWalking"		"%%+walk%% (X2) STICKY WALKING"
+		"HL2RP_Ration"					"RATION\n(Combine supplied food package)"
+	}
+}

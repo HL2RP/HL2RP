@@ -1,0 +1,17 @@
+// Client localization only
+
+"Lang"
+{
+	"Language" "Spanish"
+
+	"Tokens"
+	{
+		"HL2RP_GameExperience"			"Experiencia de juego"
+		"HL2RP_Hint_PropertyDoorAll"	"%1t %%+reload%% (X2) (DES)BLOQUEAR PUERTA"
+		"HL2RP_Hint_PropertyDoorMenu"	"%%+reload%% (MANTÉN) %1t"
+		"HL2RP_Hint_RationDeployed"		"%%+attack%% (MANTÉN) PREPARAR LANZAMIENTO %%+attack2%% CURARSE"
+		"HL2RP_Hint_RationThrowing"		"%%+attack%% (SUELTA) LANZAR %%+reload%% AÑADIR UNIDAD (DESDE MUNICIÓN) %%+attack2%% CANCELAR LANZAMIENTO"
+		"HL2RP_Hint_StickyWalking"		"%%+walk%% (X2) CAMINAR ASISTIDO"
+		"HL2RP_Ration"					"RACIÓN\n(Suplemento alimenticio proporcionado por La Alianza)"
+	}
+}

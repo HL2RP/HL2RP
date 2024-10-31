@@ -481,6 +481,10 @@ bool ShouldHaveLocalPlayerPickupTimelineEvents()
 //-----------------------------------------------------------------------------
 void C_BasePlayer::Spawn( void )
 {
+#ifdef HL2RP
+	BaseClass::Spawn();
+#endif // HL2RP
+
 	// Clear all flags except for FL_FULLEDICT
 	ClearFlags();
 	AddFlag( FL_CLIENT );

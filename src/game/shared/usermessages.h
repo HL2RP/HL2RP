@@ -50,7 +50,7 @@ public:
 	bool	IsValidIndex( int index );
 
 	// Server only
-	void	Register( const char *name, int size );
+	void	Register( const char *name, int size = -1 );
 
 	// Client only
 	void	HookMessage( const char *name, pfnUserMsgHook hook );

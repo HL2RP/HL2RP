@@ -72,6 +72,18 @@ void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 	data->SetString( "msg",	"motd" );		// use this stringtable entry
 	data->SetBool( "unload", sv_motd_unload_on_dismissal.GetBool() );
 
+#ifdef HL2RP
+	// Try using language-specific MOTD file variant
+	extern INetworkStringTable* g_pStringTableInfoPanel;
+	const char* pLanguageMOTDName = UTIL_VarArgs("motd_%s",
+		engine->GetClientConVarValue(pPlayer->entindex(), "cl_language"));
+
+	if (g_pStringTableInfoPanel->FindStringIndex(pLanguageMOTDName) != INVALID_STRING_INDEX)
+	{
+		data->SetString("msg", pLanguageMOTDName);
+	}
+#endif // HL2RP
+
 	pPlayer->ShowViewPortPanel( PANEL_INFO, true, data );
 
 	data->deleteThis();
@@ -101,7 +113,7 @@ void ClientActive( edict_t *pEdict, bool bLoadGame )
 	FinishClientPutInServer( pPlayer );
 }
 
-
+#ifndef HL2RP
 /*
 ===============
 const char *GetGameDescription()
@@ -116,6 +128,7 @@ const char *GetGameDescription()
 	else
 		return "Half-Life 2 Deathmatch";
 }
+#endif // !HL2RP
 
 //-----------------------------------------------------------------------------
 // Purpose: Given a player and optional name returns the entity of that 
@@ -185,6 +198,7 @@ void GameStartFrame( void )
 	gpGlobals->teamplay = (teamplay.GetInt() != 0);
 }
 
+#ifndef HL2RP_FULL
 //=========================================================
 // instantiate the proper game rules object
 //=========================================================
@@ -193,4 +207,4 @@ void InstallGameRules()
 	// vanilla deathmatch
 	CreateGameRulesObject( "CHL2MPRules" );
 }
-
+#endif // HL2RP_FULL

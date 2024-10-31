@@ -23,6 +23,10 @@
 #include "entityoutput.h"
 #include "nav.h"
 
+#ifdef HL2RP
+#include <hl2rp_property.h>
+#endif // HL2RP
+
 extern ConVar g_debug_doors;
 
 struct opendata_t
@@ -33,11 +37,11 @@ struct opendata_t
 };
 
 
-abstract_class CBasePropDoor : public CDynamicProp
+abstract_class CBasePropDoor : public DOOR_BASECLASS(CDynamicProp)
 {
 public:
 
-	DECLARE_CLASS( CBasePropDoor, CDynamicProp );
+	DECLARE_CLASS( CBasePropDoor, DOOR_BASECLASS(CDynamicProp) );
 	DECLARE_SERVERCLASS();
 
 	CBasePropDoor( void );
@@ -186,7 +190,10 @@ private:
 	locksound_t m_ls;			// The sounds the door plays when being locked, unlocked, etc.
 	EHANDLE		m_hActivator;		
 	
-	bool	m_bLocked;				// True if the door is locked.
+#ifndef HL2RP
+	bool	m_bLocked;				// True if the door is locked.  
+#endif // !HL2RP
+
 	EHANDLE	m_hBlocker;				// Entity blocking the door currently
 	bool	m_bFirstBlocked;		// Marker for being the first door (in a group) to be blocked (needed for motion control)
 

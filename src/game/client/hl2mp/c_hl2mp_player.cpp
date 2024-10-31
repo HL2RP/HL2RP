@@ -28,7 +28,9 @@ extern ConVar sv_maxspeed;
 
 ConVar sv_infinite_aux_power( "sv_infinite_aux_power", "0", FCVAR_CHEAT | FCVAR_REPLICATED );
 
+#ifndef HL2RP
 LINK_ENTITY_TO_CLASS( player, C_HL2MP_Player );
+#endif // !HL2RP
 
 // specific to the local player
 BEGIN_RECV_TABLE_NOBASE( C_HL2MP_Player, DT_HL2MPLocalPlayerExclusive )
@@ -832,6 +834,24 @@ void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
 		}
 	}
 
+	HandleWalkChanges(mv);
+
+	if (IsSprinting())
+	{
+		SetMaxSpeed(HL2_SPRINT_SPEED);
+	}
+	else
+	{
+		SetMaxSpeed(IsWalking() ? HL2_WALK_SPEED : HL2_NORM_SPEED);
+	}
+
+	m_HL2Local.m_bNewSprinting = IsSprinting();
+	mv->m_flClientMaxSpeed = MaxSpeed();
+	mv->m_flMaxSpeed = sv_maxspeed.GetFloat();
+}
+
+void C_HL2MP_Player::HandleWalkChanges(CMoveData *mv)
+{
 	bool bWantWalking = true;
 
 	// Have suit, pressing button, not sprinting or ducking
@@ -851,19 +871,6 @@ void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
 			StopWalking();
 		}
 	}
-
-	if (IsSprinting())
-	{
-		SetMaxSpeed(HL2_SPRINT_SPEED);
-	}
-	else
-	{
-		SetMaxSpeed(IsWalking() ? HL2_WALK_SPEED : HL2_NORM_SPEED);
-	}
-
-	m_HL2Local.m_bNewSprinting = IsSprinting();
-	mv->m_flClientMaxSpeed = MaxSpeed();
-	mv->m_flMaxSpeed = sv_maxspeed.GetFloat();
 }
 
 void C_HL2MP_Player::ReduceTimers( CMoveData* mv )

@@ -78,7 +78,12 @@ END_DATADESC()
 
 LINK_ENTITY_TO_CLASS( func_button, CBaseButton );
 
-
+#ifdef HL2RP_FULL
+IMPLEMENT_HL2RP_NETWORKCLASS(BaseButton)
+SendPropDataTable(SENDINFO_DT(mPropertyDoorData), &REFERENCE_SEND_TABLE(DT_HL2RP_PropertyDoorData)),
+SendPropBool(SENDINFO(m_bLocked))
+END_SEND_TABLE()
+#endif // HL2RP_FULL
 
 void CBaseButton::Precache( void )
 {

@@ -10,12 +10,19 @@
 #pragma once
 #endif
 
+#ifdef HL2RP
+#include <hl2rp_property.h>
+#endif // HL2RP
 
-class CBaseButton : public CBaseToggle
+class CBaseButton : public DOOR_BASECLASS(CBaseToggle)
 {
+#ifdef HL2RP
+	DECLARE_HL2RP_SERVERCLASS()
+#endif // HL2RP
+
 public:
 
-	DECLARE_CLASS( CBaseButton, CBaseToggle );
+	DECLARE_CLASS( CBaseButton, DOOR_BASECLASS(CBaseToggle) );
 
 	void Spawn( void );
 	virtual void Precache( void );
@@ -70,9 +77,12 @@ protected:
 	byte	m_bLockedSentence;	
 	byte	m_bUnlockedSound;	
 	byte	m_bUnlockedSentence;
-	bool	m_bLocked;
 	int		m_sounds;
 	float	m_flUseLockedTime;		// Controls how often we fire the OnUseLocked output.
+
+#ifndef HL2RP
+	bool	m_bLocked;
+#endif // !HL2RP
 
 	bool	m_bSolidBsp;
 

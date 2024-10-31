@@ -303,7 +303,7 @@ public:
 // Client kills/scoring
 	virtual int IPointsForKill( CBasePlayer *pAttacker, CBasePlayer *pKilled ) = 0;// how many points do I award whoever kills this player?
 	virtual void PlayerKilled( CBasePlayer *pVictim, const CTakeDamageInfo &info ) = 0;// Called each time a player dies
-	virtual void DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &info )=  0;// Call this from within a GameRules class to report an obituary.
+	virtual void DeathNotice( CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info )=  0;// Call this from within a GameRules class to report an obituary.
 	virtual const char *GetDamageCustomString( const CTakeDamageInfo &info ) { return NULL; }
 
 // Weapon Damage
@@ -355,6 +355,10 @@ public:
 	virtual int PlayerRelationship( CBaseEntity *pPlayer, CBaseEntity *pTarget ) = 0;// What is the player's relationship with this entity?
 	virtual bool PlayerCanHearChat( CBasePlayer *pListener, CBasePlayer *pSpeaker ) = 0;
 	virtual void CheckChatText( CBasePlayer *pPlayer, char *pText ) { return; }
+
+#ifdef HL2RP
+	virtual bool CanPlayerHearVoice(CBasePlayer* pListener, CBasePlayer* pSpeaker, bool allTalk) { return true; }
+#endif // HL2RP
 
 	virtual int GetTeamIndex( const char *pTeamName ) { return -1; }
 	virtual const char *GetIndexedTeamName( int teamIndex ) { return ""; }

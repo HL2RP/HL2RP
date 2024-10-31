@@ -217,8 +217,9 @@ bool PassServerEntityFilter( const IHandleEntity *pTouch, const IHandleEntity *p
 	if ( pTouch == pPass )
 		return false;
 
-	const CBaseEntity *pEntTouch = EntityFromEntityHandle( pTouch );
-	const CBaseEntity *pEntPass = EntityFromEntityHandle( pPass );
+	CBaseEntity *pEntTouch = (CBaseEntity*)EntityFromEntityHandle( pTouch );
+	CBaseEntity *pEntPass = (CBaseEntity*)EntityFromEntityHandle( pPass );
+
 	if ( !pEntTouch || !pEntPass )
 		return true;
 
@@ -230,6 +231,13 @@ bool PassServerEntityFilter( const IHandleEntity *pTouch, const IHandleEntity *p
 	if ( pEntPass->GetOwnerEntity() == pEntTouch )
 		return false;	
 
+#ifdef HL2RP
+	// Prevent characters getting stuck, when applicable (custom ShouldCollide logic)
+	if (!pEntPass->ShouldCollide(pEntTouch->GetCollisionGroup(), pEntTouch->PhysicsSolidMaskForEntity(), pEntTouch))
+	{
+		return false;
+	}
+#endif // HL2RP
 
 	return true;
 }

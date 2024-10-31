@@ -743,7 +743,11 @@ void CBaseViewport::ReloadScheme(const char *fromFile)
 	g_pClientMode->ComputeVguiResConditions( pConditions );
 
 	// reload the .res file from disk
+#ifdef HL2RP
+	LoadControlSettings("scripts/hl2rp_hudlayout.res", NULL, NULL, pConditions);
+#else
 	LoadControlSettings( "scripts/HudLayout.res", NULL, NULL, pConditions );
+#endif // HL2RP
 
 	gHUD.RefreshHudTextures();
 

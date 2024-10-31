@@ -1,0 +1,15 @@
+# VPK building
+hl2rp.*key.vdf
+*.vpk
+
+# Additional runtime files (or custom assets)
+*_entities.txt
+*.bz2
+*.sqlite3*
+*/cfg/roleplay/*
+*/custom
+*/save
+*/upload
+!*_example.txt
+database.cfg
+steam.inf

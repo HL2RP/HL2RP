@@ -223,93 +223,128 @@ public:
 // The base implementation doesn't do anything except fail to compile if you
 // use it. Getting an "incomplete type" error here means that you tried to construct
 // a localized string with a type that doesn't have a specialization.
-template < typename T >
+template < typename T, typename LC = locchar_t >
 class CLocalizedStringArg;
 
 // --------------------------------------------------------------------------
 
-template < typename T >
+template < typename LC >
 class CLocalizedStringArgStringImpl
 {
 public:
 	enum { kIsValid = true };
 
-	CLocalizedStringArgStringImpl( const locchar_t *pStr ) : m_pStr( pStr ) { }
+	CLocalizedStringArgStringImpl( const LC *pStr ) : m_pStr( pStr ) { }
 
-	const locchar_t *GetLocArg() const { Assert( m_pStr ); return m_pStr; }
+	const LC *GetLocArg() const { Assert( m_pStr ); return m_pStr; }
 
 private:
-	const locchar_t *m_pStr;
+	const LC *m_pStr;
 };
 
 // --------------------------------------------------------------------------
 
-template < typename T >
-class CLocalizedStringArg<T *> : public CLocalizedStringArgStringImpl<T>
+template < typename T, typename LC >
+class CLocalizedStringArg<T *, LC> : public CLocalizedStringArgStringImpl<LC>
 {
 public:
-	CLocalizedStringArg( const locchar_t *pStr ) : CLocalizedStringArgStringImpl<T>( pStr ) { }
+	CLocalizedStringArg( const LC *pStr ) : CLocalizedStringArgStringImpl<LC>( pStr ) { }
 };
 
 // --------------------------------------------------------------------------
 
-template < typename T >
+template < typename T, typename LC >
 class CLocalizedStringArgPrintfImpl
 {
 public:
 	enum { kIsValid = true };
 
-	CLocalizedStringArgPrintfImpl( T value, const locchar_t *loc_Format ) { loc_snprintf( m_cBuffer, kBufferSize, loc_Format, value ); }
+	CLocalizedStringArgPrintfImpl( T value, const char *loc_Format )
+	{
+		Q_snprintf( m_cBuffer, kBufferSize, loc_Format, value );
+	}
 
-	const locchar_t *GetLocArg() const { return m_cBuffer; }
+	CLocalizedStringArgPrintfImpl( T value, const wchar_t *loc_Format )
+	{
+		V_snwprintf( m_cBuffer, kBufferSize, loc_Format, value );
+	}
+
+	const LC *GetLocArg() const { return m_cBuffer; }
 
 private:
 	enum { kBufferSize = 128, };
-	locchar_t m_cBuffer[ kBufferSize ];
+	LC m_cBuffer[ kBufferSize ];
 };
 
 // --------------------------------------------------------------------------
 
-template < >
-class CLocalizedStringArg<uint16> : public CLocalizedStringArgPrintfImpl<uint16>
+template<typename LC>
+class CLocalizedStringArg<int, LC> : public CLocalizedStringArgPrintfImpl<int, LC>
 {
 public:
-	CLocalizedStringArg( uint16 unValue ) : CLocalizedStringArgPrintfImpl<uint16>( unValue, LOCCHAR("%u") ) { }
+	CLocalizedStringArg(int value) : CLocalizedStringArgPrintfImpl<int, char>(value, "%i") { }
 };
+
+template<>
+inline CLocalizedStringArg<int, wchar_t>::CLocalizedStringArg(int value)
+	: CLocalizedStringArgPrintfImpl<int, wchar_t>(value, L"%i") { }
+
+template<typename LC>
+class CLocalizedStringArg<bool, LC> : public CLocalizedStringArg<int, LC>
+{
+public:
+	CLocalizedStringArg(bool value) : CLocalizedStringArg<int, LC>(value) {}
+};
+
+template <typename LC>
+class CLocalizedStringArg<uint16, LC> : public CLocalizedStringArgPrintfImpl<uint16, LC>
+{
+public:
+	CLocalizedStringArg( uint16 unValue ) : CLocalizedStringArgPrintfImpl<uint16, char>( unValue, "%u" ) { }
+};
+
+template<>
+inline CLocalizedStringArg<uint16, wchar_t>::CLocalizedStringArg(uint16 value)
+	: CLocalizedStringArgPrintfImpl<uint16, wchar_t>(value, L"%u") { }
 
 // --------------------------------------------------------------------------
 
-template < >
-class CLocalizedStringArg<uint32> : public CLocalizedStringArgPrintfImpl<uint32>
+template <typename LC>
+class CLocalizedStringArg<uint32, LC> : public CLocalizedStringArgPrintfImpl<uint32, LC>
 {
 public:
-	CLocalizedStringArg( uint32 unValue ) : CLocalizedStringArgPrintfImpl<uint32>( unValue, LOCCHAR("%u") ) { }
+	CLocalizedStringArg( uint32 unValue ) : CLocalizedStringArgPrintfImpl<uint32, char>( unValue, "%u" ) { }
 };
+
+template<>
+inline CLocalizedStringArg<uint32, wchar_t>::CLocalizedStringArg(uint32 value)
+	: CLocalizedStringArgPrintfImpl<uint32, wchar_t>(value, L"%u") { }
 
 // --------------------------------------------------------------------------
 
-template < >
-class CLocalizedStringArg<uint64> : public CLocalizedStringArgPrintfImpl<uint64>
+template <typename LC>
+class CLocalizedStringArg<uint64, LC> : public CLocalizedStringArgPrintfImpl<uint64, LC>
 {
 public:
-	CLocalizedStringArg( uint64 unValue ) : CLocalizedStringArgPrintfImpl<uint64>( unValue, LOCCHAR("%llu") ) { }
+	CLocalizedStringArg( uint64 unValue ) : CLocalizedStringArgPrintfImpl<uint64, char>( unValue, "%llu" ) { }
 };
+
+template <>
+inline CLocalizedStringArg<uint64, wchar_t>::CLocalizedStringArg(uint64 value)
+	: CLocalizedStringArgPrintfImpl<uint64, wchar_t>(value, L"%llu") { }
 
 // --------------------------------------------------------------------------
 
-template < >
-class CLocalizedStringArg<float> : public CLocalizedStringArgPrintfImpl<float>
+template <typename LC>
+class CLocalizedStringArg<float, LC> : public CLocalizedStringArgPrintfImpl<float, LC>
 {
 public:
-	// Display one decimal point if we've got a value less than one, and no point
-	// if we're greater than one or are effectively zero.
-	CLocalizedStringArg( float fValue )
-		: CLocalizedStringArgPrintfImpl<float>( fValue,
-												fabsf( fValue ) <= FLT_EPSILON || fabsf( fValue ) >= 1.0f ? LOCCHAR("%.0f") : LOCCHAR("%.1f") )
-	{
-		//
-	}
+	CLocalizedStringArg( float fValue ) : CLocalizedStringArgPrintfImpl<float, char>(fValue, "%.2f") {}
 };
+
+template <>
+inline CLocalizedStringArg<float, wchar_t>::CLocalizedStringArg(float value)
+	: CLocalizedStringArgPrintfImpl<float, wchar_t>(value, L"%.2f") {}
 
 // --------------------------------------------------------------------------
 // Purpose:

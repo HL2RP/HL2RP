@@ -388,6 +388,7 @@ public:
 	static const T  *FindChar( const T *pStr, const T cSearch );
 	static const T	*EmptyString();
 	static const T	*NullDebugString();
+	static T		*ToUpper(T*);
 };
 
 template < >
@@ -396,13 +397,14 @@ class StringFuncs<char>
 public:
 	static char		  *Duplicate( const char *pValue ) { return strdup( pValue ); }
 	// Note that this function takes a character count, and does not guarantee null-termination.
-	static void		   Copy( OUT_CAP(iLengthInChars) char *out_pOut, const char *pIn, int iLengthInChars ) { strncpy( out_pOut, pIn, iLengthInChars ); }
+	static void		   Copy( OUT_CAP(iLengthInChars) char *out_pOut, const char *pIn, int iLengthInChars ) { Q_strncpy( out_pOut, pIn, iLengthInChars ); }
 	static int		   Compare( const char *pLhs, const char *pRhs ) { return strcmp( pLhs, pRhs ); }
 	static int		   CaselessCompare( const char *pLhs, const char *pRhs ) { return Q_strcasecmp( pLhs, pRhs ); }
 	static int		   Length( const char *pValue ) { return (int)strlen( pValue ); }
 	static const char *FindChar( const char *pStr, const char cSearch ) { return strchr( pStr, cSearch ); }
 	static const char *EmptyString() { return ""; }
 	static const char *NullDebugString() { return "(null)"; }
+	static char		  *ToUpper(char* pStr) { return Q_strupr(pStr); }
 };
 
 template < >
@@ -412,12 +414,14 @@ public:
 	static wchar_t		 *Duplicate( const wchar_t *pValue ) { return wcsdup( pValue ); }
 	// Note that this function takes a character count, and does not guarantee null-termination.
 	static void			  Copy( OUT_CAP(iLengthInChars) wchar_t *out_pOut, const wchar_t  *pIn, int iLengthInChars ) { wcsncpy( out_pOut, pIn, iLengthInChars ); }
+	static void			  Copy( OUT_CAP(iLengthInChars) wchar_t *out_pOut, const char *pIn, int iLengthInChars ) { Q_UTF8ToUnicode( pIn, out_pOut, iLengthInChars * sizeof(wchar_t) ); }
 	static int			  Compare( const wchar_t *pLhs, const wchar_t *pRhs ) { return wcscmp( pLhs, pRhs ); }
 	static int			  CaselessCompare( const wchar_t *pLhs, const wchar_t *pRhs ); // no implementation?
 	static int			  Length( const wchar_t *pValue ) { return (int)wcslen( pValue ); }
 	static const wchar_t *FindChar( const wchar_t *pStr, const wchar_t cSearch ) { return wcschr( pStr, cSearch ); }
 	static const wchar_t *EmptyString() { return L""; }
 	static const wchar_t *NullDebugString() { return L"(null)"; }
+	static wchar_t		 *ToUpper(wchar_t* pStr) { return V_wcsupr(pStr); }
 };
 
 //-----------------------------------------------------------------------------

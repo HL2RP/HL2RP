@@ -513,6 +513,14 @@ void CHL2_Player::HandleSpeedChanges( CMoveData *mv )
 		}
 	}
 
+	HandleWalkChanges(mv);
+	m_HL2Local.m_bNewSprinting = IsSprinting();
+	mv->m_flClientMaxSpeed = MaxSpeed();
+	mv->m_flMaxSpeed = sv_maxspeed.GetFloat();
+}
+
+void CHL2_Player::HandleWalkChanges(CMoveData* mv)
+{
 	bool bWantWalking = true;
 
 	// Have suit, pressing button, not sprinting or ducking
@@ -532,10 +540,6 @@ void CHL2_Player::HandleSpeedChanges( CMoveData *mv )
 			StopWalking();
 		}
 	}
-
-	m_HL2Local.m_bNewSprinting = IsSprinting();
-	mv->m_flClientMaxSpeed = MaxSpeed();
-	mv->m_flMaxSpeed = sv_maxspeed.GetFloat();
 }
 
 void CHL2_Player::ReduceTimers( CMoveData *mv )

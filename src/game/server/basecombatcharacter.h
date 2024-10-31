@@ -34,6 +34,10 @@
 #include "tf_shareddefs.h"
 #endif // TF_DLL
 
+#ifdef HL2RP
+#include <generic.h>
+#endif // HL2RP
+
 class CNavArea;
 class CScriptedTarget;
 typedef CHandle<CBaseCombatWeapon> CBaseCombatWeaponHandle;
@@ -232,6 +236,8 @@ public:
 	virtual bool		Weapon_CanUse( CBaseCombatWeapon *pWeapon );		// True is allowed to use this class of weapon
 	virtual void		Weapon_Equip( CBaseCombatWeapon *pWeapon );			// Adds weapon to player
 	virtual bool		Weapon_EquipAmmoOnly( CBaseCombatWeapon *pWeapon );	// Adds weapon ammo to player, leaves weapon
+	int					Weapon_TransferPrimaryAmmo(CBaseCombatWeapon*);
+	int					Weapon_TransferSecondaryAmmo(CBaseCombatWeapon*);
 	bool				Weapon_Detach( CBaseCombatWeapon *pWeapon );		// Clear any pointers to the weapon.
 	virtual void		Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL );
 	virtual	bool		Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex = 0 );		// Switch to given weapon if has ammo (false if failed)
@@ -518,12 +524,30 @@ private:
 	// ---------------
 	CUtlVector<Relationship_t>		m_Relationship;						// Array of relationships
 
+#ifdef HL2RP
+	bool ShouldCollide(int, int, CBaseEntity*) const OVERRIDE;
+
+	void ClearIntersectingEnts();
+
+	CAutoLessFuncAdapter<CUtlRBTree<EHANDLE>> mSpawnIntersectingEnts;
+
+public:
+	virtual void OnWeaponChanged(CBaseCombatWeapon*, bool isOwned) {}
+
+protected:
+	void AddIntersectingEnts();
+	bool HL2RP_OnTakeDamage(const CTakeDamageInfo&);
+
+	CNetworkArrayForDerived(int, m_iAmmo, MAX_AMMO_SLOTS, virtual);
+	CNetworkArray(CBaseCombatWeaponHandle, m_hMyWeapons, MAX_WEAPONS, virtual);
+#else
 protected:
 	// shared ammo slots
 	CNetworkArrayForDerived( int, m_iAmmo, MAX_AMMO_SLOTS );
 
 	// Usable character items 
 	CNetworkArray( CBaseCombatWeaponHandle, m_hMyWeapons, MAX_WEAPONS );
+#endif // HL2RP
 
 	CNetworkHandle( CBaseCombatWeapon, m_hActiveWeapon );
 

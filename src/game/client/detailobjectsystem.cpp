@@ -27,9 +27,9 @@
 #include <algorithm>
 #include "tier0/valve_minmax_on.h"
 
-#if defined(DOD_DLL) || defined(CSTRIKE_DLL)
+#if (defined DOD_DLL || defined CSTRIKE_DLL || defined HL2RP)
 #define USE_DETAIL_SHAPES
-#endif
+#endif // (defined DOD_DLL || defined CSTRIKE_DLL || defined HL2RP)
 
 #ifdef USE_DETAIL_SHAPES
 #include "engine/ivdebugoverlay.h"

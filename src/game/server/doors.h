@@ -13,6 +13,10 @@
 #include "locksounds.h"
 #include "entityoutput.h"
 
+#ifdef HL2RP
+#include <hl2rp_property.h>
+#endif // HL2RP
+
 //Since I'm here, might as well explain how these work.  Base.fgd is the file that connects
 //flags to entities.  It is full of lines with this number, a label, and a default value.
 //Voila, dynamicly generated checkboxes on the Flags tab of Entity Properties.
@@ -45,10 +49,10 @@ enum FuncDoorSpawnPos_t
 };
 
 
-class CBaseDoor : public CBaseToggle
+class CBaseDoor : public DOOR_BASECLASS(CBaseToggle)
 {
 public:
-	DECLARE_CLASS( CBaseDoor, CBaseToggle );
+	DECLARE_CLASS( CBaseDoor, DOOR_BASECLASS(CBaseToggle) );
 
 	DECLARE_SERVERCLASS();
 
@@ -112,7 +116,11 @@ public:
 
 	bool	m_bForceClosed;			// If set, always close, even if we're blocked.
 	bool	m_bDoorGroup;
-	bool	m_bLocked;				// Whether the door is locked
+
+#ifndef HL2RP
+	bool	m_bLocked;				// Whether the door is locked  
+#endif // !HL2RP
+
 	bool	m_bIgnoreDebris;
 	bool	m_bIgnoreNonPlayerEntsOnBlock;	// Non-player entities should never block.  This variable needs more letters.
 	

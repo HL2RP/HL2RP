@@ -15,6 +15,12 @@
 class CBaseToggle : public CBaseEntity
 {
 	DECLARE_CLASS( CBaseToggle, CBaseEntity );
+
+#ifdef HL2RP
+protected:
+	int ObjectCaps() OVERRIDE;
+#endif // HL2RP
+
 public:
 	CBaseToggle();
 

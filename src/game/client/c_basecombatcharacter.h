@@ -18,10 +18,17 @@
 #include "glow_outline_effect.h"
 #endif // GLOWS_ENABLE
 
+#ifdef HL2RP
+#include <generic.h>
+#endif // HL2RP
+
 class C_BaseCombatWeapon;
 class C_WeaponCombatShield;
 
 #define BCC_DEFAULT_LOOK_TOWARDS_TOLERANCE 0.9f
+
+#define BCC_INTERSECTING_ENTS_ADD_DELAY   1.0f // Minimum estimated delay for UTIL_EntitiesInBox to return entities
+#define BCC_INTERSECTING_ENTS_ADD_CONTEXT "AddIntersectingEnts"
 
 class C_BaseCombatCharacter : public C_BaseFlex
 {
@@ -130,6 +137,22 @@ private:
 	bool				m_bOldGlowEnabled;
 	CGlowObject			*m_pGlowEffect;
 #endif // GLOWS_ENABLE
+
+#ifdef HL2RP
+	bool ShouldCollide(int, int, CBaseEntity*) const OVERRIDE;
+
+	void ClearIntersectingEnts();
+
+	CAutoLessFuncAdapter<CUtlRBTree<EHANDLE>> mSpawnIntersectingEnts;
+
+public:
+	virtual const char* GetDisplayName();
+
+protected:
+	void Spawn() OVERRIDE;
+
+	void AddIntersectingEnts();
+#endif // HL2RP
 
 private:
 	C_BaseCombatCharacter( const C_BaseCombatCharacter & ); // not defined, not accessible

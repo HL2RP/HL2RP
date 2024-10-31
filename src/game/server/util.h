@@ -289,14 +289,16 @@ private:
 };
 
 // Pass in an array of pointers and an array size, it fills the array and returns the number inserted
-int			UTIL_EntitiesInBox( const Vector &mins, const Vector &maxs, CFlaggedEntitiesEnum *pEnum  );
+int			UTIL_EntitiesInBox( const Vector &mins, const Vector &maxs,
+				CFlaggedEntitiesEnum *pEnum, int partitionMask = PARTITION_ENGINE_NON_STATIC_EDICTS );
 int			UTIL_EntitiesAlongRay( const Ray_t &ray, CFlaggedEntitiesEnum *pEnum  );
 int			UTIL_EntitiesInSphere( const Vector &center, float radius, CFlaggedEntitiesEnum *pEnum  );
 
-inline int UTIL_EntitiesInBox( CBaseEntity **pList, int listMax, const Vector &mins, const Vector &maxs, int flagMask )
+inline int UTIL_EntitiesInBox( CBaseEntity **pList, int listMax, const Vector &mins,
+	const Vector &maxs, int flagMask, int partitionMask = PARTITION_ENGINE_NON_STATIC_EDICTS )
 {
 	CFlaggedEntitiesEnum boxEnum( pList, listMax, flagMask );
-	return UTIL_EntitiesInBox( mins, maxs, &boxEnum );
+	return UTIL_EntitiesInBox( mins, maxs, &boxEnum, partitionMask );
 }
 
 inline int UTIL_EntitiesAlongRay( CBaseEntity **pList, int listMax, const Ray_t &ray, int flagMask )

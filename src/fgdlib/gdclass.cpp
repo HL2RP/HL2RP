@@ -108,6 +108,7 @@ GDclass::~GDclass(void)
 //-----------------------------------------------------------------------------
 void GDclass::AddBase(GDclass *pBase)
 {
+	m_Bases.AddToTail(pBase);
 	int iBaseIndex;
 	Parent->ClassForName(pBase->GetName(), &iBaseIndex);
 
@@ -168,6 +169,18 @@ void GDclass::AddBase(GDclass *pBase)
 	}	
 }
 
+bool GDclass::HasBase(const char* pName)
+{
+	for (auto pBase : m_Bases)
+	{
+		if (pBase->IsClass(pName) || pBase->HasBase(pName))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Adds the given GDInputVariable to this GDClass's list of variables.

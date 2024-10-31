@@ -4707,10 +4707,16 @@ void CBasePlayer::PostThink()
 				SetAnimation( PLAYER_IN_VEHICLE );
 			else if (!GetAbsVelocity().x && !GetAbsVelocity().y)
 				SetAnimation( PLAYER_IDLE );
-			else if ((GetAbsVelocity().x || GetAbsVelocity().y) && ( GetFlags() & FL_ONGROUND ))
+			else if (FBitSet(GetFlags(), FL_ONGROUND))
 				SetAnimation( PLAYER_WALK );
-			else if (GetWaterLevel() > 1)
-				SetAnimation( PLAYER_WALK );
+#ifdef HL2RP
+			// NOTE: We must send at least one animation to cover cases where
+			// we need to update our activity (e.g. aiming state changed)
+			else SetAnimation(GetWaterLevel() != WL_Feet ? PLAYER_WALK : PLAYER_IDLE);
+#else
+			else if (GetWaterLevel() > WL_Feet)
+				SetAnimation(PLAYER_WALK);
+#endif // HL2RP
 		}
 
 		// Don't allow bogus sequence on player
@@ -8177,7 +8183,7 @@ void CMovementSpeedMod::InputSpeedMod(inputdata_t &data)
 		SendPropInt		(SENDINFO(m_iBonusProgress), 15 ),
 		SendPropInt		(SENDINFO(m_iBonusChallenge), 4 ),
 		SendPropFloat	(SENDINFO(m_flMaxspeed), 12, SPROP_ROUNDDOWN, 0.0f, 2048.0f ),  // CL
-		SendPropInt		(SENDINFO(m_fFlags), 0, SPROP_UNSIGNED|SPROP_CHANGES_OFTEN ),
+		SendPropInt		(SENDINFO(m_fFlags), PLAYER_FLAG_BITS, SPROP_UNSIGNED|SPROP_CHANGES_OFTEN ),
 		SendPropInt		(SENDINFO(m_iObserverMode), 3, SPROP_UNSIGNED ),
 		SendPropEHandle	(SENDINFO(m_hObserverTarget) ),
 		SendPropInt		(SENDINFO(m_iFOV), 8, SPROP_UNSIGNED ),
@@ -9644,17 +9650,6 @@ bool CBasePlayer::GetSteamID( CSteamID *pID )
 	}
 
 	return false;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-uint64 CBasePlayer::GetSteamIDAsUInt64( void )
-{
-	CSteamID steamIDForPlayer;
-	if ( GetSteamID( &steamIDForPlayer ) )
-		return steamIDForPlayer.ConvertToUint64();
-	return 0;
 }
 #endif // NO_STEAM
 

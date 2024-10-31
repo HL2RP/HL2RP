@@ -108,6 +108,7 @@ inline CHalfLife2* HL2GameRules()
 {
 #if ( !defined( HL2_DLL ) && !defined( HL2_CLIENT_DLL ) ) || defined( HL2MP )
 	Assert( 0 );	// g_pGameRules is NOT an instance of CHalfLife2 and bad things happen
+	return NULL;
 #endif
 
 	return static_cast<CHalfLife2*>(g_pGameRules);

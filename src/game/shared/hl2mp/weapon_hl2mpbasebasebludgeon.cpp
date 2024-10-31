@@ -69,6 +69,13 @@ void CBaseHL2MPBludgeonWeapon::Precache( void )
 	BaseClass::Precache();
 }
 
+#if (defined GAME_DLL && defined HL2RP)
+int CBaseHL2MPBludgeonWeapon::CapabilitiesGet()
+{
+	return bits_CAP_WEAPON_MELEE_ATTACK1;
+}
+#endif // (defined GAME_DLL && defined HL2RP)
+
 //------------------------------------------------------------------------------
 // Purpose : Update weapon
 //------------------------------------------------------------------------------
@@ -363,4 +370,18 @@ void CBaseHL2MPBludgeonWeapon::Swing( int bIsSecondary )
 	//Setup our next attack times
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFireRate();
 	m_flNextSecondaryAttack = gpGlobals->curtime + SequenceDuration();
+}
+
+void CBaseHL2MPBludgeonWeapon::Drop(const Vector& velocity)
+{
+#ifdef HL2RP
+	if (GetOwner() != NULL && GetOwner()->IsAlive())
+	{
+		return BaseClass::Drop(velocity);
+	}
+#endif // HL2RP
+
+#ifndef CLIENT_DLL
+	UTIL_Remove(this);
+#endif
 }

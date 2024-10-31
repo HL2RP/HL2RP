@@ -287,6 +287,8 @@ public:
 	CSoundPatch *m_sndLeeches;
 	CSoundPatch *m_sndWaterSplashes;
 
+	CSimpleSimTimer m_LowerWeaponTimer;
+
 protected:
 	virtual void		PreThink( void );
 	virtual	void		PostThink( void );
@@ -298,6 +300,12 @@ protected:
 	virtual void		PlayUseDenySound();
 
 private:
+#ifdef HL2RP
+	virtual void HandleWalkChanges(CMoveData*);
+#else
+	void HandleWalkChanges(CMoveData*);
+#endif // HL2RP
+
 	bool				CommanderExecuteOne( CAI_BaseNPC *pNpc, const commandgoal_t &goal, CAI_BaseNPC **Allies, int numAllies );
 
 	void				OnSquadMemberKilled( inputdata_t &data );
@@ -352,7 +360,6 @@ private:
 
 	float				m_flTimeUseSuspended;
 
-	CSimpleSimTimer		m_LowerWeaponTimer;
 	CSimpleSimTimer		m_AutoaimTimer;
 
 	EHANDLE				m_hLockedAutoAimEntity;

@@ -699,6 +699,20 @@ void OnBaseCombatWeaponCreated( CBaseCombatWeapon *pWeapon )
 void OnBaseCombatWeaponDestroyed( CBaseCombatWeapon *pWeapon )
 {
 	g_WeaponList.RemoveWeapon( pWeapon );
+
+#ifdef HL2RP
+	if (GameRules() != NULL) // Check against possible crashes inside
+	{
+		// Switch to another weapon if available, and clear current from our weapons list
+		CBaseCombatCharacter* pOwner = pWeapon->GetOwner();
+
+		if (pOwner != NULL)
+		{
+			pOwner->SwitchToNextBestWeapon(pWeapon);
+			pOwner->Weapon_Detach(pWeapon);
+		}
+	}
+#endif // HL2RP
 }
 
 int CBaseCombatWeapon::GetAvailableWeaponsInBox( CBaseCombatWeapon **pList, int listMax, const Vector &mins, const Vector &maxs )

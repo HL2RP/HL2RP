@@ -1,0 +1,43 @@
+// MySQL Driver, linking against self-built MySQL's static client library (64-bit).
+// Currently using MySQL 8* major versions. Since 8.0, it links dynamically against OpenSSL for maintainability
+// (ATM we use OpenSSL 3). Thus, both Crypto/SSL dynamic libraries are provided in corresponding bin/lib folders.
+// * On Windows, we use 8.4. On Linux, 8.0 instead since 8.4 ABI is currently incompatible with Steam Runtime.
+// As of how these libraries were built, see: https://gist.github.com/Adrianilloo/6357853fcb4530bcff9fcc80b7b9044e
+
+$Macro SRCDIR		"..\..\..\..\.."
+$Macro OUTBINDIR	"$SRCDIR\..\game\bin"
+
+$Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories "$BASE,$SRCDIR\game\server\hl2rp,$SRCDIR\thirdparty\mysql,.."
+	}
+}
+
+$Project "MySQL Driver"
+{
+	$Folder "Header Files"
+	{
+		$File "..\idatabase_driver.h"
+	}
+
+	$Folder "Source Files"
+	{
+		$File "mysql_driver.cpp"
+	}
+
+	$Folder "Link Libraries" [$WINDOWS]
+	{
+		$Lib "mysqlclient"
+	}
+
+	$Folder "Link Libraries" [$POSIX]
+	{
+		$Lib	"libmysqlclient"
+		$ImpLib	"crypto"
+		$ImpLib	"ssl"
+	}
+}

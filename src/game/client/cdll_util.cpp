@@ -1180,6 +1180,17 @@ void UTIL_BoundToWorldSize( Vector *pVecPos )
 #define MAP_KEY_FILE_DIR	"media"
 #endif
 
+C_BaseEntity* UTIL_EntityFromUserMessageEHandle(long nEncodedEHandle)
+{
+	if (nEncodedEHandle == INVALID_NETWORKED_EHANDLE_VALUE)
+	{
+		return NULL;
+	}
+
+	int nEntity = nEncodedEHandle & ((1 << MAX_EDICT_BITS) - 1), nSerialNum = nEncodedEHandle >> MAX_EDICT_BITS;
+	return EHANDLE(nEntity, nSerialNum).Get();
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Returns the filename to count map loads in
 //-----------------------------------------------------------------------------

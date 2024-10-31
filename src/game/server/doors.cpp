@@ -26,6 +26,10 @@
 #include "tf/nav_mesh/tf_nav_mesh.h"
 #endif // TF_DLL
 
+#ifdef HL2RP
+#include "ai_basenpc.h"
+#endif // HL2RP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -47,7 +51,7 @@ BEGIN_DATADESC( CBaseDoor )
 //	DEFINE_FIELD( m_isChaining, FIELD_BOOLEAN ),
 	DEFINE_KEYFIELD( m_ls.sLockedSound, FIELD_SOUNDNAME, "locked_sound" ),
 	DEFINE_KEYFIELD( m_ls.sUnlockedSound, FIELD_SOUNDNAME, "unlocked_sound" ),
-	DEFINE_FIELD( m_bLocked, FIELD_BOOLEAN ),
+	DEFINE_FIELD(m_bLocked, FIELD_BOOLEAN),
 	DEFINE_KEYFIELD( m_flWaveHeight, FIELD_FLOAT, "WaveHeight" ),
 	DEFINE_KEYFIELD( m_flBlockDamage, FIELD_FLOAT, "dmg" ),
 	DEFINE_KEYFIELD( m_eSpawnPosition, FIELD_INTEGER, "spawnpos" ),
@@ -104,6 +108,11 @@ LINK_ENTITY_TO_CLASS( func_water, CBaseDoor );
 // SendTable stuff.
 IMPLEMENT_SERVERCLASS_ST(CBaseDoor, DT_BaseDoor)
 	SendPropFloat	(SENDINFO(m_flWaveHeight),		8,	SPROP_ROUNDUP,	0.0f,	8.0f),
+
+#ifdef HL2RP_FULL
+	SendPropDataTable(SENDINFO_DT(mPropertyDoorData), &REFERENCE_SEND_TABLE(DT_HL2RP_PropertyDoorData)),
+	SendPropBool(SENDINFO(m_bLocked))
+#endif // HL2RP_FULL
 END_SEND_TABLE()
 
 #define DOOR_SENTENCEWAIT	6
@@ -720,6 +729,13 @@ void CBaseDoor::UpdateAreaPortals( bool isOpen )
 //-----------------------------------------------------------------------------
 void CBaseDoor::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
 {
+#ifdef HL2RP
+	if (useType >= USE_SPECIAL1)
+	{
+		return mPropertyDoorData.SpecialUse(this, pActivator, useType, m_bLocked);
+	}
+#endif // HL2RP
+
 	m_hActivator = pActivator;
 
 	if( m_ChainTarget != NULL_STRING )
@@ -1057,6 +1073,16 @@ void CBaseDoor::DoorHitTop( void )
 	{
 		m_OnFullyOpen.FireOutput(this, this);
 	}
+
+#ifdef HL2RP
+	CAI_BaseNPC* pNPC = dynamic_cast<CAI_BaseNPC*>(m_hActivator.Get());
+	m_hActivator = NULL;
+
+	if (pNPC != NULL)
+	{
+		pNPC->m_hOpeningDoor = NULL;
+	}
+#endif // HL2RP
 }
 
 
@@ -1131,6 +1157,10 @@ void CBaseDoor::DoorHitBottom( void )
 
 	// Close the area portals just after the door closes, to prevent visual artifacts in multiplayer games
 	SetContextThink( &CBaseDoor::CloseAreaPortalsThink, gpGlobals->curtime + 0.5f, CLOSE_AREAPORTAL_THINK_CONTEXT );
+
+#ifdef HL2RP
+	m_hActivator = NULL;
+#endif // HL2RP
 }
 
 

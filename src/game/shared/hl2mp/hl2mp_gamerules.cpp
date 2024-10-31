@@ -51,8 +51,9 @@ extern CBaseEntity	 *g_pLastRebelSpawn;
 
 #endif
 
-
+#ifndef HL2RP
 REGISTER_GAMERULES_CLASS( CHL2MPRules );
+#endif // !HL2RP
 
 BEGIN_NETWORK_TABLE_NOBASE( CHL2MPRules, DT_HL2MPRules )
 
@@ -127,6 +128,16 @@ static const char *s_PreserveEnts[] =
 	"predicted_viewmodel",
 	"worldspawn",
 	"point_devshot_camera",
+
+#ifdef HL2RP
+	"info_citizen_start",
+	"info_police_start",
+	"info_player_start",
+	"prop_ration_dispenser",
+	"ration",
+	"trigger_city_zone",
+#endif // HL2RP
+
 	"", // END Marker
 };
 
@@ -662,34 +673,40 @@ void CHL2MPRules::ClientDisconnected( edict_t *pClient )
 //=========================================================
 // Deathnotice. 
 //=========================================================
-void CHL2MPRules::DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &info )
+void CHL2MPRules::DeathNotice( CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info )
 {
 #ifndef CLIENT_DLL
 	// Work out what killed the player, and send a message to all clients about it
-	const char *killer_weapon_name = "world";		// by default, the player is killed by the world
-	int killer_ID = 0;
+	const char* killer_weapon_name = "world",		// by default, the player is killed by the world
+		* pVictimKey = "userid", * pKillerKey = "attacker";
+	int killer_ID = 0, victim_ID = pVictim->entindex();
 
 	// Find the killer & the scorer
 	CBaseEntity *pInflictor = info.GetInflictor();
 	CBaseEntity *pKiller = info.GetAttacker();
-	CBasePlayer *pScorer = GetDeathScorer( pKiller, pInflictor );
+	CBasePlayer *pScorerPlayer = GetDeathScorer( pKiller, pInflictor ), *pPlayer = ToBasePlayer(pVictim);
+	CBaseCombatCharacter* pScorer = pScorerPlayer;
+
+	if (pScorerPlayer != NULL) // Is the killer a client?
+	{
+		killer_ID = pScorerPlayer->GetUserID();
+	}
+#ifdef HL2RP_FULL
+	else
+	{
+		pScorer = ToBaseCombatCharacter(pKiller);
+	}
+#endif // HL2RP_FULL
 
 	// Custom kill type?
 	if ( info.GetDamageCustom() )
 	{
 		killer_weapon_name = GetDamageCustomString( info );
-		if ( pScorer )
-		{
-			killer_ID = pScorer->GetUserID();
-		}
 	}
 	else
 	{
-		// Is the killer a client?
 		if ( pScorer )
 		{
-			killer_ID = pScorer->GetUserID();
-			
 			if ( pInflictor )
 			{
 				if ( pInflictor == pScorer )
@@ -741,21 +758,42 @@ void CHL2MPRules::DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &info
 		{
 			killer_weapon_name = "slam";
 		}
-
-
 	}
 
-	IGameEvent *event = gameeventmanager->CreateEvent( "player_death" );
+	IGameEvent *event;
+
+#ifdef HL2RP_FULL
+	if (pPlayer == NULL) // Is victim a NPC?
+	{
+		event = gameeventmanager->CreateEvent("npc_death");
+		pVictimKey = "victim_entindex";
+		pKillerKey = "killer_entindex";
+		killer_ID = ENTINDEX(pScorer);
+	}
+	else
+#endif // HL2RP_FULL
+	{
+		event = gameeventmanager->CreateEvent("player_death");
+		victim_ID = pPlayer->GetUserID();
+	}
+
 	if( event )
 	{
-		event->SetInt("userid", pVictim->GetUserID() );
-		event->SetInt("attacker", killer_ID );
-		event->SetString("weapon", killer_weapon_name );
+#ifdef HL2RP_FULL
+		// If killer is a NPC, add its entindex to allow drawing its name under "player_death" (compatibility)
+		if (pScorerPlayer == NULL && pScorer != NULL)
+		{
+			event->SetInt("killer_entindex", pScorer->entindex());
+		}
+#endif // HL2RP_FULL
+		
+		event->SetInt(pVictimKey, victim_ID);
+		event->SetInt(pKillerKey, killer_ID);
+		event->SetString("weapon", killer_weapon_name);
 		event->SetInt( "priority", 7 );
 		gameeventmanager->FireEvent( event );
 	}
 #endif
-
 }
 
 void CHL2MPRules::ClientSettingsChanged( CBasePlayer *pPlayer )
@@ -968,6 +1006,11 @@ CAmmoDef *GetAmmoDef()
 		def.AddAmmoType("SMG1_Grenade",		DMG_BURN,					TRACER_NONE,			0,			0,			3,			0,							0 );
 		def.AddAmmoType("Grenade",			DMG_BURN,					TRACER_NONE,			0,			0,			5,			0,							0 );
 		def.AddAmmoType("slam",				DMG_BURN,					TRACER_NONE,			0,			0,			5,			0,							0 );
+
+#ifdef HL2RP
+		void HL2RP_InitAmmoDefs(CAmmoDef&);
+		HL2RP_InitAmmoDefs(def);
+#endif // HL2RP
 	}
 
 	return &def;

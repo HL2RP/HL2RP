@@ -231,9 +231,15 @@ void CVoiceGameMgr::UpdateMasks()
 			// Build a mask of who they can hear based on the game rules.
 			for(int iOtherClient=0; iOtherClient < m_nMaxPlayers; iOtherClient++)
 			{
-				CBaseEntity *pEnt = UTIL_PlayerByIndex(iOtherClient+1);
-				if(pEnt && pEnt->IsPlayer() && 
-					(bAllTalk || m_pHelper->CanPlayerHearPlayer(pPlayer, (CBasePlayer*)pEnt, bProximity )) )
+				CBasePlayer *pOther = UTIL_PlayerByIndex(iOtherClient+1);
+
+				if (pOther != NULL
+#ifdef HL2RP
+					&& GameRules()->CanPlayerHearVoice(pOther, pPlayer, bAllTalk)
+#else
+					&& (bAllTalk || m_pHelper->CanPlayerHearPlayer(pOther, pPlayer, bProximity ))
+#endif // HL2RP
+					)
 				{
 					gameRulesMask[iOtherClient] = true;
 					ProximityMask[iOtherClient] = bProximity;

@@ -44,6 +44,10 @@
 #include "weapon_physcannon.h"
 #endif
 
+#ifdef HL2RP_LEGACY
+#include <hl2rp_localizer.h>
+#endif // HL2RP_LEGACY
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -179,6 +183,7 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 	const char *cpSay = "say";
 	const char *cpSayTeam = "say_team";
 	const char *pcmd = args[0];
+	const char* pSentText = text;
 	bool bSenderDead = false;
 
 	// We can get a raw string now, without the "say " prepended
@@ -276,12 +281,20 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 		Q_snprintf( text, sizeof(text), "%s: ", pszPlayerName );
 	}
 
-	j = sizeof(text) - 2 - strlen(text);  // -2 for /n and null terminator
+	j = sizeof(text) - 1 - strlen(text);  // -1 for null terminator
 	if ( (int)strlen(p) > j )
 		p[j] = 0;
 
 	Q_strncat( text, p, sizeof( text ), COPY_ALL_CHARACTERS );
-	Q_strncat( text, "\n", sizeof( text ), COPY_ALL_CHARACTERS );
+
+#ifdef HL2RP_LEGACY
+	// Format custom chat type, which has to be done from server in this case
+	if (pszFormat != NULL)
+	{
+		pSentText = CBaseLocalizeFmtStr<>(pPlayer, szTemp).Localize(pszFormat, pszPlayerName, p);
+		pszFormat = NULL;
+	}
+#endif // HL2RP_LEGACY
  
 	// loop through all players
 	// Start with the first player.
@@ -320,8 +333,15 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 		}
 		else
 		{
-			UTIL_SayTextFilter( user, text, pPlayer, true );
+			UTIL_SayText2Filter( user, pPlayer, true, pSentText );
 		}
+
+#ifdef HL2RP
+		if (pPlayer != NULL)
+		{
+			pPlayer->OnChatMessagePassed(client, teamonly);
+		}
+#endif // HL2RP
 	}
 
 	if ( pPlayer )
@@ -336,14 +356,14 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 		}
 		else
 		{
-			UTIL_SayTextFilter( user, text, pPlayer, true );
+			UTIL_SayText2Filter( user, pPlayer, true, pSentText );
 		}
 	}
 
 	// echo to server console
 	// Adrian: Only do this if we're running a dedicated server since we already print to console on the client.
 	if ( engine->IsDedicatedServer() )
-		 Msg( "%s", text );
+		 Msg( "%s\n", text );
 
 	Assert( p );
 

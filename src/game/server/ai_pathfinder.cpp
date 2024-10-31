@@ -25,6 +25,11 @@
 //@todo: bad dependency!
 #include "ai_navigator.h"
 
+#ifdef HL2RP
+#include "BasePropDoor.h"
+#include "doors.h"
+#endif // HL2RP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1599,6 +1604,23 @@ bool CAI_Pathfinder::CheckStaleNavTypeRoute( Navigation_t navType, const Vector 
 			return true;
 		}
 	}
+
+#ifdef HL2RP
+	// Allow clearing stale links that pass through doors we may open
+	if (FBitSet(GetOuter()->CapabilitiesGet(), bits_CAP_DOORS_GROUP))
+	{
+		CBaseEntity* pEntity = GetOuter()->GetMoveProbe()->GetBlockingEntity();
+		CBaseDoor* pDoor = dynamic_cast<CBaseDoor*>(pEntity);
+
+		if (pDoor != NULL)
+		{
+			return !pDoor->IsLocked();
+		}
+
+		CBasePropDoor* pPropDoor = dynamic_cast<CBasePropDoor*>(pEntity);
+		return (pPropDoor != NULL && !pPropDoor->IsDoorLocked());
+	}
+#endif // HL2RP
 
 	return false;
 }

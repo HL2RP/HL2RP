@@ -27,9 +27,14 @@
 #include "voice_status.h"
 #include "steam/isteamutils.h"
 
+#ifdef HL2RP
+#include <hl2rp_localizer.h>
+#endif // HL2RP
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+#define CHATLINE_MAX_SIZE 256
 
 #define CHAT_WIDTH_PERCENTAGE 0.6f
 
@@ -127,50 +132,43 @@ void StripEndNewlineFromString( wchar_t *str )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Reads a string from the current message and checks if it is translatable
+// Purpose: Reads a string from the current message
 //-----------------------------------------------------------------------------
-wchar_t* ReadLocalizedString( bf_read &msg, OUT_Z_BYTECAP(outSizeInBytes) wchar_t *pOut, int outSizeInBytes, bool bStripNewline, OUT_Z_CAP(originalSize) char *originalString, int originalSize )
+char* ReadString( bf_read &msg, OUT_Z_BYTECAP(outSizeInBytes) char *pOut, int outSizeInBytes, bool localize )
 {
-	char szString[2048];
-	szString[0] = 0;
-	msg.ReadString( szString, sizeof(szString) );
+	*pOut = '\0';
+	msg.ReadString( pOut, outSizeInBytes );
 
-	if ( originalString )
+	if (localize)
 	{
-		Q_strncpy( originalString, szString, originalSize );
-	}
+		const char *pBuf = g_pVGuiLocalize->FindAsUTF8( pOut );
 
-	const wchar_t *pBuf = g_pVGuiLocalize->Find( szString );
-	if ( pBuf )
-	{
-		V_wcsncpy( pOut, pBuf, outSizeInBytes );
-	}
-	else
-	{
-		g_pVGuiLocalize->ConvertANSIToUnicode( szString, pOut, outSizeInBytes );
-	}
+		if ( pBuf )
+		{
+			Q_strncpy(pOut, pBuf, outSizeInBytes);
+		}
 
-	if ( bStripNewline )
 		StripEndNewlineFromString( pOut );
+	}
 
 	return pOut;
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Reads a string from the current message, converts it to unicode, and strips out color codes
+// Purpose: Reads a string from the current message and strips out color codes
 //-----------------------------------------------------------------------------
-wchar_t* ReadChatTextString( bf_read &msg, OUT_Z_BYTECAP(outSizeInBytes) wchar_t *pOut, int outSizeInBytes )
+char* ReadChatTextString( bf_read &msg, OUT_Z_BYTECAP(outSizeInBytes) char *pOut, int outSizeInBytes )
 {
-	char szString[2048];
-	szString[0] = 0;
-	msg.ReadString( szString, sizeof(szString) );
+	*pOut = '\0';
+	msg.ReadString( pOut, outSizeInBytes);
 
-	g_pVGuiLocalize->ConvertANSIToUnicode( szString, pOut, outSizeInBytes );
+	wchar_t szString[2048];
+	g_pVGuiLocalize->ConvertANSIToUnicode( pOut, szString, sizeof(szString) );
 
 	StripEndNewlineFromString( pOut );
 
 	// converts color control characters into control characters for the normal color
-	for ( wchar_t *test = pOut; test && *test; ++test )
+	for ( wchar_t *test = szString; test && *test; ++test )
 	{
 		if ( *test && (*test < COLOR_MAX ) )
 		{
@@ -196,6 +194,7 @@ wchar_t* ReadChatTextString( bf_read &msg, OUT_Z_BYTECAP(outSizeInBytes) wchar_t
 		}
 	}
 
+	g_pVGuiLocalize->ConvertUnicodeToANSI(szString, pOut, outSizeInBytes);
 	return pOut;
 }
 
@@ -765,7 +764,7 @@ void CBaseHudChat::Init( void )
 //-----------------------------------------------------------------------------
 void CBaseHudChat::MsgFunc_SayText( bf_read &msg )
 {
-	char szString[256];
+	char szString[CHATLINE_MAX_SIZE];
 
 	int client = msg.ReadByte();
 	msg.ReadString( szString, sizeof(szString) );
@@ -792,7 +791,7 @@ void CBaseHudChat::MsgFunc_SayText( bf_read &msg )
 	CLocalPlayerFilter filter;
 	C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "HudChat.Message" );
 
-	Msg( "%s", szString );
+	Msg( "%s", RemoveColorMarkup(szString) );
 }
 
 int CBaseHudChat::GetFilterForString( const char *pString )
@@ -818,20 +817,17 @@ void CBaseHudChat::MsgFunc_SayText2( bf_read &msg )
 	int client = msg.ReadByte();
 	bool bWantsToChat = msg.ReadByte();
 
-	wchar_t szBuf[6][256];
-	char untranslated_msg_text[256];
-	wchar_t *msg_text = ReadLocalizedString( msg, szBuf[0], sizeof( szBuf[0] ), false, untranslated_msg_text, sizeof( untranslated_msg_text ) );
+	char szBuf[6][CHATLINE_MAX_SIZE];
+	char* msg_text = ReadString(msg, szBuf[0], sizeof(szBuf[0]), false);
 
 	// keep reading strings and using C format strings for subsituting the strings into the localised text string
 	ReadChatTextString ( msg, szBuf[1], sizeof( szBuf[1] ) );		// player name
 	ReadChatTextString ( msg, szBuf[2], sizeof( szBuf[2] ) );		// chat text
-	ReadLocalizedString( msg, szBuf[3], sizeof( szBuf[3] ), true );
-	ReadLocalizedString( msg, szBuf[4], sizeof( szBuf[4] ), true );
+	ReadString( msg, szBuf[3], sizeof( szBuf[3] ), true );
+	ReadString( msg, szBuf[4], sizeof( szBuf[4] ), true );
 
-	g_pVGuiLocalize->ConstructString_safe( szBuf[5], msg_text, 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
-
-	char ansiString[512];
-	g_pVGuiLocalize->ConvertUnicodeToANSI( ConvertCRtoNL( szBuf[ 5 ] ), ansiString, sizeof( ansiString ) );
+	ConstructString(szBuf[5], false, msg_text, szBuf[1], szBuf[2], szBuf[3], szBuf[4]);
+	ConvertCRtoNL(szBuf[5]);
 
 	if ( bWantsToChat )
 	{
@@ -842,17 +838,17 @@ void CBaseHudChat::MsgFunc_SayText2( bf_read &msg )
 			iFilter = CHAT_FILTER_PUBLICCHAT;
 		}
 
-		UTIL_GetFilteredChatText( client, ansiString, sizeof( ansiString ) );
-		if ( !ansiString[ 0 ] )
+		UTIL_GetFilteredChatText( client, szBuf[5], sizeof( szBuf[5] ) );
+		if ( !szBuf[5][ 0 ] )
 		{
 			// This user has been ignored at the Steam level
 			return;
 		}
 
 		// print raw chat text
-		ChatPrintf( client, iFilter, "%s", ansiString );
+		ChatPrintf( client, iFilter, "%s", szBuf[5] );
 
-		Msg( "%s\n", RemoveColorMarkup(ansiString) );
+		Msg( "%s\n", RemoveColorMarkup(szBuf[5]) );
 
 		CLocalPlayerFilter filter;
 		C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "HudChat.Message" );
@@ -860,7 +856,7 @@ void CBaseHudChat::MsgFunc_SayText2( bf_read &msg )
 	else
 	{
 		// print raw chat text
-		ChatPrintf( client, GetFilterForString( untranslated_msg_text ), "%s", ansiString );
+		ChatPrintf( client, GetFilterForString(msg_text), "%s", szBuf[5] );
 	}
 }
 
@@ -880,79 +876,75 @@ void CBaseHudChat::MsgFunc_SayText2( bf_read &msg )
 //-----------------------------------------------------------------------------
 void CBaseHudChat::MsgFunc_TextMsg( bf_read &msg )
 {
-	char szString[2048];
 	int msg_dest = msg.ReadByte();
 
-	wchar_t szBuf[5][256];
-	wchar_t outputBuf[256];
+	char szBuf[5][CHATLINE_MAX_SIZE], *texts[5];
+	char outputBuf[CHATLINE_MAX_SIZE];
 
-	for ( int i=0; i<5; ++i )
+	for ( int i = 0; i < ARRAYSIZE(szBuf); ++i )
 	{
-		msg.ReadString( szString, sizeof(szString) );
-		char *tmpStr = hudtextmessage->LookupString( szString, &msg_dest );
-		const wchar_t *pBuf = g_pVGuiLocalize->Find( tmpStr );
-		if ( pBuf )
+		msg.ReadString( szBuf[i], sizeof(szBuf[i]) );
+		texts[i] = hudtextmessage->LookupString( szBuf[i], &msg_dest );
+
+		if (i > 0)
 		{
-			// Copy pBuf into szBuf[i].
-			int nMaxChars = sizeof( szBuf[i] ) / sizeof( wchar_t );
-			wcsncpy( szBuf[i], pBuf, nMaxChars );
-			szBuf[i][nMaxChars-1] = 0;
-		}
-		else
-		{
-			if ( i )
+			const wchar_t* pText = g_pVGuiLocalize->Find(texts[i]);
+
+			if (pText != NULL)
 			{
-				StripEndNewlineFromString( tmpStr );  // these strings are meant for subsitution into the main strings, so cull the automatic end newlines
+				g_pVGuiLocalize->ConvertUnicodeToANSI(pText, szBuf[i], sizeof(szBuf[i]));
+				texts[i] = szBuf[i];
+				continue;
 			}
-			g_pVGuiLocalize->ConvertANSIToUnicode( tmpStr, szBuf[i], sizeof(szBuf[i]) );
+
+			// These strings are meant for substitution into the main string, so cull the automatic end newlines
+			StripEndNewlineFromString( texts[i] );
 		}
 	}
 
 	if ( !cl_showtextmsg.GetInt() )
 		return;
 
-	int len;
 	switch ( msg_dest )
 	{
 	case HUD_PRINTCENTER:
-		g_pVGuiLocalize->ConstructString_safe( outputBuf, szBuf[0], 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
+		ConstructString(outputBuf, false, texts[0], texts[1], texts[2], texts[3], texts[4]);
 		internalCenterPrint->Print( ConvertCRtoNL( outputBuf ) );
 		break;
 
 	case HUD_PRINTNOTIFY:
-		g_pVGuiLocalize->ConstructString_safe( outputBuf, szBuf[0], 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
-		g_pVGuiLocalize->ConvertUnicodeToANSI( outputBuf, szString, sizeof(szString) );
-		len = strlen( szString );
-		if ( len && szString[len-1] != '\n' && szString[len-1] != '\r' )
-		{
-			Q_strncat( szString, "\n", sizeof(szString), 1 );
-		}
-		Msg( "%s", ConvertCRtoNL( szString ) );
-		break;
-
 	case HUD_PRINTTALK:
-		g_pVGuiLocalize->ConstructString_safe( outputBuf, szBuf[0], 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
-		g_pVGuiLocalize->ConvertUnicodeToANSI( outputBuf, szString, sizeof(szString) );
-		len = strlen( szString );
-		if ( len && szString[len-1] != '\n' && szString[len-1] != '\r' )
-		{
-			Q_strncat( szString, "\n", sizeof(szString), 1 );
-		}
-		Printf( CHAT_FILTER_NONE, "%s", ConvertCRtoNL( szString ) );
-		Msg( "%s", ConvertCRtoNL( szString ) );
-		break;
-
 	case HUD_PRINTCONSOLE:
-		g_pVGuiLocalize->ConstructString_safe( outputBuf, szBuf[0], 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
-		g_pVGuiLocalize->ConvertUnicodeToANSI( outputBuf, szString, sizeof(szString) );
-		len = strlen( szString );
-		if ( len && szString[len-1] != '\n' && szString[len-1] != '\r' )
+		bool printToChat = (msg_dest == HUD_PRINTTALK);
+		ConstructString(outputBuf, printToChat, texts[0], texts[1], texts[2], texts[3], texts[4]);
+		ConvertCRtoNL(outputBuf);
+		StripEndNewlineFromString(outputBuf);
+
+		if (printToChat)
 		{
-			Q_strncat( szString, "\n", sizeof(szString), 1 );
+			Printf( CHAT_FILTER_NONE, "%s", outputBuf );
+			RemoveColorMarkup(outputBuf);
 		}
-		Msg( "%s", ConvertCRtoNL( szString ) );
+
+		Msg( "%s\n", outputBuf );
 		break;
 	}
+}
+
+template<int N, typename... T>
+void CBaseHudChat::ConstructString(char(&dest)[N], bool isChat, const char* pToken, T... args)
+{
+#ifdef HL2RP
+	// Try using HL2RP localizer, first
+	if (Q_strncmp(pToken, "#HL2RP_", 7) == 0)
+	{
+		CBaseLocalizeFmtStr<char>(NULL, dest, isChat).Localize(pToken, args...);
+		return;
+	}
+#endif // HL2RP
+
+	const char* pText = g_pVGuiLocalize->FindAsUTF8(pToken);
+	g_pVGuiLocalize->ConstructString_safe(dest, pText != NULL ? pText : pToken, sizeof...(T), args...);
 }
 
 void CBaseHudChat::MsgFunc_VoiceSubtitle( bf_read &msg )
@@ -1152,23 +1144,6 @@ int CBaseHudChat::ComputeBreakChar( int width, const char *text, int textlen )
 #else
 	return 0;
 #endif
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : *fmt - 
-//			... - 
-//-----------------------------------------------------------------------------
-void CBaseHudChat::Printf( int iFilter, const char *fmt, ... )
-{
-	va_list marker;
-	char msg[4096];
-
-	va_start(marker, fmt);
-	Q_vsnprintf(msg, sizeof( msg), fmt, marker);
-	va_end(marker);
-
-	ChatPrintf( 0, iFilter, "%s", msg );
 }
 
 //-----------------------------------------------------------------------------

@@ -97,8 +97,8 @@ void StripEndNewlineFromString( wchar_t *str );
 
 char* ConvertCRtoNL( char *str );
 wchar_t* ConvertCRtoNL( wchar_t *str );
-wchar_t* ReadLocalizedString( bf_read &msg, OUT_Z_BYTECAP(outSizeInBytes) wchar_t *pOut, int outSizeInBytes, bool bStripNewline, OUT_Z_CAP(originalSize) char *originalString = NULL, int originalSize = 0 );
-wchar_t* ReadChatTextString( bf_read &msg, OUT_Z_BYTECAP(outSizeInBytes) wchar_t *pOut, int outSizeInBytes );
+char* ReadString( bf_read &msg, OUT_Z_BYTECAP(outSizeInBytes) char *pOut, int outSizeInBytes, bool localize );
+char* ReadChatTextString( bf_read &msg, OUT_Z_BYTECAP(outSizeInBytes) char *pOut, int outSizeInBytes );
 char* RemoveColorMarkup( char *str );
 
 //--------------------------------------------------------------------------------------------------------
@@ -239,8 +239,13 @@ public:
 	void			LevelShutdown( void );
 
 	void			MsgFunc_TextMsg(const char *pszName, int iSize, void *pbuf);
-	
-	virtual void	Printf( int iFilter, PRINTF_FORMAT_STRING const char *fmt, ... );
+
+	template<typename... T>
+	void Printf(int filter, const char* pFormat, T... args)
+	{
+		ChatPrintf(0, filter, pFormat, args...);
+	}
+
 	virtual void	ChatPrintf( int iPlayerIndex, int iFilter, PRINTF_FORMAT_STRING const char *fmt, ... ) FMTFUNCTION( 4, 5 );
 	
 	virtual void	StartMessageMode( int iMessageModeType );
@@ -318,6 +323,9 @@ private:
 	void			Clear( void );
 
 	int				ComputeBreakChar( int width, const char *text, int textlen );
+
+	template<int N, typename... T>
+	void			ConstructString(char(&dest)[N], bool isChat, const char* pToken, T...);
 
 	int				m_nMessageMode;
 

@@ -37,13 +37,20 @@ ConVar mp_forcecamera(
 	
 ConVar mp_allowspectators(
 	"mp_allowspectators", 
-	"1.0", 
+	"1.0",
+#ifdef HL2RP
+	FCVAR_NOTIFY |
+#endif // HL2RP
 	FCVAR_REPLICATED,
 	"toggles whether the server allows spectator mode or not" );
 
 ConVar friendlyfire(
 	"mp_friendlyfire",
+#ifdef HL2RP
+	"1",
+#else
 	"0",
+#endif // HL2RP
 	FCVAR_REPLICATED | FCVAR_NOTIFY,
 	"Allows team members to injure other members of their team"
 	);

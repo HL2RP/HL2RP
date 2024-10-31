@@ -128,6 +128,18 @@ void CBaseEntity::UnsetPlayerSimulated( void )
 }
 #endif
 
+#ifdef HL2RP
+bool CBaseEntity::IsLocked()
+{
+	return false;
+}
+
+CHL2RP_PropertyDoorData* CBaseEntity::GetPropertyDoorData()
+{
+	return NULL;
+}
+#endif // HL2RP
+
 // position of eyes
 Vector CBaseEntity::EyePosition( void )
 { 
@@ -616,7 +628,7 @@ bool CBaseEntity::GetKeyValue( const char *szKeyName, char *szValue, int iMaxLen
 // Input  : collisionGroup - 
 // Output : Returns true on success, false on failure.
 //-----------------------------------------------------------------------------
-bool CBaseEntity::ShouldCollide( int collisionGroup, int contentsMask ) const
+bool CBaseEntity::ShouldCollide( int collisionGroup, int contentsMask, CBaseEntity* ) const
 {
 	if ( m_CollisionGroup == COLLISION_GROUP_DEBRIS )
 	{

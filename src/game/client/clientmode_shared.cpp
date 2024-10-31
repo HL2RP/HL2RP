@@ -351,7 +351,12 @@ void ClientModeShared::Init()
 
 	// Derived ClientMode class must make sure m_Viewport is instantiated
 	Assert( m_pViewport );
+
+#ifdef HL2RP
+	m_pViewport->LoadControlSettings("scripts/hl2rp_hudlayout.res", NULL, NULL, pConditions);
+#else
 	m_pViewport->LoadControlSettings( "scripts/HudLayout.res", NULL, NULL, pConditions );
+#endif // HL2RP
 
 #if defined( REPLAY_ENABLED )
  	m_pReplayReminderPanel = GET_HUDELEMENT( CReplayReminderPanel );

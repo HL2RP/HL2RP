@@ -98,6 +98,7 @@ public:
 	void ResetAnimation( void );
 	void SetPlayerModel( void );
 	void SetPlayerTeamModel( void );
+	void SetModel(const char*) OVERRIDE;
 	Activity TranslateTeamActivity( Activity ActToTranslate );
 	
 	float GetNextModelChangeTime( void ) { return m_flNextModelChangeTime; }
@@ -143,15 +144,19 @@ public:
 
 	bool IsThreatAimingTowardMe( CBaseEntity* threat, float cosTolerance = 0.8f ) const;
 	bool IsThreatFiringAtMe( CBaseEntity* threat ) const;
-private:
 
+protected:
+	void InitSLAMProtectTime();
+
+	CNetworkVar( int, m_iPlayerSoundType );
+
+private:
 	CNetworkQAngle( m_angEyeAngles );
 	CPlayerAnimState   m_PlayerAnimState;
 
 	int m_iLastWeaponFireUsercmd;
 	int m_iModelType;
 	CNetworkVar( int, m_iSpawnInterpCounter );
-	CNetworkVar( int, m_iPlayerSoundType );
 
 	float m_flNextModelChangeTime;
 	float m_flNextTeamChangeTime;

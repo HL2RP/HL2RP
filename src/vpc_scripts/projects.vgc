@@ -16,7 +16,8 @@ $Project "captioncompiler"
 $Project "client"
 {
 	"game\client\client_tf.vpc"			[$TF]
-	"game\client\client_hl2mp.vpc"		[$HL2MP]
+	"game\client\client_hl2mp_stub.vpc"	[$HL2MP]
+	"game\client\client_hl2rp.vpc"		[$HL2RP_FULL]
 }
 
 $Project "fgdlib"
@@ -50,8 +51,10 @@ $Project "height2normal"
 
 $Project "server"
 {
-	"game\server\server_tf.vpc"			[$TF]
-	"game\server\server_hl2mp.vpc"		[$HL2MP]
+	"game\server\server_tf.vpc"				[$TF]
+	"game\server\server_hl2mp_stub.vpc"		[$HL2MP]
+	"game\server\server_hl2rp_full.vpc"		[$HL2RP_FULL]
+	"game\server\server_hl2rp_legacy.vpc"	[$HL2RP_LEGACY]
 }
 
 $Project "launcher_main"
@@ -75,6 +78,11 @@ $Project "motionmapper"
 	"utils\motionmapper\motionmapper.vpc" [$WINDOWS]
 }
 
+$Project "mysql_driver"
+{
+	"game\server\hl2rp\dal\mysql_driver\mysql_driver.vpc"
+}
+
 $Project "phonemeextractor"
 {
 	"utils\phonemeextractor\phonemeextractor.vpc" [$WIN32]
@@ -93,6 +101,16 @@ $Project "qc_eyes"
 $Project "serverplugin_empty"
 {
 	"utils\serverplugin_sample\serverplugin_empty.vpc"
+}
+
+$Project "sqlite3_amalgamation"
+{
+	"thirdparty\sqlite3\sqlite3_amalgamation.vpc"
+}
+
+$Project "sqlite3_driver"
+{
+	"game\server\hl2rp\dal\sqlite3_driver\sqlite3_driver.vpc"
 }
 
 $Project "tgadiff"

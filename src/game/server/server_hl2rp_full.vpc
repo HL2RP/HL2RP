@@ -1,0 +1,16 @@
+$Macro GAMENAME "mod_hl2rp"
+
+$Include "server_hl2rp_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$PreprocessorDefinitions "$BASE;HL2RP_FULL"
+	}
+}
+
+$Project "Server (HL2RP Full)"
+{
+
+}

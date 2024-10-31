@@ -15,6 +15,7 @@
 #include "materialsub.h"
 #include "fgdlib/fgdlib.h"
 #include "manifest.h"
+#include <fmtstr.h>
 
 #ifdef VSVMFIO
 #include "VmfImport.h"
@@ -2659,6 +2660,69 @@ bool LoadMapFile( const char *pszFileName )
 		
 		// Clear the error reporting
 		g_MapError.ClearState();
+
+		// Export the entities marked as exportable separately (skip worldspawn)
+		KeyValuesAD exportables("Entities");
+		int exportablesCount = 0;
+
+		for (int i = 1; i < g_LoadingMap->num_entities; ++i)
+		{
+			const char* pClassName = ValueForKey(g_LoadingMap->entities + i, "classname");
+			GDclass* pClass = GD.ClassForName(pClassName);
+
+			if (pClass != NULL && pClass->HasBase("ExportableEntity"))
+			{
+				KeyValues* pEntity = exportables->CreateNewKey();
+
+				for (epair_t* pPair = g_LoadingMap->entities[i].epairs; pPair != NULL; pPair = pPair->next)
+				{
+					if (Q_stricmp(pPair->key, "hammerid") != 0)
+					{
+						pEntity->SetString(pPair->key, pPair->value);
+					}
+				}
+
+				if (g_LoadingMap->entities[i].numbrushes > 0)
+				{
+					KeyValues* pSolids = pEntity->FindKey("Solids", true);
+
+					for (int j = g_LoadingMap->entities[i].firstbrush,
+						lastBrush = j + g_LoadingMap->entities[i].numbrushes; j < lastBrush; ++j)
+					{
+						KeyValues* pPlanes = pSolids->CreateNewKey();
+
+						for (int k = 0; k < g_LoadingMap->mapbrushes[j].numsides; ++k)
+						{
+							plane_t& plane = g_LoadingMap->mapplanes
+								[g_LoadingMap->mapbrushes[j].original_sides[k].planenum];
+							CFmtStr buffer("%f %f %f %f", plane.normal.x, plane.normal.y, plane.normal.z, plane.dist);
+							pPlanes->CreateNewKey()->SetStringValue(buffer);
+						}
+					}
+
+					g_LoadingMap->entities[i].numbrushes = 0; // Ignore brushes from now
+				}
+
+				g_LoadingMap->entities[i].epairs = 0; // Ignore properties from now
+				++exportablesCount;
+			}
+		}
+
+		if (exportablesCount > 0)
+		{
+			CFmtStrN<MAX_PATH> exportablesPath;
+			Q_ExtractFilePath(pszFileName, exportablesPath.Access(), exportablesPath.GetMaxLength());
+			int mapDirLen = Q_strlen(exportablesPath);
+			exportablesPath.SetLength(mapDirLen);
+			exportablesPath.AppendFormat("entities%c", CORRECT_PATH_SEPARATOR);
+			g_pFullFileSystem->CreateDirHierarchy(exportablesPath);
+			Q_FileBase(pszFileName + mapDirLen, exportablesPath.Access() + exportablesPath.Length(),
+				exportablesPath.GetMaxLength() - exportablesPath.Length());
+			Q_strcat(exportablesPath.Access() + exportablesPath.Length(), ".txt",
+				exportablesPath.GetMaxLength() - exportablesPath.Length());
+			Msg("Exporting %i entities outside BSP to: %s\n", exportablesCount, exportablesPath.Get());
+			exportables->SaveToFile(g_pFullFileSystem, exportablesPath);
+		}
 	}
 
 	if ( g_MainMap == g_LoadingMap )

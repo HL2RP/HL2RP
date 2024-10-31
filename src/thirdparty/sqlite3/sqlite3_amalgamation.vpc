@@ -1,0 +1,26 @@
+// Build script for official SQLite3 source distributed in a single file (amalgamation).
+// Separated from our enveloping driver because no suitable per-file configuration options
+// are currently available in VPC tool to compile the file with C standards, at least when using Ninja.
+
+$Macro SRCDIR		"..\.."
+$Macro OUTLIBNAME	"sqlite3"
+
+$Include "$SRCDIR\vpc_scripts\source_lib_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$PreprocessorDefinitions	"$BASE;SQLITE_OMIT_LOAD_EXTENSION;SQLITE_DEFAULT_FOREIGN_KEYS=1"
+		$PreprocessorDefinitions	"$BASE;MAKEFILE_FORCE_C_COMPILE" [$POSIX]
+		$CompileAs					"Compile as C Code (/TC)"
+	}
+}
+
+$Project "SQLite3 Amalgamation"
+{
+	$Folder "Source Files"
+	{
+		$File "sqlite3.c"
+	}
+}

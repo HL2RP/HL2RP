@@ -57,8 +57,13 @@ public:
 
 protected:
 	virtual	void	ImpactEffect( trace_t &trace );
+	void			Drop(const Vector&) OVERRIDE;
 
 private:
+#if (defined GAME_DLL && defined HL2RP)
+	int CapabilitiesGet() OVERRIDE;
+#endif // (defined GAME_DLL && defined HL2RP)
+
 	bool			ImpactWater( const Vector &start, const Vector &end );
 	void			Swing( int bIsSecondary );
 	void			Hit( trace_t &traceHit, Activity nHitActivity );

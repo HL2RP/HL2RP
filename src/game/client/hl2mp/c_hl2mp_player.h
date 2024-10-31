@@ -125,6 +125,8 @@ private:
 	
 	C_HL2MP_Player( const C_HL2MP_Player & );
 
+	virtual void HandleWalkChanges(CMoveData*);
+	
 	CPlayerAnimState m_PlayerAnimState;
 
 	QAngle	m_angEyeAngles;

@@ -1,0 +1,14 @@
+"Lang"
+{
+	"Language" "Spanish"
+
+	"Tokens"
+	{
+		"HL2RP_Hint_PropertyDoorAll"	"%1t\n{+reload} (X2) = (DES)BLOQUEAR PUERTA"
+		"HL2RP_Hint_PropertyDoorMenu"	"{+reload} (MANTÉN) = %1t"
+		"HL2RP_Hint_RationDeployed"		"<ATACAR> (MANTÉN) = PREPARAR LANZAMIENTO\n<ATACAR2> = CURARSE"
+		"HL2RP_Hint_RationThrowing"		"<ATACAR> (SUELTA) = LANZAR\n{+reload} = AÑADIR UNIDAD (DESDE MUNICIÓN)\n<ATACAR2> = CANCELAR LANZAMIENTO"
+		"HL2RP_Hint_StickyWalking"		"<CAMINAR> (X2) = CAMINAR ASISTIDO"
+		"HL2RP_Menu_HiddenWeapons"		"Armas ocultas"
+	}
+}

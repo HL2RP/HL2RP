@@ -25,6 +25,7 @@
 
 class CDamageModifier;
 class CDmgAccumulator;
+class CHL2RP_PropertyDoorData;
 
 struct CSoundParameters;
 
@@ -85,6 +86,7 @@ class Vector;
 struct gamevcollisionevent_t;
 class CBaseAnimating;
 class CBasePlayer;
+class CHL2Roleplayer;
 class IServerVehicle;
 struct solid_t;
 struct notify_system_event_params_t;
@@ -99,6 +101,9 @@ class CSkyCamera;
 class CEntityMapData;
 class INextBot;
 class IHasAttributes;
+
+template<typename = char>
+class CLocalizeFmtStr;
 
 typedef CUtlVector< CBaseEntity* > EntityList_t;
 
@@ -468,7 +473,7 @@ public:
 	bool					IsFloating();
 
 	// Called by physics to see if we should avoid a collision test....
-	virtual	bool			ShouldCollide( int collisionGroup, int contentsMask ) const;
+	virtual	bool			ShouldCollide( int collisionGroup, int contentsMask, CBaseEntity* pOther = NULL ) const;
 
 	// Move type / move collide
 	MoveType_t				GetMoveType() const;
@@ -667,7 +672,7 @@ public:
 
 	// handles an input (usually caused by outputs)
 	// returns true if the the value in the pass in should be set, false if the input is to be ignored
-	virtual bool AcceptInput( const char *szInputName, CBaseEntity *pActivator, CBaseEntity *pCaller, variant_t Value, int outputID );
+	virtual bool AcceptInput( const char *szInputName, CBaseEntity *pActivator, CBaseEntity *pCaller, variant_t Value = {}, int outputID = 0 );
 
 	//
 	// Input handlers.
@@ -1237,7 +1242,18 @@ public:
 	// variables promoted from edict_t
 	string_t	m_target;
 	CNetworkVarForDerived( int, m_iMaxHealth ); // CBaseEntity doesn't care about changes to this variable, but there are derived classes that do.
+
+#ifdef HL2RP
+	virtual bool IsLocked();
+	virtual CHL2RP_PropertyDoorData* GetPropertyDoorData();
+	virtual void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtStr<>&) {}
+
+	CBasePlayer* UTIL_GetLocalPlayer();
+
+	CNetworkVarForDerived(int, m_iHealth, virtual);
+#else
 	CNetworkVarForDerived( int, m_iHealth );
+#endif // HL2RP
 
 	CNetworkVarForDerived( char, m_lifeState );
 	CNetworkVarForDerived( char , m_takedamage );

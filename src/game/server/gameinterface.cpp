@@ -104,6 +104,10 @@ extern ConVar tf_mm_trusted;
 extern ConVar tf_mm_servermode;
 #endif
 
+#ifdef HL2RP
+#include <language.h>
+#endif // HL2RP
+
 #ifdef USE_NAV_MESH
 #include "nav_mesh.h"
 #endif
@@ -131,6 +135,8 @@ extern ConVar tf_mm_servermode;
 
 extern IToolFrameworkServer *g_pToolFrameworkServer;
 extern IParticleSystemQuery *g_pParticleSystemQuery;
+
+void HL2RP_PostInit();
 
 extern ConVar commentary;
 
@@ -750,6 +756,10 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 
 void CServerGameDLL::PostInit()
 {
+#ifdef HL2RP
+	HL2RP_PostInit();
+#endif // HL2RP
+
 	IGameSystem::PostInitAllSystems();
 }
 
@@ -2117,6 +2127,26 @@ void CServerGameDLL::LoadSpecificMOTDMsg( const ConVar &convar, const char *pszS
 	}
 
 	g_pStringTableInfoPanel->AddString( CBaseEntity::IsServer(), pszStringName, buf.TellPut(), buf.Base() );
+
+#ifdef HL2RP
+	// Try loading language-specific MOTD file variants as well
+	Q_StripExtension(szResolvedFilename, szPreferredFilename, sizeof(szPreferredFilename));
+	int len = Q_strlen(szPreferredFilename);
+
+	FOR_EACH_LANGUAGE(language)
+	{
+		buf.Clear();
+		const char* pLangShortName = GetLanguageShortName((ELanguage)language);
+		Q_snprintf(szPreferredFilename + len, sizeof(szPreferredFilename) - len,
+			"_%s%s", pLangShortName, szResolvedFilename + len);
+
+		if (filesystem->ReadFile(szPreferredFilename, "GAME", buf))
+		{
+			g_pStringTableInfoPanel->AddString(CBaseEntity::IsServer(),
+				UTIL_VarArgs("%s_%s", pszStringName, pLangShortName), buf.TellPut(), buf.Base());
+		}
+	}
+#endif // HL2RP
 #endif
 }
 
@@ -3213,12 +3243,14 @@ void CServerGameClients::ClientVoice( edict_t *pEdict )
 	}
 }
 
+#ifndef HL2RP
 //-----------------------------------------------------------------------------
 // Purpose: A user has had their network id setup and validated 
 //-----------------------------------------------------------------------------
 void CServerGameClients::NetworkIDValidated( const char *pszUserName, const char *pszNetworkID )
 {
 }
+#endif // !HL2RP
 
 // The client has submitted a keyvalues command
 void CServerGameClients::ClientCommandKeyValues( edict_t *pEntity, KeyValues *pKeyValues )
@@ -3309,6 +3341,14 @@ void MessageWriteLong( int iValue)
 		Error( "WriteLong called with no active message\n" );
 
 	g_pMsgBuffer->WriteLong( iValue );
+}
+
+void MessageWriteVarInt64(uint64 value)
+{
+	if (!g_pMsgBuffer)
+		Error("WriteVarInt64 called with no active message\n");
+
+	g_pMsgBuffer->WriteVarInt64(value);
 }
 
 void MessageWriteFloat( float flValue)

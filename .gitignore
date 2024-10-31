@@ -91,8 +91,6 @@ generated_proto_*
 
 *_Release/
 *_Debug/
-Release/x64/*
-Debug/x64/*
 Release_*/
 Debug_*/
 *.dbg
@@ -116,8 +114,8 @@ _vpc_/
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
-x64/
-x86/
+**/x64/*
+**/x86/*
 [Ww][Ii][Nn]32/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
@@ -126,6 +124,21 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+
+# HL2RP utils or external libs
+!game/[Bb]in
+
+!7z.exe
+!filesystem_stdio.dll
+!libcrypto.so
+!libcrypto*.dll
+!libmysqlclient.a
+!libssl.so
+!libssl*.dll
+!mysqlclient.lib
+!tier0.dll
+!vpk.exe
+!vstdlib.dll
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

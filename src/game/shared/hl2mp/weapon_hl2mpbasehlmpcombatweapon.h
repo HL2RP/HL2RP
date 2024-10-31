@@ -32,6 +32,10 @@ public:
 
 	virtual bool	WeaponShouldBeLowered( void );
 
+#ifdef HL2RP
+	virtual bool	IsLowered() { return m_bLowered; }
+#endif // HL2RP
+
 	virtual bool	Ready( void );
 	virtual bool	Lower( void );
 	virtual bool	Deploy( void );

@@ -33,9 +33,11 @@ class CPropJeep : public CPropVehicleDriveable
 {
 public:
 	DECLARE_CLASS( CPropJeep, CPropVehicleDriveable );
-
-	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
+
+#ifndef HL2RP_LEGACY
+	DECLARE_SERVERCLASS();
+#endif // !HL2RP_LEGACY
 
 	CPropJeep( void );
 

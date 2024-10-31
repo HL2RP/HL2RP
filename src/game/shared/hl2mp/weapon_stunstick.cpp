@@ -155,7 +155,7 @@ PRECACHE_WEAPON_REGISTER( weapon_stunstick );
 
 acttable_t	CWeaponStunStick::m_acttable[] = 
 {
-	{ ACT_RANGE_ATTACK1,				ACT_RANGE_ATTACK_SLAM, true },
+	{ ACT_RANGE_ATTACK1,				ACT_RANGE_ATTACK_SLAM,					true },
 	{ ACT_HL2MP_IDLE,					ACT_HL2MP_IDLE_MELEE,					false },
 	{ ACT_HL2MP_RUN,					ACT_HL2MP_RUN_MELEE,					false },
 	{ ACT_HL2MP_IDLE_CROUCH,			ACT_HL2MP_IDLE_CROUCH_MELEE,			false },
@@ -163,6 +163,11 @@ acttable_t	CWeaponStunStick::m_acttable[] =
 	{ ACT_HL2MP_GESTURE_RANGE_ATTACK,	ACT_HL2MP_GESTURE_RANGE_ATTACK_MELEE,	false },
 	{ ACT_HL2MP_GESTURE_RELOAD,			ACT_HL2MP_GESTURE_RELOAD_MELEE,			false },
 	{ ACT_HL2MP_JUMP,					ACT_HL2MP_JUMP_MELEE,					false },
+
+#ifdef HL2RP
+	{ ACT_MELEE_ATTACK1,	ACT_MELEE_ATTACK_SWING,	true },
+	{ ACT_IDLE_ANGRY,		ACT_IDLE_ANGRY_MELEE,	true }
+#endif // HL2RP
 };
 
 IMPLEMENT_ACTTABLE(CWeaponStunStick);
@@ -474,11 +479,7 @@ bool CWeaponStunStick::Holster( CBaseCombatWeapon *pSwitchingTo )
 void CWeaponStunStick::Drop( const Vector &vecVelocity )
 {
 	SetStunState( false );
-
-#ifndef CLIENT_DLL
-	UTIL_Remove( this );
-#endif
-
+	BaseClass::Drop(vecVelocity);
 }
 
 //-----------------------------------------------------------------------------

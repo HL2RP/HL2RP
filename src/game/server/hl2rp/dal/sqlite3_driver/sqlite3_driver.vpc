@@ -1,0 +1,31 @@
+$Macro SRCDIR			"..\..\..\..\.."
+$Macro OUTBINDIR		"$SRCDIR\..\game\bin"
+$Macro SQLITE3_SRCDIR	"$SRCDIR\thirdparty\sqlite3"
+
+$Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories "$BASE,$SRCDIR\game\server\hl2rp,$SQLITE3_SRCDIR,.."
+	}
+}
+
+$Project "SQLite3 Driver"
+{
+	$Folder "Header Files"
+	{
+		$File "..\idatabase_driver.h"
+	}
+
+	$Folder "Source Files"
+	{
+		$File "sqlite3_driver.cpp"
+	}
+
+	$Folder "Link Libraries"
+	{
+		$Lib "sqlite3"
+	}
+}

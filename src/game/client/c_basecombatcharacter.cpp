@@ -58,6 +58,20 @@ int	C_BaseCombatCharacter::GetAmmoCount( char *szName ) const
 }
 */
 
+#ifdef HL2RP
+void C_BaseCombatCharacter::Spawn()
+{
+	BaseClass::Spawn();
+	SetContextThink(&ThisClass::AddIntersectingEnts,
+		gpGlobals->curtime + BCC_INTERSECTING_ENTS_ADD_DELAY, BCC_INTERSECTING_ENTS_ADD_CONTEXT);
+}
+
+const char* C_BaseCombatCharacter::GetDisplayName()
+{
+	return GetClassname();
+}
+#endif // HL2RP
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------

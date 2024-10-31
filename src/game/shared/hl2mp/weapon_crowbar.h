@@ -49,9 +49,6 @@ public:
 	float		GetDamageForActivity( Activity hitActivity );
 	void		SecondaryAttack( void )	{	return;	}
 
-	void		Drop( const Vector &vecVelocity );
-
-
 	// Animation event
 #ifndef CLIENT_DLL
 	virtual void Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator );
@@ -60,9 +57,6 @@ public:
 #endif
 
 	CWeaponCrowbar( const CWeaponCrowbar & );
-
-private:
-		
 };
 
 

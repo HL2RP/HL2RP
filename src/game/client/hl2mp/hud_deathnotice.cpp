@@ -24,17 +24,21 @@
 static ConVar hud_deathnotice_time( "hud_deathnotice_time", "6", 0 );
 
 // Player entries in a death notice
-struct DeathNoticePlayer
+struct DeathNoticeEntity
 {
 	char		szName[MAX_PLAYER_NAME_LENGTH];
 	int			iEntIndex;
+
+#ifdef HL2RP
+	int mTeamNum; // To safely preserve team color once related NPC (if any) dies
+#endif // HL2RP
 };
 
 // Contents of each entry in our list of death notices
 struct DeathNoticeItem 
 {
-	DeathNoticePlayer	Killer;
-	DeathNoticePlayer   Victim;
+	DeathNoticeEntity	Killer;
+	DeathNoticeEntity   Victim;
 	CHudTexture *iconDeath;
 	int			iSuicide;
 	float		flDisplayTime;
@@ -47,6 +51,7 @@ struct DeathNoticeItem
 class CHudDeathNotice : public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE( CHudDeathNotice, vgui::Panel );
+
 public:
 	CHudDeathNotice( const char *pElementName );
 
@@ -56,12 +61,13 @@ public:
 	virtual void Paint( void );
 	virtual void ApplySchemeSettings( vgui::IScheme *scheme );
 
-	void SetColorForNoticePlayer( int iTeamNumber );
+	void SetColorForNoticeEntity(const DeathNoticeEntity&);
 	void RetireExpiredDeathNotices( void );
 	
 	virtual void FireGameEvent( IGameEvent * event );
 
 private:
+	void GetEventEntityInfo(IGameEvent*, DeathNoticeEntity&, const char* pEntIndexKey);
 
 	CPanelAnimationVarAliasType( float, m_flLineHeight, "LineHeight", "15", "proportional_float" );
 
@@ -115,7 +121,11 @@ void CHudDeathNotice::ApplySchemeSettings( IScheme *scheme )
 //-----------------------------------------------------------------------------
 void CHudDeathNotice::Init( void )
 {
-	ListenForGameEvent( "player_death" );	
+	ListenForGameEvent( "player_death" );
+
+#ifdef HL2RP
+	ListenForGameEvent("npc_death");
+#endif // HL2RP
 }
 
 //-----------------------------------------------------------------------------
@@ -138,9 +148,26 @@ bool CHudDeathNotice::ShouldDraw( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CHudDeathNotice::SetColorForNoticePlayer( int iTeamNumber )
+void CHudDeathNotice::SetColorForNoticeEntity(const DeathNoticeEntity& entityData)
 {
-	surface()->DrawSetTextColor( GameResources()->GetTeamColor( iTeamNumber ) );
+	int team = 0;
+
+#ifdef HL2RP
+	if (entityData.iEntIndex > gpGlobals->maxClients)
+	{
+		CBaseEntity* pCharacter = ToBaseCombatCharacter(ClientEntityList().GetBaseEntity(entityData.iEntIndex));
+		team = (pCharacter != NULL) ? pCharacter->GetTeamNumber() : entityData.mTeamNum;
+	}
+	else
+#endif // HL2RP
+	{
+		if (g_PR != NULL)
+		{
+			team = g_PR->GetTeam(entityData.iEntIndex);
+		}
+	}
+
+	surface()->DrawSetTextColor( GameResources()->GetTeamColor( team ) );
 }
 
 //-----------------------------------------------------------------------------
@@ -166,16 +193,6 @@ void CHudDeathNotice::Paint()
 
 		wchar_t victim[ 256 ];
 		wchar_t killer[ 256 ];
-
-		// Get the team numbers for the players involved
-		int iKillerTeam = 0;
-		int iVictimTeam = 0;
-
-		if( g_PR )
-		{
-			iKillerTeam = g_PR->GetTeam( m_DeathNotices[i].Killer.iEntIndex );
-			iVictimTeam = g_PR->GetTeam( m_DeathNotices[i].Victim.iEntIndex );
-		}
 
 		g_pVGuiLocalize->ConvertANSIToUnicode( m_DeathNotices[i].Victim.szName, victim, sizeof( victim ) );
 		g_pVGuiLocalize->ConvertANSIToUnicode( m_DeathNotices[i].Killer.szName, killer, sizeof( killer ) );
@@ -222,7 +239,7 @@ void CHudDeathNotice::Paint()
 				x -= UTIL_ComputeStringWidth( m_hTextFont, killer );
 			}
 
-			SetColorForNoticePlayer( iKillerTeam );
+			SetColorForNoticeEntity(m_DeathNotices[i].Killer);
 
 			// Draw killer's name
 			surface()->DrawSetTextPos( x, y );
@@ -238,7 +255,7 @@ void CHudDeathNotice::Paint()
 		icon->DrawSelf( x, y, iconWide, iconTall, iconColor );
 		x += iconWide;		
 
-		SetColorForNoticePlayer( iVictimTeam );
+		SetColorForNoticeEntity(m_DeathNotices[i].Victim);
 
 		// Draw victims name
 		surface()->DrawSetTextPos( x, y );
@@ -277,9 +294,11 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 	if ( hud_deathnotice_time.GetFloat() == 0 )
 		return;
 
+	DeathNoticeItem deathMsg;
+
 	// the event should be "player_death"
-	int killer = engine->GetPlayerForUserID( event->GetInt("attacker") );
-	int victim = engine->GetPlayerForUserID( event->GetInt("userid") );
+	deathMsg.Killer.iEntIndex = engine->GetPlayerForUserID( event->GetInt("attacker") );
+	deathMsg.Victim.iEntIndex = engine->GetPlayerForUserID( event->GetInt("userid") );
 	const char *killedwith = event->GetString( "weapon" );
 
 	char fullkilledwith[128];
@@ -300,23 +319,10 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 		m_DeathNotices.Remove(0);
 	}
 
-	// Get the names of the players
-	const char *killer_name = g_PR->GetPlayerName( killer );
-	const char *victim_name = g_PR->GetPlayerName( victim );
-
-	if ( !killer_name )
-		killer_name = "";
-	if ( !victim_name )
-		victim_name = "";
-
-	// Make a new death notice
-	DeathNoticeItem deathMsg;
-	deathMsg.Killer.iEntIndex = killer;
-	deathMsg.Victim.iEntIndex = victim;
-	Q_strncpy( deathMsg.Killer.szName, killer_name, MAX_PLAYER_NAME_LENGTH );
-	Q_strncpy( deathMsg.Victim.szName, victim_name, MAX_PLAYER_NAME_LENGTH );
+	GetEventEntityInfo(event, deathMsg.Killer, "killer_entindex");
+	GetEventEntityInfo(event, deathMsg.Victim, "victim_entindex");
 	deathMsg.flDisplayTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
-	deathMsg.iSuicide = ( !killer || killer == victim );
+	deathMsg.iSuicide = (deathMsg.Killer.iEntIndex == 0 || deathMsg.Killer.iEntIndex == deathMsg.Victim.iEntIndex);
 
 	// Try and find the death identifier in the icon list
 	deathMsg.iconDeath = gHUD.GetIcon( fullkilledwith );
@@ -357,5 +363,32 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 	Msg( "%s.\n", sDeathMsg );
 }
 
+void CHudDeathNotice::GetEventEntityInfo(IGameEvent* pEvent, DeathNoticeEntity& entityData, const char* pEntIndexKey)
+{
+	*entityData.szName = '\0';
+	const char* pName = NULL;
 
+#ifdef HL2RP
+	if (entityData.iEntIndex < 1)
+	{
+		int entIndex = pEvent->GetInt(pEntIndexKey);
+		CBaseCombatCharacter* pCharacter = ToBaseCombatCharacter(ClientEntityList().GetBaseEntity(entIndex));
 
+		if (pCharacter != NULL)
+		{
+			entityData.iEntIndex = entIndex;
+			entityData.mTeamNum = pCharacter->GetTeamNumber();
+			pName = g_pVGuiLocalize->FindAsUTF8(pCharacter->GetDisplayName());
+		}
+	}
+	else
+#endif // HL2RP
+	{
+		pName = g_PR->GetPlayerName(entityData.iEntIndex);
+	}
+
+	if (pName != NULL)
+	{
+		V_strcpy_safe(entityData.szName, pName);
+	}
+}

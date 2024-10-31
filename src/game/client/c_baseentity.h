@@ -41,6 +41,8 @@ class IPhysicsObject;
 class IClientVehicle;
 class CPredictionCopy;
 class C_BasePlayer;
+class C_HL2Roleplayer;
+class CHL2RP_PropertyDoorData;
 struct studiohdr_t;
 class CStudioHdr;
 class CDamageModifier;
@@ -59,6 +61,9 @@ class CEntityMapData;
 class ConVar;
 class CDmgAccumulator;
 class IHasAttributes;
+
+template<typename = wchar_t>
+class CLocalizeFmtStr;
 
 struct CSoundParameters;
 
@@ -1032,7 +1037,7 @@ public:
 	Vector	EarPosition( void ) const;			// position of ears
 
 	// Called by physics to see if we should avoid a collision test....
-	virtual bool		ShouldCollide( int collisionGroup, int contentsMask ) const;
+	virtual bool		ShouldCollide( int collisionGroup, int contentsMask, CBaseEntity* pOther = NULL ) const;
 
 	// Sets physics parameters
 	void				SetFriction( float flFriction );
@@ -1341,6 +1346,12 @@ public:
 #ifdef TF_CLIENT_DLL
 	int								m_nModelIndexOverrides[MAX_VISION_MODES];
 #endif
+
+#ifdef HL2RP
+	virtual bool IsLocked();
+	virtual CHL2RP_PropertyDoorData* GetPropertyDoorData();
+	virtual void GetHUDInfo(C_HL2Roleplayer*, CLocalizeFmtStr<>&) {}
+#endif // HL2RP
 
 	char							m_takedamage;
 	char							m_lifeState;

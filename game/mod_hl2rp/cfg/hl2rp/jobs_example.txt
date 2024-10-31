@@ -1,0 +1,62 @@
+// Jobs setup, split by Faction. Each Job can have multiple model groups from models.txt.
+
+"Jobs"
+{
+	"Citizen"
+	{
+		"Medic"
+		{
+			"model" "Citizen Medic"
+		}
+	}
+
+	"Combine" // NOTE: All players in this Faction will already receive a Stunstick and a Pistol every spawn
+	{
+		"Police"
+		{
+			"armor" "75"
+
+			"models"
+			{
+				"1" "Metropolice"
+				"2" "Combine Soldier"
+			}
+
+			"Weapons"
+			{
+				"weapon_pistol"
+				{
+					"ammo1" "60" // Primary reserve ammo count. NOTE: "clip1" and "clip2" are also available.
+				}
+			}
+		}
+
+		"SWAT"
+		{
+			"health"	"150"
+			"armor"		"200"
+			"model"		"Super Soldier"
+			"vip"		"1" // Job will only be available to granted Combine (field works analogously on Citizen jobs)
+
+			"Weapons"
+			{
+				"weapon_ar2"
+				{
+					"ammo2" "1" // Secondary reserve ammo count
+				}
+			}
+		}
+
+		"Admin"
+		{
+			"model" "G-Man"
+			"admin" "1" // Admin-only
+		}
+
+		"Root"
+		{
+			"god"	"1" // Can't be damaged
+			"root"	"1" // Root admin only
+		}
+	}
+}
