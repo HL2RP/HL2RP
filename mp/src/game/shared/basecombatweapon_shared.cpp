@@ -143,7 +143,17 @@ void CBaseCombatWeapon::GiveDefaultAmmo( void )
 	// If I use clips, set my clips to the default
 	if ( UsesClipsForAmmo1() )
 	{
-		m_iClip1 = AutoFiresFullClip() ? 0 : GetDefaultClip1();
+#ifdef HL2RP
+		if (GetDefaultClip1() > GetMaxClip1())
+		{
+			m_iClip1 = GetMaxClip1();
+			SetPrimaryAmmoCount(GetDefaultClip1() - GetMaxClip1());
+		}
+		else
+#endif // HL2RP
+		{
+			m_iClip1 = AutoFiresFullClip() ? 0 : GetDefaultClip1();
+		}
 	}
 	else
 	{
@@ -152,7 +162,16 @@ void CBaseCombatWeapon::GiveDefaultAmmo( void )
 	}
 	if ( UsesClipsForAmmo2() )
 	{
-		m_iClip2 = GetDefaultClip2();
+#ifdef HL2RP
+		if (GetDefaultClip2() > GetMaxClip2())
+		{
+			m_iClip2 = GetMaxClip2();
+			SetSecondaryAmmoCount(GetDefaultClip2() - GetMaxClip2());
+		}
+#endif // HL2RP
+		{
+			m_iClip2 = GetDefaultClip2();
+		}
 	}
 	else
 	{
@@ -353,6 +372,21 @@ const char *CBaseCombatWeapon::GetAnimPrefix( void ) const
 const char *CBaseCombatWeapon::GetPrintName( void ) const
 {
 	return GetWpnData().szPrintName;
+}
+
+void CBaseCombatWeapon::NetworkVarChanged_m_iClip1()
+{
+#if (!defined CLIENT_DLL && defined HL2RP)
+	if (GetOwner() != NULL)
+	{
+		GetOwner()->OnWeaponChanged(this, true);
+	}
+#endif // (!defined CLIENT_DLL && defined HL2RP)
+}
+
+void CBaseCombatWeapon::NetworkVarChanged_m_iClip2()
+{
+	NetworkVarChanged_m_iClip1();
 }
 
 //-----------------------------------------------------------------------------
@@ -1023,7 +1057,12 @@ void CBaseCombatWeapon::SetActivity( Activity act, float duration )
 { 
 	//Adrian: Oh man...
 #if !defined( CLIENT_DLL ) && (defined( HL2MP ) || defined( PORTAL ))
-	SetModel( GetWorldModel() );
+#ifdef HL2RP
+	if (GetOwner()->IsPlayer())
+#endif // HL2RP
+	{
+		SetModel(GetWorldModel());
+	}
 #endif
 	
 	int sequence = SelectWeightedSequence( act ); 
@@ -1034,7 +1073,12 @@ void CBaseCombatWeapon::SetActivity( Activity act, float duration )
 
 	//Adrian: Oh man again...
 #if !defined( CLIENT_DLL ) && (defined( HL2MP ) || defined( PORTAL ))
-	SetModel( GetViewModel() );
+#ifdef HL2RP
+	if (GetOwner()->IsPlayer())
+#endif // HL2RP
+	{
+		SetModel(GetViewModel());
+	}
 #endif
 
 	if ( sequence != ACTIVITY_NOT_AVAILABLE )

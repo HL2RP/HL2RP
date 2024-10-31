@@ -20,7 +20,9 @@
 #undef CHL2MP_Player	
 #endif
 
+#ifndef HL2RP
 LINK_ENTITY_TO_CLASS( player, C_HL2MP_Player );
+#endif // !HL2RP
 
 IMPLEMENT_CLIENTCLASS_DT(C_HL2MP_Player, DT_HL2MP_Player, CHL2MP_Player)
 	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
@@ -620,7 +622,13 @@ void C_HL2MP_Player::HandleSpeedChanges( void )
 			}
 		}
 	}
-	else if( buttonsChanged & IN_WALK )
+
+	HandleWalkChanges(buttonsChanged);
+}
+
+void C_HL2MP_Player::HandleWalkChanges(int buttonsChanged)
+{
+	if (FBitSet(buttonsChanged, IN_SPEED | IN_WALK) == IN_WALK)
 	{
 		if ( IsSuitEquipped() )
 		{

@@ -1,0 +1,82 @@
+// This file defines alternative activities to be used when a base activity (grouping key) fails,
+// prioritized in order of appearance and without control of translated weapon model activities.
+// For player, these are the base activities requested depending on base animation and aiming need:
+// Idle + standing: ACT_IDLE / ACT_IDLE_AIM
+// Idle + crouching: ACT_CROUCHIDLE / ACT_CROUCH
+// Walking + standing: ACT_WALK / ACT_WALK_AIM
+// Walking + crouching: ACT_WALK_CROUCH / ACT_WALK_CROUCH_AIM
+// Running: ACT_RUN / ACT_RUN_AIM
+// Jumping: ACT_JUMP
+
+"Activities"
+{
+	"ACT_IDLE"
+	{
+		"1" "ACT_IDLE_RELAXED"
+		"2" "ACT_IDLE_STIMULATED"
+		"3" "ACT_IDLE_AGITATED"
+		"4" "ACT_HL2MP_IDLE"
+	}
+
+	"ACT_IDLE_AIM"
+	{
+		"1" "ACT_IDLE_AIM_STIMULATED"
+		"2" "ACT_IDLE_AIM_AGITATED"
+		"3" "ACT_IDLE_ANGRY"
+		"4" "ACT_IDLE_AIM_RELAXED"
+		"5" "ACT_HL2MP_IDLE"
+	}
+
+	"ACT_CROUCHIDLE"
+	{
+		"1" "ACT_HL2MP_IDLE_CROUCH"
+		"2" "ACT_COVER_LOW"
+	}
+
+	"ACT_CROUCH" // For aiming
+	{
+		"1" "ACT_RANGE_AIM_LOW"
+		"2" "ACT_HL2MP_IDLE_CROUCH"
+	}
+
+	"ACT_WALK"
+	{
+		"1" "ACT_WALK_RELAXED"
+		"2" "ACT_WALK_STIMULATED"
+		"3" "ACT_WALK_AGITATED"
+		"4" "ACT_WALK_UNARMED"
+		"5" "ACT_HL2MP_RUN"
+	}
+
+	"ACT_WALK_AIM"
+	{
+		"1" "ACT_WALK_AIM_STIMULATED"
+		"2" "ACT_WALK_AIM_AGITATED"
+		"3" "ACT_WALK_ANGRY"
+		"4" "ACT_WALK_AIM_RELAXED"
+		"5" "ACT_HL2MP_RUN"
+	}
+
+	"ACT_WALK_CROUCH"		"ACT_HL2MP_WALK_CROUCH"
+	"ACT_WALK_CROUCH_AIM"	"ACT_HL2MP_WALK_CROUCH"
+
+	"ACT_RUN"
+	{
+		"1" "ACT_RUN_RELAXED"
+		"2" "ACT_RUN_STIMULATED"
+		"3" "ACT_RUN_AGITATED"
+		"4" "ACT_HL2MP_RUN"
+	}
+
+	"ACT_RUN_AIM"
+	{
+		"1" "ACT_RUN_AIM_STIMULATED"
+		"2" "ACT_RUN_AIM_AGITATED"
+		"3" "ACT_RUN_AIM_RELAXED"
+		"4" "ACT_HL2MP_RUN"
+	}
+
+	"ACT_JUMP"					"ACT_HL2MP_JUMP"
+	"ACT_GESTURE_RANGE_ATTACK1"	"ACT_HL2MP_GESTURE_RANGE_ATTACK"
+	"ACT_GESTURE_RELOAD"		"ACT_HL2MP_GESTURE_RELOAD"
+}

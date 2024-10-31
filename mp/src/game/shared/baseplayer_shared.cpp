@@ -23,6 +23,7 @@
 	#include "client_virtualreality.h"
 	#define CRecipientFilter C_RecipientFilter
 	#include "sourcevr/isourcevirtualreality.h"
+	#include <steam/steam_api.h>
 
 #else
 
@@ -2064,6 +2065,14 @@ const Vector &CBasePlayer::GetPreviouslyPredictedOrigin() const
 {
 	return m_vecPreviouslyPredictedOrigin;
 }
+
+#if (defined CLIENT_DLL || !defined NO_STEAM)
+uint64 CBasePlayer::GetSteamIDAsUInt64()
+{
+	CSteamID steamId;
+	return (GetSteamID(&steamId) ? steamId.ConvertToUint64() : 0);
+}
+#endif // (defined CLIENT_DLL || !defined NO_STEAM)
 
 bool fogparams_t::operator !=( const fogparams_t& other ) const
 {

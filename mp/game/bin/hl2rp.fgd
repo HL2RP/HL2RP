@@ -1,0 +1,60 @@
+@include "hl2mp.fgd"
+
+@BaseClass base(Targetname) = ExportableEntity
+[
+
+]
+
+@PointClass base(Angles, ExportableEntity) studioprop("models/props_combine/combine_dispenser.mdl")
+	= prop_ration_dispenser : "Ration Dispenser"
+[
+	rations(integer) : "Rations ammo" : 1 : "Total units to assign to each deployed ration"
+
+	spawnflags(flags) =
+	[
+		512 : "Combine controlled (not public)" : 0
+	]
+]
+
+@PointClass base(ExportableEntity, Weapon) studioprop("models/weapons/w_ration.mdl") = ration : "Ration"
+[
+	ammocount(integer) : "Contained units" : 1 : "Total units to be given when picked up"
+
+	spawnflags(flags) =
+	[
+		1073741824 : "Disable respawn" : 1
+	]
+]
+
+@BaseClass base(PlayerClass, Angles, ExportableEntity) = HL2RPSpawnPoint
+[
+	spawnflags(flags) =
+	[
+		1 : "NPCs only" : 0
+	]
+]
+
+@PointClass base(HL2RPSpawnPoint) studio("models/editor/playerstart.mdl") = info_citizen_start
+[
+	
+]
+
+@PointClass base(HL2RPSpawnPoint) studio("models/editor/playerstart.mdl") = info_police_start
+[
+	
+]
+
+@SolidClass base(ExportableEntity) = trigger_city_zone
+[
+	type(choices) : "Type" : "7" =
+	[
+		0: "None"
+		1: "Automatic crime gaining (citizens)"
+		2: "Blocked crime gaining"
+		3: "Disabled PVP (clean citizens only)"
+		4: "Jail (normal)"
+		5: "VIP jail"
+		6: "Execution room"
+		7: "Home"
+	]
+]

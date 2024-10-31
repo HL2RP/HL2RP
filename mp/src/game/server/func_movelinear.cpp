@@ -29,6 +29,12 @@ LINK_ENTITY_TO_CLASS( momentary_door, CFuncMoveLinear );	// For backward compati
 //
 LINK_ENTITY_TO_CLASS( func_water_analog, CFuncMoveLinear );
 
+#ifdef HL2RP_FULL
+IMPLEMENT_HL2RP_NETWORKCLASS(FuncMoveLinear)
+SendPropDataTable(SENDINFO_DT(mPropertyDoorData), &REFERENCE_SEND_TABLE(DT_HL2RP_PropertyDoorData)),
+SendPropBool(SENDINFO(m_bLocked))
+END_NETWORK_TABLE()
+#endif // HL2RP_FULL
 
 BEGIN_DATADESC( CFuncMoveLinear )
 
@@ -40,6 +46,11 @@ BEGIN_DATADESC( CFuncMoveLinear )
 	DEFINE_KEYFIELD( m_flStartPosition, FIELD_FLOAT,	"StartPosition"),
 	DEFINE_KEYFIELD( m_flMoveDistance,  FIELD_FLOAT,	"MoveDistance"),
 //	DEFINE_PHYSPTR( m_pFluidController ),
+
+#ifdef HL2RP
+	DEFINE_INPUTFUNC(FIELD_VOID, "Lock", InputLock),
+	DEFINE_INPUTFUNC(FIELD_VOID, "Unlock", InputUnlock),
+#endif // HL2RP
 
 	// Inputs
 	DEFINE_INPUTFUNC( FIELD_VOID,  "Open", InputOpen ),
@@ -87,6 +98,13 @@ void CFuncMoveLinear::Spawn( void )
 	m_vecPosition1 = GetAbsOrigin() - (m_vecMoveDir * m_flMoveDistance * m_flStartPosition);
 	m_vecPosition2 = m_vecPosition1 + (m_vecMoveDir * m_flMoveDistance);
 	m_vecFinalDest = GetAbsOrigin();
+
+#ifdef HL2RP
+	if (m_vecFinalDest == m_vecPosition1)
+	{
+		m_toggle_state = TS_AT_BOTTOM;
+	}
+#endif // HL2RP
 
 	SetTouch( NULL );
 
@@ -258,10 +276,18 @@ void CFuncMoveLinear::MoveDone( void )
 
 	if ( GetAbsOrigin() == m_vecPosition2 )
 	{
+#ifdef HL2RP
+		m_toggle_state = TS_AT_TOP;
+#endif // HL2RP
+
 		m_OnFullyOpen.FireOutput( this, this );
 	}
 	else if ( GetAbsOrigin() == m_vecPosition1 )
 	{
+#ifdef HL2RP
+		m_toggle_state = TS_AT_BOTTOM;
+#endif // HL2RP
+
 		m_OnFullyClosed.FireOutput( this, this );
 	}
 }
@@ -272,6 +298,17 @@ void CFuncMoveLinear::MoveDone( void )
 //------------------------------------------------------------------------------
 void CFuncMoveLinear::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
 {
+#ifdef HL2RP
+	if (useType >= USE_SPECIAL1)
+	{
+		return mPropertyDoorData.SpecialUse(this, pActivator, useType, m_bLocked);
+	}
+	else if (m_bLocked)
+	{
+		return;
+	}
+#endif // HL2RP
+
 	if ( useType != USE_SET )		// Momentary buttons will pass down a float in here
 		return;
 
@@ -304,8 +341,17 @@ void CFuncMoveLinear::SetPosition( float flPosition )
 //------------------------------------------------------------------------------
 void CFuncMoveLinear::InputOpen( inputdata_t &inputdata )
 {
-	if (GetLocalOrigin() != m_vecPosition2)
+	if (
+#ifdef HL2RP
+		!m_bLocked &&
+#endif // HL2RP
+		GetLocalOrigin() != m_vecPosition2
+		)
 	{
+#ifdef HL2RP
+		m_toggle_state = TS_GOING_UP;
+#endif // HL2RP
+
 		MoveTo(m_vecPosition2, m_flSpeed);
 	}
 }
@@ -316,12 +362,32 @@ void CFuncMoveLinear::InputOpen( inputdata_t &inputdata )
 //------------------------------------------------------------------------------
 void CFuncMoveLinear::InputClose( inputdata_t &inputdata )
 {
-	if (GetLocalOrigin() != m_vecPosition1)
+	if (
+#ifdef HL2RP
+		!m_bLocked &&
+#endif // HL2RP
+		GetLocalOrigin() != m_vecPosition1
+		)
 	{
+#ifdef HL2RP
+		m_toggle_state = TS_GOING_DOWN;
+#endif // HL2RP
+
 		MoveTo(m_vecPosition1, m_flSpeed);
 	}
 }
 
+#ifdef HL2RP
+void CFuncMoveLinear::InputLock(inputdata_t&)
+{
+	m_bLocked = true;
+}
+
+void CFuncMoveLinear::InputUnlock(inputdata_t&)
+{
+	m_bLocked = false;
+}
+#endif // HL2RP
 
 //------------------------------------------------------------------------------
 // Purpose: Input handler for setting the position from [0..1].

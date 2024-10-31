@@ -1,0 +1,43 @@
+$Macro SHARED_SRCDIR "$SRCDIR\game\shared\hl2rp"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories	"$BASE,hl2rp,$SHARED_SRCDIR,$SHARED_SRCDIR\weapons"
+		$PreprocessorDefinitions		"$BASE;HL2RP"
+	}
+}
+
+$Project
+{
+	$Folder "Source Files"
+	{
+		$Folder "HL2RP"
+		{
+			$Folder "Weapons"
+			{
+				$File "$SHARED_SRCDIR\weapons\ration.h"
+				$File "$SHARED_SRCDIR\weapons\ration_shared.cpp"
+			}
+
+			$File "$SHARED_SRCDIR\hl2_roleplayer_shared.cpp"
+			$File "$SHARED_SRCDIR\hl2_roleplayer_shared.h"
+			$File "$SHARED_SRCDIR\hl2rp_character.cpp"
+			$File "$SHARED_SRCDIR\hl2rp_character.h"
+			$File "$SHARED_SRCDIR\hl2rp_gamerules_shared.cpp"
+			$File "$SHARED_SRCDIR\hl2rp_gamerules_shared.h"
+			$File "$SHARED_SRCDIR\hl2rp_localizer.cpp"
+			$File "$SHARED_SRCDIR\hl2rp_localizer.h"
+			$File "$SHARED_SRCDIR\hl2rp_property.h"
+			$File "$SHARED_SRCDIR\hl2rp_property_shared.cpp"
+			$File "$SHARED_SRCDIR\hl2rp_shareddefs.h"
+			$File "$SHARED_SRCDIR\hl2rp_util_shared.cpp"
+			$File "$SHARED_SRCDIR\hl2rp_util_shared.h"
+			$File "$SHARED_SRCDIR\prop_ration_dispenser.h"
+			$File "$SHARED_SRCDIR\prop_ration_dispenser_shared.cpp"
+			$File "$SHARED_SRCDIR\trigger_city_zone.cpp"
+			$File "$SHARED_SRCDIR\trigger_city_zone.h"
+		}
+	}
+}

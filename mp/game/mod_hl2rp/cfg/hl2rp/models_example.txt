@@ -1,0 +1,41 @@
+// Models setup, split by category and custom groups. Each model path allows search wildcards.
+// The 'models/' prefix must be omitted, but .mdl extension is still required, for clarity.
+// If a model group appears more than once (among any type), only the first one will be registered.
+
+"Models"
+{
+	"Public" // Models allowed to Citizens unless their Job has other models. These aren't automatically set.
+	{
+		"Citizen Basic" "humans/group01/*.mdl" // Wildcard search case. Wildcards only work at file name (and extension).
+	}
+
+	// Job models should generally be here, unless you want to share any with another category
+	// (in which case no further model access will be required when using the related Job)
+	"Job"
+	{
+		"Citizen Medic"	"humans/group03m/*.mdl"
+		"Metropolice"	"police.mdl"
+		"Super Soldier"	"combine_super_soldier.mdl"
+
+		"Combine Soldier"
+		{
+			"Standard"		"combine_soldier.mdl"
+			"Prison Guard"	"combine_soldier_prisonguard.mdl"
+		}
+	}
+
+	"VIP" // Models only available to granted Citizens
+	{
+		"Odessa" "odessa.mdl"
+	}
+
+	"Admin" // Admin-only
+	{
+		"G-Man" "gman.mdl"
+	}
+
+	"Root" // Root admin only
+	{
+		"Dr. Breen" "breen.mdl"
+	}
+}

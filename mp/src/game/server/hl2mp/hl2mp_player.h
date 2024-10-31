@@ -96,6 +96,7 @@ public:
 	void ResetAnimation( void );
 	void SetPlayerModel( void );
 	void SetPlayerTeamModel( void );
+	void SetModel(const char*) OVERRIDE;
 	Activity TranslateTeamActivity( Activity ActToTranslate );
 	
 	float GetNextModelChangeTime( void ) { return m_flNextModelChangeTime; }
@@ -138,15 +139,18 @@ public:
 	virtual bool	CanHearAndReadChatFrom( CBasePlayer *pPlayer );
 
 		
-private:
+protected:
+	void InitSLAMProtectTime();
 
+	CNetworkVar( int, m_iPlayerSoundType );
+
+private:
 	CNetworkQAngle( m_angEyeAngles );
 	CPlayerAnimState   m_PlayerAnimState;
 
 	int m_iLastWeaponFireUsercmd;
 	int m_iModelType;
 	CNetworkVar( int, m_iSpawnInterpCounter );
-	CNetworkVar( int, m_iPlayerSoundType );
 
 	float m_flNextModelChangeTime;
 	float m_flNextTeamChangeTime;
