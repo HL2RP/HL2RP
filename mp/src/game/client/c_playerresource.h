@@ -15,6 +15,7 @@
 #include "const.h"
 #include "c_baseentity.h"
 #include <igameresources.h>
+#include <steam/steamtypes.h>
 
 #define PLAYER_UNCONNECTED_NAME	"unconnected"
 #define PLAYER_ERROR_NAME		"ERRORNAME"
@@ -62,15 +63,18 @@ protected:
 	// Data for each player that's propagated to all clients
 	// Stored in individual arrays so they can be sent down via datatables
 	string_t	m_szName[MAX_PLAYERS+1];
-	int		m_iPing[MAX_PLAYERS+1];
-	int		m_iScore[MAX_PLAYERS+1];
-	int		m_iDeaths[MAX_PLAYERS+1];
-	bool	m_bConnected[MAX_PLAYERS+1];
-	int		m_iTeam[MAX_PLAYERS+1];
-	bool	m_bAlive[MAX_PLAYERS+1];
-	int		m_iHealth[MAX_PLAYERS+1];
-	Color	m_Colors[MAX_TEAMS];
-	string_t m_szUnconnectedName;
+	int			m_iPing[MAX_PLAYERS+1];
+	int			m_iScore[MAX_PLAYERS+1];
+	int			m_iDeaths[MAX_PLAYERS+1];
+	bool		m_bConnected[MAX_PLAYERS+1];
+	int			m_iTeam[MAX_PLAYERS+1];
+	bool		m_bAlive[MAX_PLAYERS+1];
+	int			m_iHealth[MAX_PLAYERS+1];
+	AccountID_t	m_iAccountID[MAX_PLAYERS + 1];
+	bool		m_bValid[MAX_PLAYERS + 1];
+	int			m_iUserID[MAX_PLAYERS + 1];
+	Color		m_Colors[MAX_TEAMS];
+	string_t	m_szUnconnectedName;
 
 };
 

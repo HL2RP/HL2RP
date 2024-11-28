@@ -731,3 +731,31 @@ bool CWorld::IsColdWorld( void )
 {
 	return m_bColdWorld;
 }
+
+class CPointWorldText : public CBaseEntity
+{
+	DECLARE_CLASS(CPointWorldText, CBaseEntity)
+	DECLARE_SERVERCLASS()
+
+	CNetworkString(m_szText, 256);
+	CNetworkColor32(m_colTextColor);
+	CNetworkVar(float, m_flTextSize);
+	CNetworkVar(float, m_flTextSpacingX);
+	CNetworkVar(float, m_flTextSpacingY);
+	CNetworkVar(byte, m_nOrientation);
+	CNetworkVar(unsigned short, m_nFont);
+	CNetworkVar(bool, m_bRainbow);
+};
+
+LINK_ENTITY_TO_CLASS(point_worldtext, CPointWorldText)
+
+IMPLEMENT_SERVERCLASS_ST(CPointWorldText, DT_PointWorldText)
+SendPropString(SENDINFO(m_szText)),
+SendPropInt(SENDINFO(m_colTextColor), -1, SPROP_UNSIGNED),
+SendPropFloat(SENDINFO(m_flTextSize)),
+SendPropFloat(SENDINFO(m_flTextSpacingX)),
+SendPropFloat(SENDINFO(m_flTextSpacingY)),
+SendPropInt(SENDINFO(m_nOrientation), 3, SPROP_UNSIGNED),
+SendPropInt(SENDINFO(m_nFont), 16, SPROP_UNSIGNED),
+SendPropBool(SENDINFO(m_bRainbow))
+END_SEND_TABLE()

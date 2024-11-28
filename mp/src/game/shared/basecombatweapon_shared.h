@@ -565,6 +565,7 @@ public:
 
 	// Networked fields
 	CNetworkVar( int, m_nViewModelIndex );
+	CNetworkVar( int, m_nCustomViewmodelModelIndex );
 
 	// Weapon firing
 	CNetworkVar( float, m_flNextPrimaryAttack );						// soonest time ItemPostFrame will call PrimaryAttack

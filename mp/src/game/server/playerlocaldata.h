@@ -72,6 +72,7 @@ public:
 	// Is the player wearing the HEV suit
 	CNetworkVar( bool, m_bWearingSuit );
 	CNetworkVar( bool, m_bPoisoned );
+	CNetworkVar( bool, m_bForceLocalPlayerDraw );
 	CNetworkVar( float, m_flStepSize );
 	CNetworkVar( bool, m_bAllowAutoMovement );
 
@@ -84,6 +85,7 @@ public:
 	CNetworkVarEmbedded( audioparams_t, m_audio );
 
 	CNetworkVar( bool, m_bSlowMovement );
+	CNetworkString( m_szScriptOverlayMaterial, MAX_PATH );
 };
 
 EXTERN_SEND_TABLE(DT_Local);

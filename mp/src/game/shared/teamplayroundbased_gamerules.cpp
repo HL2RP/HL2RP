@@ -82,6 +82,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CTeamplayRoundBasedRules, DT_TeamplayRoundBasedRules
 	RecvPropBool( RECVINFO( m_bAwaitingReadyRestart ) ),
 	RecvPropTime( RECVINFO( m_flRestartRoundTime ) ),
 	RecvPropTime( RECVINFO( m_flMapResetTime ) ),
+	RecvPropInt( RECVINFO( m_nRoundsPlayed ) ),
 	RecvPropArray3( RECVINFO_ARRAY(m_flNextRespawnWave), RecvPropTime( RECVINFO(m_flNextRespawnWave[0]) ) ),
 	RecvPropArray3( RECVINFO_ARRAY(m_TeamRespawnWaveTimes), RecvPropFloat( RECVINFO(m_TeamRespawnWaveTimes[0]) ) ),
 	RecvPropArray3( RECVINFO_ARRAY(m_bTeamReady), RecvPropBool( RECVINFO(m_bTeamReady[0]) ) ),
@@ -89,7 +90,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CTeamplayRoundBasedRules, DT_TeamplayRoundBasedRules
 	RecvPropBool( RECVINFO( m_bMultipleTrains ) ),
 	RecvPropArray3( RECVINFO_ARRAY(m_bPlayerReady), RecvPropBool( RECVINFO(m_bPlayerReady[0]) ) ),
 	RecvPropBool( RECVINFO( m_bCheatsEnabledDuringLevel ) ),
-
+	RecvPropTime( RECVINFO( m_flCountdownTime ) ),
+	RecvPropTime( RECVINFO( m_flStateTransitionTime ) )
 #else
 	SendPropInt( SENDINFO( m_iRoundState ), 5 ),
 	SendPropBool( SENDINFO( m_bInWaitingForPlayers ) ),
@@ -100,6 +102,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CTeamplayRoundBasedRules, DT_TeamplayRoundBasedRules
 	SendPropBool( SENDINFO( m_bAwaitingReadyRestart ) ),
 	SendPropTime( SENDINFO( m_flRestartRoundTime ) ),
 	SendPropTime( SENDINFO( m_flMapResetTime ) ),
+	SendPropInt( SENDINFO( m_nRoundsPlayed ), 4, SPROP_UNSIGNED ),
 	SendPropArray3( SENDINFO_ARRAY3(m_flNextRespawnWave), SendPropTime( SENDINFO_ARRAY(m_flNextRespawnWave) ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_TeamRespawnWaveTimes), SendPropFloat( SENDINFO_ARRAY(m_TeamRespawnWaveTimes) ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_bTeamReady), SendPropBool( SENDINFO_ARRAY(m_bTeamReady) ) ),
@@ -107,6 +110,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CTeamplayRoundBasedRules, DT_TeamplayRoundBasedRules
 	SendPropBool( SENDINFO( m_bMultipleTrains ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_bPlayerReady), SendPropBool( SENDINFO_ARRAY(m_bPlayerReady) ) ),
 	SendPropBool( SENDINFO( m_bCheatsEnabledDuringLevel ) ),
+	SendPropTime( SENDINFO( m_flCountdownTime ) ),
+	SendPropTime( SENDINFO( m_flStateTransitionTime ) )
 #endif
 END_NETWORK_TABLE()
 

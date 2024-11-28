@@ -34,6 +34,7 @@ protected:
 	void			ResetData();
 
 	int				m_iActiveIssueIndex;
+	int				m_nVoteIdx;
 	int				m_iOnlyTeamToVote;
 	int				m_nVoteOptionCount[MAX_VOTE_OPTIONS];
 	int				m_iVoteChoiceIndex;

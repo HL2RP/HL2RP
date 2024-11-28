@@ -192,3 +192,26 @@ C_World *GetClientWorldEntity()
 	return g_pClientWorld;
 }
 
+class C_PointWorldText : public C_BaseEntity
+{
+	DECLARE_CLASS(C_PointWorldText, C_BaseEntity)
+	DECLARE_CLIENTCLASS()
+
+	char m_szText[256];
+	color32 m_colTextColor;
+	float m_flTextSize, m_flTextSpacingX, m_flTextSpacingY;
+	byte m_nOrientation;
+	ushort m_nFont;
+	bool m_bRainbow;
+};
+
+IMPLEMENT_CLIENTCLASS_DT(C_PointWorldText, DT_PointWorldText, CPointWorldText)
+RecvPropString(RECVINFO_STRING(m_szText)),
+RecvPropInt(RECVINFO(m_colTextColor)),
+RecvPropFloat(RECVINFO(m_flTextSize)),
+RecvPropFloat(RECVINFO(m_flTextSpacingX)),
+RecvPropFloat(RECVINFO(m_flTextSpacingY)),
+RecvPropInt(RECVINFO(m_nOrientation)),
+RecvPropInt(RECVINFO(m_nFont)),
+RecvPropBool(RECVINFO(m_bRainbow))
+END_RECV_TABLE()

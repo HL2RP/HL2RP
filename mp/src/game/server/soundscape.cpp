@@ -217,7 +217,7 @@ int CEnvSoundscape::UpdateTransmitState()
 
 void CEnvSoundscape::WriteAudioParamsTo( audioparams_t &audio )
 {
-	audio.ent.Set( this );
+	audio.entIndex = m_soundscapeEntityId;
 	audio.soundscapeIndex = m_soundscapeIndex;
 	audio.localBits = 0;
 	for ( int i = 0; i < ARRAYSIZE(m_positionNames); i++ )
@@ -310,7 +310,7 @@ void CEnvSoundscape::UpdateForPlayer( ss_update_t &update )
  		if ( update.pPlayer )
 		{
 			audioparams_t &audio = update.pPlayer->GetAudioParams();
-			if ( audio.ent.Get() != this )
+			if ( audio.entIndex != m_soundscapeEntityId )
 			{
 				if ( InRangeOfPlayer( update.pPlayer ) )
 				{
@@ -393,7 +393,7 @@ void CEnvSoundscape::DrawDebugGeometryOverlays( void )
 		if ( pPlayer )
 		{
 			audioparams_t &audio = pPlayer->GetAudioParams();
-			if ( audio.ent.Get() != this )
+			if ( audio.entIndex != m_soundscapeEntityId )
 			{
 				CBaseEntity *pEnt = pPlayer; // ->GetSoundscapeListener();
 				if ( pEnt )
@@ -463,7 +463,7 @@ void CEnvSoundscapeTriggerable::DelegateEndTouch( CBaseEntity *pEnt )
 	}
 
 	// No soundscapes left.
-	pPlayer->GetAudioParams().ent = NULL;
+	pPlayer->GetAudioParams().entIndex = 0;
 }
 
 

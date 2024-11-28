@@ -17,6 +17,7 @@
 
 IMPLEMENT_CLIENTCLASS_DT( C_VoteController, DT_VoteController, CVoteController )
 	RecvPropInt( RECVINFO( m_iActiveIssueIndex ), 0, C_VoteController::RecvProxy_VoteType ),
+	RecvPropInt( RECVINFO( m_nVoteIdx ) ),
 	RecvPropInt( RECVINFO( m_iOnlyTeamToVote ) ),
 	RecvPropArray3( RECVINFO_ARRAY( m_nVoteOptionCount ), RecvPropInt( RECVINFO( m_nVoteOptionCount[0] ), 0, C_VoteController::RecvProxy_VoteOption ) ),
 	RecvPropInt( RECVINFO( m_nPotentialVotes ) ),

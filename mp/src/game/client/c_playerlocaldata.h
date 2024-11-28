@@ -63,6 +63,7 @@ public:
 	bool					m_bDrawViewmodel;
 	bool					m_bWearingSuit;
 	bool					m_bPoisoned;
+	bool					m_bForceLocalPlayerDraw;
 	float					m_flStepSize;
 	bool					m_bAllowAutoMovement;
 
@@ -74,7 +75,7 @@ public:
 	audioparams_t			m_audio;
 
 	bool					m_bSlowMovement;
-
+	char					m_szScriptOverlayMaterial[MAX_PATH];
 };
 
 #endif // C_PLAYERLOCALDATA_H
