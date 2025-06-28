@@ -242,7 +242,8 @@ public:
 bool CMySQLDriver::Connect(const char* pDatabaseName, const char* pHostName,
 	const char* pUserName, const char* pPassword, int port)
 {
-	bool reportDataTruncation = false;
+	bool autoReconnect = true, reportDataTruncation = false;
+	mysql_options(&mConnection, MYSQL_OPT_RECONNECT, &autoReconnect);
 	mysql_options(&mConnection, MYSQL_REPORT_DATA_TRUNCATION, &reportDataTruncation);
 	mysql_options(&mConnection, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 
