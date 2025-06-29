@@ -9,6 +9,21 @@
 #include <fmtstr.h>
 #include <GameEventListener.h>
 
+SCOPED_ENUM(ESeasonRangePart,
+	Start,
+	End
+)
+
+SCOPED_ENUM(ESeasonTimePart,
+	Month,
+	Day
+)
+
+SCOPED_ENUM(EMapCycleTime,
+	Day,
+	Night
+)
+
 SCOPED_ENUM(EHL2RPDatabaseIOFlag,
 	ArePropertiesLoaded
 )
@@ -31,6 +46,15 @@ public:
 
 class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
 {
+	class CSeasonData
+	{
+	public:
+		bool mIsTimeLess = false; // Ignores time range checks
+		int mTimeRange[ESeasonRangePart::_Count][ESeasonTimePart::_Count];
+		CAutoLessFuncAdapter<CUtlRBTree<const char*>> mEligibleMaps[EMapCycleTime::_Count],
+			mNonEligibleMaps[EMapCycleTime::_Count];
+	};
+
 	class CPlayerModelDict : public CUtlDict<const char*> // Model path by alias
 	{
 		void AddExactModel(const char* pAlias, const char* pPath, INetworkStringTable* pModelPrecache);
@@ -68,10 +92,12 @@ class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
 	void ClientCommandKeyValues(edict_t*, KeyValues*) OVERRIDE;
 
 	void RegisterDownloadableFiles(CFmtStrN<MAX_PATH>&, FileFindHandle_t, INetworkStringTable* pDownloadables);
+	bool IsSeasonActive(const CSeasonData&, const tm&);
 	Activity TranslateActivity(CBaseCombatCharacter*, Activity,
 		Activity& fallbackActivity, bool weaponActStrict, int& sequence);
 
 	CUtlRBTree<const char*> mExcludedUploadExts;
+	CUtlVector<CSeasonData> mSeasons;
 	CAutoLessFuncAdapter<CAutoDeleteAdapter<CUtlMap<Activity, CActivityList*>>> mActivityFallbacksMap;
 	CSimpleSimTimer mPoliceWaveTimer;
 

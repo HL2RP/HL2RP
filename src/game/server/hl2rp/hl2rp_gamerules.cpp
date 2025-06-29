@@ -9,6 +9,7 @@
 #include <networkstringtable_gamedll.h>
 #include <sourcehook.h>
 #include <tier2/fileutils.h>
+#include <time.h>
 #include <usermessages.h>
 
 #define DOWNLOADABLE_FILE_TABLENAME "downloadables"
@@ -21,8 +22,10 @@
 extern SourceHook::ISourceHook* g_SHPtr;
 extern ConVar gMaxHomeInactivityDays, gRegionMaxRadiusCVar;
 
-ConVar gPoliceWaveCountCVar("sv_police_wave_count", "5", FCVAR_ARCHIVE | FCVAR_NOTIFY,
-	"Amount of police NPCs to spawn or keep in each wave"),
+ConVar gMapCycleChangeHour("sv_mapcycle_change_hour", "7", FCVAR_ARCHIVE | FCVAR_NOTIFY,
+	"Hour at which to switch between day/night maps from time mapcycle", true, 0.0f, true, 11.0f),
+	gPoliceWaveCountCVar("sv_police_wave_count", "5", FCVAR_ARCHIVE | FCVAR_NOTIFY,
+		"Amount of police NPCs to spawn or keep in each wave"),
 	gPoliceWavePeriodCVar("sv_police_wave_period", "60", FCVAR_ARCHIVE | FCVAR_NOTIFY,
 		"Period to (re)create police NPCs in waves");
 
@@ -224,7 +227,8 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 
 	DevMsg("HL2RPRules: Took %s ms to register %s downloadable files\n", Q_pretifynum(Plat_MSTime() - startTime),
 		Q_pretifynum(pDownloadables->GetNumStrings() - oldDownloadablesCount));
-	KeyValuesAD mapGroupsKV(""), modelsKV(""), jobsKV("");
+	KeyValuesAD mapGroupsKV(""), seasonsKV(""), timeMapCycleKV(""), modelsKV(""), jobsKV("");
+	CAutoLessFuncAdapter<CUtlMap<const char*, CSeasonData*>> seasonByName;
 
 	// Load related map groups
 	if (mapGroupsKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "mapgroups.txt"))
@@ -237,6 +241,94 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 				{
 					mMapGroups.InsertIfNotFound(pMapGroupKV->GetName());
 					break;
+				}
+			}
+		}
+	}
+
+	// Load seasons
+	if (seasonsKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "seasons.txt"))
+	{
+		FOR_EACH_TRUE_SUBKEY(seasonsKV, pSeasonKV)
+		{
+			if (!seasonByName.HasElement(pSeasonKV->GetName()))
+			{
+				int index = seasonByName.Insert(pSeasonKV->GetName(), mSeasons.AddToTailGetPtr());
+				auto& timeRange = seasonByName[index]->mTimeRange;
+				const char* pPartNames[] = { "start", "end" };
+
+				for (int i = 0; i < ARRAYSIZE(pPartNames); ++i)
+				{
+					sscanf(pSeasonKV->GetString(pPartNames[i]), "%2i-%2i",
+						&timeRange[i][ESeasonTimePart::Month], &timeRange[i][ESeasonTimePart::Day]);
+					timeRange[i][ESeasonTimePart::Month] -= 1; // Accomodate to tm's 0-index month range
+				}
+
+				DevMsg("HL2RPRules: Loaded season '%s', scheduled between %02i-%02i and %02i-%02i (MM-DD)\n",
+					pSeasonKV->GetName(), timeRange[ESeasonRangePart::Start][ESeasonTimePart::Month],
+					timeRange[ESeasonRangePart::Start][ESeasonTimePart::Day],
+					timeRange[ESeasonRangePart::End][ESeasonTimePart::Month],
+					timeRange[ESeasonRangePart::End][ESeasonTimePart::Day]);
+			}
+		}
+	}
+
+	// Load time mapcycle
+	if (timeMapCycleKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "time_mapcycle.txt"))
+	{
+		FOR_EACH_TRUE_SUBKEY(timeMapCycleKV, pMapGroupKV)
+		{
+			if (mMapGroups.HasElement(pMapGroupKV->GetName()))
+			{
+				FOR_EACH_TRUE_SUBKEY(pMapGroupKV, pSeasonKV)
+				{
+					CSeasonData* pSeason = NULL;
+					int index = seasonByName.Find(pSeasonKV->GetName());
+
+					if (seasonByName.IsValidIndex(index))
+					{
+						pSeason = seasonByName[index];
+					}
+					else
+					{
+						// Continue except for "Default" season, which is allowed to be used as a fallback
+						if (Q_stricmp(pSeasonKV->GetName(), "Default") != 0)
+						{
+							continue;
+						}
+
+						// NOTE: Since it gets added at end, it won't take priority over timed seasons with fast search
+						pSeason = mSeasons.AddToTailGetPtr();
+						pSeason->mIsTimeLess = true;
+						index = seasonByName.Insert(pSeasonKV->GetName(), pSeason);
+					}
+
+					FOR_EACH_SUBKEY(pSeasonKV, pMapKV)
+					{
+						bool eligible = true;
+						const char* pTime = pMapKV->GetString();
+						EMapCycleTime time = EMapCycleTime::Day;
+
+						if (pMapKV->GetFirstSubKey() != NULL)
+						{
+							pTime = pMapKV->GetString("time");
+							eligible = pMapKV->GetBool("eligible", true);
+						}
+
+						if (Q_stricmp(pTime, "night") == 0)
+						{
+							time = EMapCycleTime::Night;
+						}
+						else if (Q_stricmp(pTime, "day") != 0)
+						{
+							continue;
+						}
+
+						auto pMaps = eligible ? pSeason->mEligibleMaps : pSeason->mNonEligibleMaps;
+						pMaps[time].InsertIfNotFound(pMapKV->GetName());
+						DevMsg("HL2RPRules: Loaded time '%s' for map '%s' under '%s' season (eligible = %i)\n",
+							pTime, pMapKV->GetName(), pSeasonKV->GetName(), eligible);
+					}
 				}
 			}
 		}
@@ -257,29 +349,26 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 				{
 					if (!mPlayerModelsByGroup.IsValidIndex(mPlayerModelsByGroup.Find(pGroupKV->GetName())))
 					{
-						CPlayerModelDict* pSubModels = new CPlayerModelDict;
+						CPlainAutoPtr<CPlayerModelDict> subModels(new CPlayerModelDict);
 
 						if (pGroupKV->GetFirstSubKey() == NULL)
 						{
-							pSubModels->AddModel(pGroupKV, pModelPrecache);
+							subModels->AddModel(pGroupKV, pModelPrecache);
 						}
 						else
 						{
 							FOR_EACH_VALUE(pGroupKV, pModelKV)
 							{
-								pSubModels->AddModel(pModelKV, pModelPrecache);
+								subModels->AddModel(pModelKV, pModelPrecache);
 							}
 						}
 
-						if (pSubModels->Count() < 1)
+						if (subModels->Count() > 0)
 						{
-							delete pSubModels;
-							continue;
+							subModels->mType = (EPlayerModelType)i;
+							int index = mPlayerModelsByGroup.Insert(pGroupKV->GetName(), subModels.Detach());
+							mPlayerModelsByGroup.mGroupIndices[i].AddToTail(index);
 						}
-
-						pSubModels->mType = (EPlayerModelType)i;
-						int index = mPlayerModelsByGroup.Insert(pGroupKV->GetName(), pSubModels);
-						mPlayerModelsByGroup.mGroupIndices[i].AddToTail(index);
 					}
 				}
 			}
@@ -363,27 +452,24 @@ void CHL2RPRules::LevelInitPostEntity()
 
 			if (!mActivityFallbacksMap.IsValidIndex(mActivityFallbacksMap.Find(baseActivity)))
 			{
-				CActivityList* pFallbackActivities = new CActivityList;
+				CPlainAutoPtr<CActivityList> fallbackActivities(new CActivityList);
 
 				if (pBaseActivityKV->GetFirstSubKey() == NULL)
 				{
-					pFallbackActivities->AddActivity(pBaseActivityKV);
+					fallbackActivities->AddActivity(pBaseActivityKV);
 				}
 				else
 				{
 					FOR_EACH_VALUE(pBaseActivityKV, pFallbackActivityKV)
 					{
-						pFallbackActivities->AddActivity(pFallbackActivityKV);
+						fallbackActivities->AddActivity(pFallbackActivityKV);
 					}
 				}
 
-				if (pFallbackActivities->IsEmpty())
+				if (!fallbackActivities->IsEmpty())
 				{
-					delete pFallbackActivities;
-					continue;
+					mActivityFallbacksMap.Insert(baseActivity, fallbackActivities.Detach());
 				}
-
-				mActivityFallbacksMap.Insert(baseActivity, pFallbackActivities);
 			}
 		}
 	}
@@ -398,6 +484,30 @@ void CHL2RPRules::InitDefaultAIRelationships()
 const char* CHL2RPRules::GetIdealMapAlias()
 {
 	return (mMapGroups.Count() == 1 ? mMapGroups[0] : STRING(gpGlobals->mapname));
+}
+
+bool CHL2RPRules::IsSeasonActive(const CSeasonData& season, const tm& curTime)
+{
+	auto& range = season.mTimeRange;
+	CUtlPair<int, int> rangeMonths(range[ESeasonRangePart::Start][ESeasonTimePart::Month],
+		range[ESeasonRangePart::End][ESeasonTimePart::Month]);
+
+	// First, check within months range, accounting for year breaks between
+	if (rangeMonths.second >= rangeMonths.first ?
+		(curTime.tm_mon >= rangeMonths.first && curTime.tm_mon <= rangeMonths.second)
+		: (curTime.tm_mon >= rangeMonths.first || curTime.tm_mon <= rangeMonths.second))
+	{
+		// Now, check day only if month lays in any of the bounds (ignoring month breaks; end >= start)
+		if (curTime.tm_mon == rangeMonths.first)
+		{
+			return (curTime.tm_mday >= range[ESeasonRangePart::Start][ESeasonTimePart::Day]);
+		}
+
+		return (curTime.tm_mon != rangeMonths.second
+			|| curTime.tm_mday <= range[ESeasonRangePart::End][ESeasonTimePart::Day]);
+	}
+
+	return false;
 }
 
 const char* CHL2RPRules::GetChatFormat(bool teamOnly, CBasePlayer* pPlayer)
@@ -484,6 +594,30 @@ Activity CHL2RPRules::TranslateActivity(CBaseCombatCharacter* pCharacter,
 void CHL2RPRules::Think()
 {
 	BaseClass::Think();
+
+	if (!g_fGameOver)
+	{
+		tm curTime;
+		VCRHook_LocalTime(&curTime);
+
+		for (auto& season : mSeasons)
+		{
+			if (season.mIsTimeLess || IsSeasonActive(season, curTime))
+			{
+				EMapCycleTime time = (curTime.tm_hour >= gMapCycleChangeHour.GetInt()
+					&& curTime.tm_hour < gMapCycleChangeHour.GetInt() + 12) ? EMapCycleTime::Day : EMapCycleTime::Night;
+
+				if (!season.mEligibleMaps[time].HasElement(STRING(gpGlobals->mapname))
+					&& !season.mNonEligibleMaps[time].HasElement(STRING(gpGlobals->mapname)))
+				{
+					int index = RandomInt(0, season.mEligibleMaps[time].Count() - 1);
+					ChangeLevelToMap(season.mEligibleMaps[time][index]);
+				}
+
+				break;
+			}
+		}
+	}
 
 	if (gMaxHomeInactivityDays.GetInt() > 0)
 	{
