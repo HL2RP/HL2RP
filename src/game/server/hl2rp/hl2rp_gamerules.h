@@ -9,6 +9,21 @@
 #include <fmtstr.h>
 #include <GameEventListener.h>
 
+SCOPED_ENUM(ESeasonRangePart,
+	Start,
+	End
+)
+
+SCOPED_ENUM(ESeasonDatePart,
+	Month,
+	Day
+)
+
+SCOPED_ENUM(EMapCycleTime,
+	Day,
+	Night
+)
+
 SCOPED_ENUM(EHL2RPDatabaseIOFlag,
 	ArePropertiesLoaded
 )
@@ -31,6 +46,16 @@ public:
 
 class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
 {
+	class CSeasonData
+	{
+	public:
+		CSeasonData();
+
+		bool mIsTimeLess = false; // Whether to ignore time range checks (for default season)
+		int mDateRange[ESeasonRangePart::_Count][ESeasonDatePart::_Count];
+		CUtlRBTree<const char*> mEligibleMaps[EMapCycleTime::_Count], mNonEligibleMaps[EMapCycleTime::_Count];
+	};
+
 	class CPlayerModelDict : public CUtlDict<const char*> // Model path by alias
 	{
 		void AddExactModel(const char* pAlias, const char* pPath, INetworkStringTable* pModelPrecache);
@@ -55,6 +80,8 @@ class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
 
 	DECLARE_CLASS(CHL2RPRules, CBaseHL2RPRules)
 
+	friend class CHL2RPRulesProxy;
+
 	~CHL2RPRules();
 
 	void LevelInitPostEntity() OVERRIDE;
@@ -68,10 +95,16 @@ class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
 	void ClientCommandKeyValues(edict_t*, KeyValues*) OVERRIDE;
 
 	void RegisterDownloadableFiles(CFmtStrN<MAX_PATH>&, FileFindHandle_t, INetworkStringTable* pDownloadables);
+	bool IsSeasonApplicable(const CSeasonData&, const tm&);
+	void SendDayNightMapTimeLeft(bool useChat);
+	bool EndDayNightMapChange();
 	Activity TranslateActivity(CBaseCombatCharacter*, Activity,
 		Activity& fallbackActivity, bool weaponActStrict, int& sequence);
 
 	CUtlRBTree<const char*> mExcludedUploadExts;
+	CUtlVector<CSeasonData> mSeasons;
+	const char* mpNextDayNightMap = NULL;
+	float mDayNightMapChangeTime;
 	CAutoLessFuncAdapter<CAutoDeleteAdapter<CUtlMap<Activity, CActivityList*>>> mActivityFallbacksMap;
 	CSimpleSimTimer mPoliceWaveTimer;
 

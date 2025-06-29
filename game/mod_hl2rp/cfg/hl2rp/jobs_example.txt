@@ -16,7 +16,7 @@
 		{
 			"armor" "75"
 
-			"models"
+			"Models"
 			{
 				"1" "Metropolice"
 				"2" "Combine Soldier"

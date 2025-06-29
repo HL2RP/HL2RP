@@ -65,8 +65,10 @@ BEGIN_NETWORK_TABLE_NOBASE( CHL2MPRules, DT_HL2MPRules )
 
 END_NETWORK_TABLE()
 
-
+#ifndef HL2RP
 LINK_ENTITY_TO_CLASS( hl2mp_gamerules, CHL2MPGameRulesProxy );
+#endif // !HL2RP
+
 IMPLEMENT_NETWORKCLASS_ALIASED( HL2MPGameRulesProxy, DT_HL2MPGameRulesProxy )
 
 static HL2MPViewVectors g_HL2MPViewVectors(
@@ -251,7 +253,13 @@ void CHL2MPRules::CreateStandardEntities( void )
 #ifdef DBGFLAG_ASSERT
 	CBaseEntity *pEnt = 
 #endif
+
+#ifdef HL2RP
+	CBaseEntity::Create("hl2rp_gamerules", vec3_origin, vec3_angle);
+#else
 	CBaseEntity::Create( "hl2mp_gamerules", vec3_origin, vec3_angle );
+#endif // HL2RP
+
 	Assert( pEnt );
 #endif
 }

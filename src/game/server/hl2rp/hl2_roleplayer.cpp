@@ -31,7 +31,7 @@
 #define HL2_ROLEPLAYER_BEAM_RING_DURATION    0.2f
 #define HL2_ROLEPLAYER_BEAM_RING_WIDTH       3.0f
 
-extern ConVar gCopVIPSkinsAllowCVar, gMaxHomeInactivityDays;
+extern ConVar gCopVIPSkinsAllowCVar;
 
 #ifdef HL2RP_FULL
 static void SendProxy_ZoneWithin(const SendProp*, const void*, const void* pData, DVariant* pOut, int, int)

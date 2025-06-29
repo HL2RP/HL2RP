@@ -1,0 +1,28 @@
+// Seasons, with inclusive time ranges defined in format MM-DD (month-day precision)
+
+"Seasons"
+{
+	"Winter"
+	{
+		"start"	"12-21"
+		"end"	"3-19"
+	}
+
+	"Spring"
+	{
+		"start"	"3-20"
+		"end"	"6-19"
+	}
+
+	"Summer"
+	{
+		"start"	"6-20"
+		"end"	"9-21"
+	}
+
+	"Autumn"
+	{
+		"start"	"9-22"
+		"end"	"12-20"
+	}
+}

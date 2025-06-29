@@ -4,8 +4,10 @@
 #include "hl2rp_gamerules.h"
 #include "hl2rp_gameinterface.h"
 #include "hl2_roleplayer.h"
+#include <hl2rp_localizer.h>
 #include <hl2rp_property.h>
 #include <activitylist.h>
+#include <gameinterface.h>
 #include <networkstringtable_gamedll.h>
 #include <sourcehook.h>
 #include <tier2/fileutils.h>
@@ -16,14 +18,21 @@
 #define HL2RP_RULES_UPLOAD_PATH_ID   "upload"
 #define HL2RP_RULES_UPLOAD_LIST_FILE (HL2RP_CONFIG_PATH "upload.txt")
 
+#define HL2RP_RULES_DAYNIGHT_MAPCHANGE_THINK_CONTEXT "DayNightMapChangeThink"
+
 #define ONE_DAY_IN_SECONDS 86400
 
+extern CServerGameDLL g_ServerGameDLL;
 extern SourceHook::ISourceHook* g_SHPtr;
-extern ConVar gMaxHomeInactivityDays, gRegionMaxRadiusCVar;
+extern ConVar mp_chattime, nextlevel, gMaxHomeInactivityDaysCVar, gRegionMaxRadiusCVar;
 
-ConVar gPoliceWaveCountCVar("sv_police_wave_count", "5", FCVAR_ARCHIVE | FCVAR_NOTIFY,
-	"Amount of police NPCs to spawn or keep in each wave"),
-	gPoliceWavePeriodCVar("sv_police_wave_period", "60", FCVAR_ARCHIVE | FCVAR_NOTIFY,
+static ConVar sDayNightMapCycleAllowCVar("sv_allow_daynight_mapcycle", "1",
+	FCVAR_ARCHIVE | FCVAR_NOTIFY, "Whether to switch maps from day/night cycle automatically"),
+	sDayNightChangeHourCVar("sv_daynight_change_hour", "7", FCVAR_ARCHIVE | FCVAR_NOTIFY,
+		"Hour at which to switch between maps from day/night cycle", true, 0.0f, true, 12.0f),
+	sPoliceWaveCountCVar("sv_police_wave_count", "5", FCVAR_ARCHIVE | FCVAR_NOTIFY,
+		"Amount of police NPCs to spawn or keep in each wave"),
+	sPoliceWavePeriodCVar("sv_police_wave_period", "60", FCVAR_ARCHIVE | FCVAR_NOTIFY,
 		"Period to (re)create police NPCs in waves");
 
 #ifdef HL2RP_FULL
@@ -117,6 +126,15 @@ void CJobData::AddModelGroup(const char* pGroup)
 	if (HL2RPRules()->mPlayerModelsByGroup.IsValidIndex(index))
 	{
 		mModelGroupIndices.InsertIfNotFound(index);
+	}
+}
+
+CHL2RPRules::CSeasonData::CSeasonData()
+{
+	for (int i = 0; i < EMapCycleTime::_Count; ++i)
+	{
+		mEligibleMaps[i].SetLessFunc(CaselessStringLessThan);
+		mNonEligibleMaps[i].SetLessFunc(CaselessStringLessThan);
 	}
 }
 
@@ -224,7 +242,8 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 
 	DevMsg("HL2RPRules: Took %s ms to register %s downloadable files\n", Q_pretifynum(Plat_MSTime() - startTime),
 		Q_pretifynum(pDownloadables->GetNumStrings() - oldDownloadablesCount));
-	KeyValuesAD mapGroupsKV(""), modelsKV(""), jobsKV("");
+	KeyValuesAD mapGroupsKV(""), seasonsKV(""), dayNightMapCycleKV(""), modelsKV(""), jobsKV("");
+	CAutoLessFuncAdapter<CUtlRBTree<const char*>> seasonNames; // Correlative with loaded seasons
 
 	// Load related map groups
 	if (mapGroupsKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "mapgroups.txt"))
@@ -237,6 +256,105 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 				{
 					mMapGroups.InsertIfNotFound(pMapGroupKV->GetName());
 					break;
+				}
+			}
+		}
+	}
+
+	// Load seasons
+	if (seasonsKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "seasons.txt"))
+	{
+		FOR_EACH_TRUE_SUBKEY(seasonsKV, pSeasonKV)
+		{
+			if (!seasonNames.HasElement(pSeasonKV->GetName()))
+			{
+				auto pDateRange = mSeasons.AddToTailGetPtr()->mDateRange;
+				const char* partNames[] = { "start", "end" };
+				int i = 0;
+
+				for (; i < ARRAYSIZE(partNames); ++i)
+				{
+					sscanf(pSeasonKV->GetString(partNames[i]), "%i-%i",
+						&pDateRange[i][ESeasonDatePart::Month], &pDateRange[i][ESeasonDatePart::Day]);
+					pDateRange[i][ESeasonDatePart::Month] -= 1; // Accommodate to tm's 0-index based month range
+
+					// Validate time parts are non-negative at least, to produce clean DevMsgs (eg. no double minus sign)
+					if (Min(pDateRange[i][ESeasonDatePart::Month], pDateRange[i][ESeasonDatePart::Day]) < 0)
+					{
+						Msg("HL2RPRules: Found invalid %s date format '%s' (MM-DD) for season '%s'. Discarded season.\n",
+							partNames[i], pSeasonKV->GetString(partNames[i]), pSeasonKV->GetName());
+						break;
+					}
+				}
+
+				if (i < ARRAYSIZE(partNames))
+				{
+					mSeasons.RemoveMultipleFromTail(1);
+					continue;
+				}
+
+				seasonNames.Insert(pSeasonKV->GetName());
+				DevMsg("HL2RPRules: Loaded season '%s', scheduled between %02i-%02i and %02i-%02i (MM-DD)\n",
+					pSeasonKV->GetName(), pDateRange[ESeasonRangePart::Start][ESeasonDatePart::Month] + 1,
+					pDateRange[ESeasonRangePart::Start][ESeasonDatePart::Day],
+					pDateRange[ESeasonRangePart::End][ESeasonDatePart::Month] + 1,
+					pDateRange[ESeasonRangePart::End][ESeasonDatePart::Day]);
+			}
+		}
+	}
+
+	// Load day/night mapcycle
+	if (dayNightMapCycleKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "daynight_mapcycle.txt"))
+	{
+		FOR_EACH_TRUE_SUBKEY(dayNightMapCycleKV, pMapGroupKV)
+		{
+			if (mMapGroups.HasElement(pMapGroupKV->GetName()))
+			{
+				FOR_EACH_TRUE_SUBKEY(pMapGroupKV, pSeasonKV)
+				{
+					int index = seasonNames.Find(pSeasonKV->GetName());
+
+					if (!seasonNames.IsValidIndex(index))
+					{
+						// Continue except for "Default" season, which is allowed to be used as a fallback
+						if (Q_stricmp(pSeasonKV->GetName(), "Default") != 0)
+						{
+							continue;
+						}
+
+						index = mSeasons.AddToTail();
+						mSeasons[index].mIsTimeLess = true;
+					}
+
+					FOR_EACH_SUBKEY(pSeasonKV, pMapKV)
+					{
+						bool eligible = true;
+						const char* pTime = pMapKV->GetString();
+						EMapCycleTime cycleTime = EMapCycleTime::Day;
+
+						if (pMapKV->GetFirstSubKey() != NULL)
+						{
+							pTime = pMapKV->GetString("time");
+							eligible = pMapKV->GetBool("eligible", true);
+						}
+
+						if (Q_stricmp(pTime, "night") == 0)
+						{
+							cycleTime = EMapCycleTime::Night;
+						}
+						else if (Q_stricmp(pTime, "day") != 0)
+						{
+							continue;
+						}
+
+						auto pMaps = eligible ? mSeasons[index].mEligibleMaps : mSeasons[index].mNonEligibleMaps;
+
+						if (pMaps[cycleTime].InsertIfNotFound(pMapKV->GetName()) != pMaps[cycleTime].InvalidIndex())
+						{
+							DevMsg("HL2RPRules: Loaded time '%s' for map '%s' under '%s' season (eligible = %i)\n",
+								pTime, pMapKV->GetName(), pSeasonKV->GetName(), eligible);
+						}
+					}
 				}
 			}
 		}
@@ -257,29 +375,26 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 				{
 					if (!mPlayerModelsByGroup.IsValidIndex(mPlayerModelsByGroup.Find(pGroupKV->GetName())))
 					{
-						CPlayerModelDict* pSubModels = new CPlayerModelDict;
+						CPlainAutoPtr<CPlayerModelDict> subModels(new CPlayerModelDict);
 
 						if (pGroupKV->GetFirstSubKey() == NULL)
 						{
-							pSubModels->AddModel(pGroupKV, pModelPrecache);
+							subModels->AddModel(pGroupKV, pModelPrecache);
 						}
 						else
 						{
 							FOR_EACH_VALUE(pGroupKV, pModelKV)
 							{
-								pSubModels->AddModel(pModelKV, pModelPrecache);
+								subModels->AddModel(pModelKV, pModelPrecache);
 							}
 						}
 
-						if (pSubModels->Count() < 1)
+						if (subModels->Count() > 0)
 						{
-							delete pSubModels;
-							continue;
+							subModels->mType = (EPlayerModelType)i;
+							int index = mPlayerModelsByGroup.Insert(pGroupKV->GetName(), subModels.Detach());
+							mPlayerModelsByGroup.mGroupIndices[i].AddToTail(index);
 						}
-
-						pSubModels->mType = (EPlayerModelType)i;
-						int index = mPlayerModelsByGroup.Insert(pGroupKV->GetName(), pSubModels);
-						mPlayerModelsByGroup.mGroupIndices[i].AddToTail(index);
 					}
 				}
 			}
@@ -363,27 +478,24 @@ void CHL2RPRules::LevelInitPostEntity()
 
 			if (!mActivityFallbacksMap.IsValidIndex(mActivityFallbacksMap.Find(baseActivity)))
 			{
-				CActivityList* pFallbackActivities = new CActivityList;
+				CPlainAutoPtr<CActivityList> fallbackActivities(new CActivityList);
 
 				if (pBaseActivityKV->GetFirstSubKey() == NULL)
 				{
-					pFallbackActivities->AddActivity(pBaseActivityKV);
+					fallbackActivities->AddActivity(pBaseActivityKV);
 				}
 				else
 				{
 					FOR_EACH_VALUE(pBaseActivityKV, pFallbackActivityKV)
 					{
-						pFallbackActivities->AddActivity(pFallbackActivityKV);
+						fallbackActivities->AddActivity(pFallbackActivityKV);
 					}
 				}
 
-				if (pFallbackActivities->IsEmpty())
+				if (!fallbackActivities->IsEmpty())
 				{
-					delete pFallbackActivities;
-					continue;
+					mActivityFallbacksMap.Insert(baseActivity, fallbackActivities.Detach());
 				}
-
-				mActivityFallbacksMap.Insert(baseActivity, pFallbackActivities);
 			}
 		}
 	}
@@ -398,6 +510,30 @@ void CHL2RPRules::InitDefaultAIRelationships()
 const char* CHL2RPRules::GetIdealMapAlias()
 {
 	return (mMapGroups.Count() == 1 ? mMapGroups[0] : STRING(gpGlobals->mapname));
+}
+
+bool CHL2RPRules::IsSeasonApplicable(const CSeasonData& season, const tm& targetTime)
+{
+	auto pDateRange = season.mDateRange;
+	CUtlPair<int, int> monthsRange(pDateRange[ESeasonRangePart::Start][ESeasonDatePart::Month],
+		pDateRange[ESeasonRangePart::End][ESeasonDatePart::Month]);
+
+	// First, check within months range, accounting for year breaks between
+	if (monthsRange.second >= monthsRange.first ?
+		(targetTime.tm_mon >= monthsRange.first && targetTime.tm_mon <= monthsRange.second)
+		: (targetTime.tm_mon >= monthsRange.first || targetTime.tm_mon <= monthsRange.second))
+	{
+		// Now, check day only if month lays in any of the bounds
+		if (targetTime.tm_mon == monthsRange.first)
+		{
+			return (targetTime.tm_mday >= pDateRange[ESeasonRangePart::Start][ESeasonDatePart::Day]);
+		}
+
+		return (targetTime.tm_mon != monthsRange.second
+			|| targetTime.tm_mday <= pDateRange[ESeasonRangePart::End][ESeasonDatePart::Day]);
+	}
+
+	return false;
 }
 
 const char* CHL2RPRules::GetChatFormat(bool teamOnly, CBasePlayer* pPlayer)
@@ -485,11 +621,94 @@ void CHL2RPRules::Think()
 {
 	BaseClass::Think();
 
-	if (gMaxHomeInactivityDays.GetInt() > 0)
+	if (!g_fGameOver)
+	{
+		if (sDayNightMapCycleAllowCVar.GetBool())
+		{
+			CHL2RPRulesProxy* pProxy = static_cast<CHL2RPRulesProxy*>
+				(gEntList.FindEntityByClassname(NULL, "hl2rp_gamerules"));
+
+			if (mpNextDayNightMap == NULL)
+			{
+				tm targetTime;
+				time_t timeStamp = 0;
+				VCRHook_Time((long*)&timeStamp);
+				timeStamp += mp_chattime.GetInt();
+				Plat_localtime(&timeStamp, &targetTime);
+
+				for (auto& season : mSeasons)
+				{
+					if (season.mIsTimeLess || IsSeasonApplicable(season, targetTime))
+					{
+						EMapCycleTime cycleTime = (targetTime.tm_hour >= sDayNightChangeHourCVar.GetInt()
+							&& targetTime.tm_hour < sDayNightChangeHourCVar.GetInt() + 12) ?
+							EMapCycleTime::Day : EMapCycleTime::Night;
+
+						if (season.mEligibleMaps[cycleTime].HasElement(STRING(gpGlobals->mapname))
+							|| season.mNonEligibleMaps[cycleTime].HasElement(STRING(gpGlobals->mapname)))
+						{
+							break; // Current map is already valid for this season; stop
+						}
+						else if (season.mEligibleMaps[cycleTime].Count() > 0)
+						{
+							char path[MAX_PATH];
+							int index = RandomInt(0, season.mEligibleMaps[cycleTime].Count() - 1);
+							V_sprintf_safe(path, "maps/%s.bsp", season.mEligibleMaps[cycleTime][index]);
+
+							if (filesystem->FileExists(path))
+							{
+								if (pProxy != NULL)
+								{
+									pProxy->SetContextThink(&CHL2RPRulesProxy::DayNightMapChangeThink,
+										gpGlobals->curtime + 1.0f, HL2RP_RULES_DAYNIGHT_MAPCHANGE_THINK_CONTEXT);
+								}
+
+								mpNextDayNightMap = season.mEligibleMaps[cycleTime][index];
+								mDayNightMapChangeTime = gpGlobals->realtime + mp_chattime.GetFloat();
+								SendDayNightMapTimeLeft(true);
+								Msg("%s\n", CLocalizeFmtStr<>().Localize("#HL2RP_DayNight_MapChange",
+									mpNextDayNightMap, mp_chattime.GetString()));
+								break;
+							}
+						}
+					}
+				}
+			}
+			else if (pProxy == NULL || g_ServerGameDLL.m_bIsHibernating)
+			{
+				EndDayNightMapChange();
+			}
+		}
+		else
+		{
+			mpNextDayNightMap = NULL; // Fully end countdown, so we'll create a new one once cvar is re-enabled
+		}
+
+		if (mPoliceWaveTimer.Expired())
+		{
+			mPoliceWaveTimer.Set(sPoliceWavePeriodCVar.GetInt());
+			CUtlVector<CBaseEntity*> spawnPoints;
+			CBaseEntity* pSpawnPoint = NULL;
+			for (; (pSpawnPoint = gEntList.FindEntityByClassname(pSpawnPoint, "info_police_start")) != NULL;
+				spawnPoints.AddToTail(pSpawnPoint));
+
+			if (!spawnPoints.IsEmpty())
+			{
+				for (int i = mWavePolices.Count(); i < sPoliceWaveCountCVar.GetInt(); ++i)
+				{
+					pSpawnPoint = spawnPoints.Random();
+					mWavePolices.Insert(CBaseEntity::Create("npc_hl2rp_police",
+						pSpawnPoint->GetAbsOrigin(), pSpawnPoint->GetAbsAngles()));
+				}
+			}
+		}
+	}
+
+	if (gMaxHomeInactivityDaysCVar.GetInt() > 0)
 	{
 		long curTime;
 		VCRHook_Time(&curTime);
-		int maxInactivitySeconds = gMaxHomeInactivityDays.GetInt() * ONE_DAY_IN_SECONDS;
+		int maxInactivitySeconds = gMaxHomeInactivityDaysCVar.GetInt() * ONE_DAY_IN_SECONDS;
 
 		FOR_EACH_DICT_FAST(mProperties, i)
 		{
@@ -497,25 +716,6 @@ void CHL2RPRules::Think()
 				&& UTIL_PlayerBySteamID(mProperties[i]->mOwnerSteamIdNumber) == NULL)
 			{
 				mProperties[i]->Disown(NULL, 100);
-			}
-		}
-	}
-
-	if (mPoliceWaveTimer.Expired())
-	{
-		mPoliceWaveTimer.Set(gPoliceWavePeriodCVar.GetInt());
-		CUtlVector<CBaseEntity*> spawnPoints;
-		CBaseEntity* pSpawnPoint = NULL;
-		for (; (pSpawnPoint = gEntList.FindEntityByClassname(pSpawnPoint, "info_police_start")) != NULL;
-			spawnPoints.AddToTail(pSpawnPoint));
-
-		if (!spawnPoints.IsEmpty())
-		{
-			for (int i = mWavePolices.Count(); i < gPoliceWaveCountCVar.GetInt(); ++i)
-			{
-				pSpawnPoint = spawnPoints.Random();
-				mWavePolices.Insert(CBaseEntity::Create("npc_hl2rp_police",
-					pSpawnPoint->GetAbsOrigin(), pSpawnPoint->GetAbsAngles()));
 			}
 		}
 	}
@@ -582,6 +782,54 @@ void CHL2RPRules::SendPlayerName(int index, CRecipientFilter&& filter)
 	MessageEnd();
 }
 #endif // HL2RP_FULL
+
+void CHL2RPRules::SendDayNightMapTimeLeft(bool useChat)
+{
+	CNumStr timeLeft(Ceil2Int(mDayNightMapChangeTime - gpGlobals->realtime));
+
+	ForEachRoleplayer([&](CHL2Roleplayer* pPlayer)
+	{
+		if (useChat)
+		{
+			pPlayer->Print(HUD_PRINTTALK, "#HL2RP_DayNight_MapChange", mpNextDayNightMap, timeLeft);
+		}
+
+		pPlayer->Print(HUD_PRINTCENTER, "#HL2RP_DayNight_MapChange", mpNextDayNightMap, timeLeft);
+	});
+}
+
+bool CHL2RPRules::EndDayNightMapChange()
+{
+	if (gpGlobals->realtime >= mDayNightMapChangeTime)
+	{
+		char path[MAX_PATH];
+		V_sprintf_safe(path, "maps/%s.bsp", mpNextDayNightMap);
+
+		if (engine->IsMapValid(path))
+		{
+			// Adapt to CHL2MPRules way
+			g_fGameOver = true;
+			nextlevel.SetValue(mpNextDayNightMap);
+
+			// Ensure SM's next map won't supersede ours during SM's ChangeLevel hook
+			ConVarRef("sm_nextmap", true).SetValue(mpNextDayNightMap);
+		}
+
+		mpNextDayNightMap = NULL;
+		return true;
+	}
+
+	return false;
+}
+
+void CHL2RPRulesProxy::DayNightMapChangeThink()
+{
+	if (HL2RPRules()->mpNextDayNightMap != NULL && !HL2RPRules()->EndDayNightMapChange())
+	{
+		HL2RPRules()->SendDayNightMapTimeLeft(false);
+		SetNextThink(gpGlobals->curtime + 1.0f, HL2RP_RULES_DAYNIGHT_MAPCHANGE_THINK_CONTEXT);
+	}
+}
 
 ConVar gCopVIPSkinsAllowCVar("sv_allow_cop_vip_skins", "0", FCVAR_ARCHIVE | FCVAR_NOTIFY,
 	"Allow usage of VIP Citizen models playing as Combine."

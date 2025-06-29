@@ -46,7 +46,7 @@
 		"HL2RP_Property_Door_Unlock"		"You unlock this Door"
 		"HL2RP_Property_Door_Unlocked"		"Door unlocked"
 		"HL2RP_Property_Key_Given"			"You've given a key to your Home to %1"
-		"HL2RP_Property_Key_Received"		"You've received a key to '%1' from %2"
+		"HL2RP_Property_Key_Received"		"You've received a key to %1 from %2"
 		"HL2RP_Property_Key_Taken_Issuer"	"You've taken %1's key to your Home"
 		"HL2RP_Property_Key_Taken_Target"	"%1 has taken your key to %2"
 		"HL2RP_Property_Name"				"Property name"

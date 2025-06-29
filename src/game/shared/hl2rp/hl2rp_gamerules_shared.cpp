@@ -14,6 +14,8 @@
 REGISTER_GAMERULES_CLASS(CHL2RPRules)
 #endif // HL2RP_FULL
 
+LINK_ENTITY_TO_CLASS(hl2rp_gamerules, CHL2RPRulesProxy);
+
 void HL2RP_InitAmmoDefs(CAmmoDef& def)
 {
 	def.AddAmmoType("Molotov", DMG_BURN, TRACER_NONE, 0, 0, INT_MAX, 0.0f, ITEM_FLAG_NOITEMPICKUP, 1, 1);

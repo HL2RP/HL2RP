@@ -15,6 +15,15 @@ public:
 	CUtlPooledStringMap<uint64> mPlayerNameBySteamIdNum;
 };
 
+class CHL2RPRulesProxy : public CHL2MPGameRulesProxy
+{
+	DECLARE_CLASS(CHL2RPRulesProxy, CHL2MPGameRulesProxy)
+
+	friend class CHL2RPRules;
+
+	void DayNightMapChangeThink();
+};
+
 CHL2RPRules* HL2RPRules();
 
 #endif // !HL2RP_GAMERULES_SHARED_H

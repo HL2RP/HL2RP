@@ -11,7 +11,7 @@ ConVar gMaxMapPlayerHomesCVar("sv_max_map_player_homes", "1", FCVAR_ARCHIVE | FC
 	"Maximum amount of ownable homes per map and player"),
 	gMaxHomeKeysCVar("sv_max_home_keys", "5", FCVAR_ARCHIVE | FCVAR_NOTIFY,
 		"Maximum amount of additional players with (un)lock access to a home"),
-	gMaxHomeInactivityDays("sv_max_home_inactivity_days", "60", FCVAR_ARCHIVE | FCVAR_NOTIFY,
+	gMaxHomeInactivityDaysCVar("sv_max_home_inactivity_days", "60", FCVAR_ARCHIVE | FCVAR_NOTIFY,
 		"Maximum days since owner's last seen time before disowning a home. 0 = Disable the feature.");
 
 CHL2RP_Property::~CHL2RP_Property()

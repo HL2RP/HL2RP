@@ -44,7 +44,7 @@
 		"HL2RP_Property_Door_Unlock"		"Has desbloqueado esta Puerta"
 		"HL2RP_Property_Door_Unlocked"		"Puerta desbloqueada"
 		"HL2RP_Property_Key_Given"			"Has dado una llave de tu Hogar a %1"
-		"HL2RP_Property_Key_Received"		"Has recibido una llave a '%1' de %2"
+		"HL2RP_Property_Key_Received"		"Has recibido una llave a %1 de %2"
 		"HL2RP_Property_Key_Taken_Issuer"	"Has quitado la llave de tu Hogar a %1"
 		"HL2RP_Property_Key_Taken_Target"	"%1 te ha quitado tu llave a %2"
 		"HL2RP_Property_Name"				"Nombre de Propiedad"

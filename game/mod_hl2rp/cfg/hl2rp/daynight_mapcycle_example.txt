@@ -1,0 +1,30 @@
+// Season and day/night mapcycle setup.
+// Seasons are loaded from seasons.txt. "Default" section will apply when not running a configured season IRL.
+// In case of overlaps, priority is given to the earlier declared season in the main file (top-down order).
+// Map groups listed here must belong to mapgroups.txt. Mapcycles will be loaded and merged for all active groups.
+// This means map changes will still trigger from maps not specified here, but tied to any loaded group.
+// Also, for simplicity, maps listed here don't have to belong to their specified group. Just ensure it manually.
+
+"DayNightMapCycle"
+{
+	"Sample City"
+	{
+		"Default"
+		{
+			"rp_samplecity_day"		"day"
+			"rp_samplecity_night"	"night"
+
+			"rp_samplecity_rainy"
+			{
+				"time"		"night"
+				"eligible"	"0" // Map won't be eligible, but will stay while current cycle time matches the assigned one
+			}
+		}
+
+		"Winter"
+		{
+			"rp_samplecity_winter_day"		"day"
+			"rp_samplecity_winter_night"	"night"
+		}
+	}
+}

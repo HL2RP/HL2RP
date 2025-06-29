@@ -8,6 +8,7 @@
 	{
 		"HL2RP_Access_Granted_Issuer"	"You have granted %1 access to: %2"
 		"HL2RP_Access_Removed_Issuer"	"You have removed access from %1 to: %2"
+		"HL2RP_DayNight_MapChange"		"Changing map from day/night cycle to %1 in %2..."
 		"HL2RP_ManagePropertyDoor"		"Manage Property/Door"
 	}
 }
