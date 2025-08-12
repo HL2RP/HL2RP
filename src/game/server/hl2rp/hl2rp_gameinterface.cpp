@@ -13,10 +13,19 @@ const char* GetGameDescription()
 
 void HL2RP_PostInit()
 {
-	// Add game parent bin path, to allow loading SQL drivers if available there
+	// Add specific executable paths to allow loading SQL drivers (when required) if available there
 	char path[MAX_PATH];
 
-	if (filesystem->RelativePathToFullPath_safe(".." CORRECT_PATH_SEPARATOR_S PLATFORM_BIN_DIR, "GAME", path) != NULL)
+	// Attempt to add mod's parent bin path, which may be needed when running from local repository.
+	// Search in MOD_WRITE as it'll likely contain a single path, and other locations are unneeded.
+	if (filesystem->RelativePathToFullPath_safe(".."
+		CORRECT_PATH_SEPARATOR_S PLATFORM_BIN_DIR, "MOD_WRITE", path, FILTER_CULLPACK) != NULL)
+	{
+		filesystem->AddSearchPath(path, "EXECUTABLE_PATH", PATH_ADD_TO_HEAD);
+	}
+
+	// Add GAMEBIN path to support drivers install location from thirdparty version
+	if (filesystem->GetSearchPath_safe("GAMEBIN", false, path) > 0)
 	{
 		filesystem->AddSearchPath(path, "EXECUTABLE_PATH", PATH_ADD_TO_HEAD);
 	}
