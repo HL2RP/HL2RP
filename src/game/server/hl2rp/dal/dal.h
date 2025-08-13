@@ -7,7 +7,7 @@
 #include <utlhashtable.h>
 #include <UtlSortVector.h>
 
-class CDatabaseConnection;
+class IDatabaseConnection;
 
 // Data Access Layer - A multi-threaded processor for user-level database I/O requests
 class CDAL : CAutoGameSystemPerFrame, CThread
@@ -53,7 +53,7 @@ class CDAL : CAutoGameSystemPerFrame, CThread
 	void FrameUpdatePostEntityThink() OVERRIDE;
 	int Run() OVERRIDE;
 
-	CDatabaseConnection* LoadDatabaseConfiguration();
+	IDatabaseConnection* LoadDatabaseConfiguration();
 	bool LoadSQLDriver(const char* pFileName, const char* pInterfaceName, CSysModule*&, void*&);
 
 	CHashedDAOList mPendingDAOs;

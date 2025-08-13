@@ -216,6 +216,7 @@ void CMySQLPreparedStatement::Execute(CRecordListDTO* pDestResults)
 class CMySQLDriver : public ISQLDriver
 {
 	bool Connect(const char*, const char*, const char*, const char*, int) OVERRIDE;
+	void Close() OVERRIDE;
 	void DispatchExecuteIO(IDAO*) OVERRIDE;
 	void ExecuteQuery(const char*, CRecordListDTO* = NULL) OVERRIDE;
 	ISQLPreparedStatement* PrepareStatement(const char*) OVERRIDE;
@@ -233,7 +234,7 @@ public:
 
 	~CMySQLDriver() OVERRIDE
 	{
-		mysql_close(&mConnection);
+		CMySQLDriver::Close();
 		mysql_library_end();
 	}
 };
@@ -252,6 +253,11 @@ bool CMySQLDriver::Connect(const char* pDatabaseName, const char* pHostName,
 
 	CMySQLIOException e(&mConnection);
 	return false;
+}
+
+void CMySQLDriver::Close()
+{
+	mysql_close(&mConnection);
 }
 
 void CMySQLDriver::DispatchExecuteIO(IDAO* pDAO)

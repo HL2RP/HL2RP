@@ -30,33 +30,45 @@ CDAL& DAL()
 
 static CDAL& sDAL = DAL(); // Instantiate DAL early at a proper place
 
-class CDatabaseConnection
+abstract_class IDatabaseConnection
 {
 public:
-	CDatabaseConnection(IDatabaseDriver* pDriver) : mpDriver(pDriver) {}
+	IDatabaseConnection(IDatabaseDriver * pDriver) : mpDriver(pDriver) {}
 
-	virtual ~CDatabaseConnection()
-	{
-		delete mpDriver;
-	}
+	virtual ~IDatabaseConnection() = 0;
 
 	IDatabaseDriver* mpDriver;
 };
 
-class CSQLDatabaseConnection : public CDatabaseConnection
+IDatabaseConnection::~IDatabaseConnection()
 {
-	~CSQLDatabaseConnection() OVERRIDE
+
+}
+
+class CKeyValuesConnection : public IDatabaseConnection
+{
+	using IDatabaseConnection::IDatabaseConnection;
+
+	~CKeyValuesConnection() OVERRIDE
 	{
-		mpDriver = NULL; // Prevent double deletion, unloading module already does it
-		Sys_UnloadModule(mpModule);
+		delete mpDriver;
+	}
+};
+
+class CSQLConnection : public IDatabaseConnection
+{
+	~CSQLConnection() OVERRIDE
+	{
+		// Close connection immediately, since module may be unloaded later and not close it now
+		static_cast<ISQLDriver*>(mpDriver)->Close();
+
+		Sys_UnloadModule(mpModule); // NOTE: The module will delete the driver when unloaded
 	}
 
 	CSysModule* mpModule;
 
 public:
-	CSQLDatabaseConnection(ISQLDriver* pDriver, CSysModule* pModule)
-		: CDatabaseConnection(pDriver), mpModule(pModule) {
-	}
+	CSQLConnection(ISQLDriver* pDriver, CSysModule* pModule) : IDatabaseConnection(pDriver), mpModule(pModule) {}
 };
 
 CDAL::CDAOTypeRef::CDAOTypeRef(IDAO* pDAO) : mType(typeid(*pDAO))
@@ -119,7 +131,7 @@ void CDAL::LevelShutdownPostEntity()
 		}
 	}
 
-	if (mPendingDAOs.Count() < 1)
+	if (mPendingDAOs.IsEmpty())
 	{
 		mMustIOThreadRun = false;
 	}
@@ -146,16 +158,15 @@ void CDAL::FrameUpdatePostEntityThink()
 	// deadlocks with the pending DAO list mutex generated within self completion handling
 	for (IDAO* pDAO;;)
 	{
+		if (!mCompletedDAOs.IsEmpty())
 		{
 			AUTO_LOCK(mCompletedDAOs.mMutex);
-
-			if (mCompletedDAOs.Count() < 1)
-			{
-				break;
-			}
-
 			pDAO = mCompletedDAOs[mCompletedDAOs.Head()];
 			mCompletedDAOs.Remove(mCompletedDAOs.Head());
+		}
+		else
+		{
+			break;
 		}
 
 		pDAO->HandleCompletion();
@@ -165,7 +176,7 @@ void CDAL::FrameUpdatePostEntityThink()
 
 int CDAL::Run()
 {
-	CPlainAutoPtr<CDatabaseConnection> connection(LoadDatabaseConfiguration());
+	CPlainAutoPtr<IDatabaseConnection> connection(LoadDatabaseConfiguration());
 
 	// NOTE: After each iteration, we apply a small delay, consistent with the configured tickrate for optimization.
 	// Without this delay, main thread preemption can happen under low-end Linux machines, slowing down framerate.
@@ -220,7 +231,7 @@ int CDAL::Run()
 	return 0;
 }
 
-CDatabaseConnection* CDAL::LoadDatabaseConfiguration()
+IDatabaseConnection* CDAL::LoadDatabaseConfiguration()
 {
 	KeyValuesAD configuration("");
 	const char* pDatabaseName = DAL_DEFAULT_DATABASE_NAME;
@@ -257,7 +268,7 @@ CDatabaseConnection* CDAL::LoadDatabaseConfiguration()
 				if (pSQLite3Driver->Connect(databasePath, NULL, NULL, NULL, 0))
 				{
 					Msg("Gameplay data will save into SQLite3 database file: '%s'\n", databaseName);
-					return (new CSQLDatabaseConnection(pSQLite3Driver, pModule));
+					return (new CSQLConnection(pSQLite3Driver, pModule));
 				}
 
 				Sys_UnloadModule(pModule);
@@ -299,7 +310,7 @@ CDatabaseConnection* CDAL::LoadDatabaseConfiguration()
 				{
 					Msg("Successfully connected to MySQL database '%s' using specified parameters."
 						" Gameplay data will save there.\n", pDatabaseName);
-					return (new CSQLDatabaseConnection(pMySQLDriver, pModule));
+					return (new CSQLConnection(pMySQLDriver, pModule));
 				}
 
 				Sys_UnloadModule(pModule);
@@ -320,7 +331,7 @@ CDatabaseConnection* CDAL::LoadDatabaseConfiguration()
 	}
 
 	Msg("Gameplay data will save in KeyValues format at directory: '%s'\n", pDatabaseName);
-	return (new CDatabaseConnection(new CKeyValuesDriver(pDatabaseName)));
+	return (new CKeyValuesConnection(new CKeyValuesDriver(pDatabaseName)));
 }
 
 bool CDAL::LoadSQLDriver(const char* pFileName, const char* pInterfaceName, CSysModule*& pModule, void*& pDriver)

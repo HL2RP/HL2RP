@@ -44,6 +44,7 @@ abstract_class ISQLDriver : public IDatabaseDriver
 public:
 	virtual bool Connect(const char* pDatabaseName, const char* pHostName,
 		const char* pUserName, const char* pPassword, int port) = 0;
+	virtual void Close() = 0;
 	virtual void ExecuteQuery(const char*, CRecordListDTO* pDestResults = NULL) = 0;
 	virtual ISQLPreparedStatement* PrepareStatement(const char*) = 0;
 	virtual void GetFeatures(SSQLDriverFeatures&) = 0;

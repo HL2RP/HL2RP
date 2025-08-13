@@ -93,6 +93,8 @@ public:
 abstract_class ISQLColumnDTO
 {
 public:
+	virtual ~ISQLColumnDTO() = default;
+
 	virtual void AppendTo(CSQLQuery&, const SSQLDriverFeatures&) = 0;
 };
 

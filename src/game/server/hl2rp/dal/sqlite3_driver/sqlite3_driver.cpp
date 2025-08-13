@@ -92,6 +92,7 @@ void CSQLite3PreparedStatement::Execute(CRecordListDTO* pDestResults)
 class CSQLite3Driver : public ISQLDriver
 {
 	bool Connect(const char*, const char*, const char*, const char*, int) OVERRIDE;
+	void Close() OVERRIDE;
 	void DispatchExecuteIO(IDAO*) OVERRIDE;
 	void ExecuteQuery(const char*, CRecordListDTO* = NULL) OVERRIDE;
 	ISQLPreparedStatement* PrepareStatement(const char*) OVERRIDE;
@@ -104,7 +105,7 @@ class CSQLite3Driver : public ISQLDriver
 public:
 	~CSQLite3Driver() OVERRIDE
 	{
-		sqlite3_close_v2(mpConnection);
+		CSQLite3Driver::Close();
 	}
 };
 
@@ -134,6 +135,12 @@ bool CSQLite3Driver::Connect(const char* pDatabaseName, const char* pHostName,
 
 	Warning("SQLite3 error: %s [Code: %i]\n", sqlite3_errmsg(mpConnection), sqlite3_errcode(mpConnection));
 	return false;
+}
+
+void CSQLite3Driver::Close()
+{
+	sqlite3_close_v2(mpConnection);
+	mpConnection = NULL;
 }
 
 void CSQLite3Driver::DispatchExecuteIO(IDAO* pDAO)
