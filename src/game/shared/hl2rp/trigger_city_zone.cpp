@@ -47,6 +47,12 @@ void CCityZone::Spawn()
 	Think();
 }
 
+void CCityZone::UpdateOnRemove()
+{
+	SendToPlayers(false);
+	BaseClass::UpdateOnRemove();
+}
+
 void CCityZone::Think()
 {
 	SetNextThink(TICK_INTERVAL);
@@ -112,12 +118,6 @@ bool CCityZone::IsPointWithin(const Vector& origin)
 }
 
 #ifdef HL2RP_FULL
-void CCityZone::UpdateOnRemove()
-{
-	SendToPlayers(false);
-	BaseClass::UpdateOnRemove();
-}
-
 void CCityZone::SendToPlayers(bool create, CRecipientFilter&& filter)
 {
 	filter.MakeReliable();

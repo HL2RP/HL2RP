@@ -26,7 +26,7 @@ class CCityZone : public CServerOnlyEntity
 	DECLARE_DATADESC()
 
 	void Spawn() OVERRIDE;
-	void UpdateOnRemove() OVERRIDE HL2RP_FULL_FUNCTION;
+	void UpdateOnRemove() OVERRIDE;
 	void Think() OVERRIDE;
 
 public:
