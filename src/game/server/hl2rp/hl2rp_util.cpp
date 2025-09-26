@@ -185,6 +185,14 @@ void CPlayerEquipment::Equip(CBasePlayer* pPlayer)
 	}
 }
 
+void UTIL_GetServerTime(tm& destTime, int offset)
+{
+	time_t timeStamp = 0;
+	VCRHook_Time((long*)&timeStamp);
+	timeStamp += offset;
+	Plat_localtime(&timeStamp, &destTime);
+}
+
 const char* UTIL_GetCommandIssuerName()
 {
 	CBasePlayer* pPlayer = UTIL_GetCommandClient();
