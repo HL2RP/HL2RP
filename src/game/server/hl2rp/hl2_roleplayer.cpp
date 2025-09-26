@@ -53,8 +53,8 @@ SendPropArray(SendPropInt(SENDINFO_ARRAY(mZonesWithin), -1, 0, SendProxy_ZoneWit
 END_SEND_TABLE()
 #endif // HL2RP_FULL
 
-LINK_ENTITY_TO_CLASS(info_citizen_start, CServerOnlyEntity)
-LINK_ENTITY_TO_CLASS(info_police_start, CServerOnlyEntity)
+LINK_ENTITY_TO_CLASS(info_citizen_start, CServerOnlyPointEntity)
+LINK_ENTITY_TO_CLASS(info_police_start, CServerOnlyPointEntity)
 
 const char* gPlayerDatabasePropNames[EPlayerDatabasePropType::_Count] =
 {

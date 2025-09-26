@@ -111,6 +111,7 @@ class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
 public:
 	CHL2RPRules();
 
+	bool IsDayTime(const tm&);
 	const char* GetIdealMapAlias(); // Returns the unique map group, if possible, current map otherwise
 	Activity GetBestTranslatedActivity(CBaseCombatCharacter*, Activity, bool weaponActStrict, int& sequence);
 	void AddPlayerName(uint64, const char*);
