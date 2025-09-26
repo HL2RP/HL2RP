@@ -61,10 +61,15 @@ protected:
 	CPlayerEquipment(int health, int armor, bool allowClipsFallback);
 };
 
+void UTIL_GetServerTime(tm&, int offset = 0);
+
 const char* UTIL_GetCommandIssuerName();
 void UTIL_ReplyToCommand(int type, const char* pText, const char* pArg1 = "", const char* pArg2 = "");
+
 void UTIL_SendDialog(CBasePlayer*, KeyValues* pData, DIALOG_TYPE);
+
 CUtlString& UTIL_TrimQuotableString(CUtlString&&);
+
 bool UTIL_IsPropertyDoor(CBaseEntity*);
 CHL2RP_PropertyDoorData* UTIL_GetPropertyDoorData(CBaseEntity*);
 void UTIL_SetDoorLockState(CBaseEntity*, CHL2Roleplayer* pActivator, bool lock, bool save);

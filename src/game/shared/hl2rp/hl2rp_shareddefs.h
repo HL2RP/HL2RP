@@ -29,6 +29,9 @@
 #define HL2RP_CLIENT_OR_LEGACY_FUNCTION
 #endif // HL2RP_FULL
 
+#define HALF_DAY_IN_MINUTES 720
+#define ONE_DAY_IN_SECONDS  86400
+
 // HUD positions, based off screen percentages
 #define HL2RP_CENTER_HUD_SPECIAL_POS  -1.0f
 #define HL2RP_MAIN_HUD_DEFAULT_X_POS   0.015f

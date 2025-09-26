@@ -5,6 +5,33 @@
 
 ]
 
+@PointClass base(ExportableEntity) iconsprite("vgui/friends/icon_away") = logic_atmos
+	: "Computes atmospheric light values and fires outputs (few of them passing these values) based on server time." +
+	" The entity relies on sv_enable_atmos ConVar to work."
+[
+	scale(integer) readonly : "Icon scale (internal)" : 1
+
+	midday_alpha(integer) : "Midday alpha" : 0 : "Color alpha to forward at midday via OnLightAlpha (start of transition)"
+	midnight_alpha(integer) : "Midnight alpha" : 255 : "Color alpha to forward at midnight via OnLightAlpha (end of transition)"
+	midday_pattern(string) : "Midday appearance" : "z"
+		: "Lighting pattern (single character) to forward at midday via OnLightPattern (start of transition)"
+	midnight_pattern(string) : "Midnight appearance" : "a"
+		: "Lighting pattern (single character) to forward at midnight via OnLightPattern (end of transition)"
+
+	input ForceUpdateLightValues(void) : "Immediately compute correct light values (alpha/pattern), firing related outputs"
+
+	output OnActivate(void) : "Fired when the entity spawns (and atmos is enabled), or sv_enable_atmos becomes enabled (once)"
+	output OnDay(void) : "Fired as soon as the entity detects daytime according to server config,"
+		+ " including sv_enable_atmos activations (once per 12-hour period)"
+	output OnNight(void) : "Fired as soon as the entity detects nighttime according to server config,"
+		+ " including sv_enable_atmos activations (once per 12-hour period)"
+	output OnMidDay(void) : "Fired strictly when the server time transitions to 12 P.M."
+	output OnMidNight(void) : "Fired strictly when the server time transitions to 12 A.M."
+	output OnLightAlpha(integer) : "Fired when the entity computes a new color alpha value"
+	output OnInverseLightAlpha(integer) : "Same as OnLightAlpha, but passing the opposite value from the defined midday-midnight range"
+	output OnLightPattern(string) : "Fired when the entity computes a new pattern/appearance value"
+]
+
 @PointClass base(Angles, ExportableEntity) studioprop("models/props_combine/combine_dispenser.mdl")
 	= prop_ration_dispenser : "Ration Dispenser"
 [
@@ -36,12 +63,12 @@
 
 @PointClass base(HL2RPSpawnPoint) studio("models/editor/playerstart.mdl") = info_citizen_start
 [
-	
+
 ]
 
 @PointClass base(HL2RPSpawnPoint) studio("models/editor/playerstart.mdl") = info_police_start
 [
-	
+
 ]
 
 @SolidClass base(ExportableEntity) = trigger_city_zone

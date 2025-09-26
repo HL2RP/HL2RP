@@ -65,6 +65,7 @@ $Project
 			$File "hl2rp\hl2rp_property.cpp"
 			$File "hl2rp\hl2rp_util.cpp"
 			$File "hl2rp\hl2rp_util.h"
+			$File "hl2rp\logic_atmos.cpp"
 			$File "hl2rp\prop_ration_dispenser.cpp"
 			$File "hl2rp\sourcehooks.h"
 

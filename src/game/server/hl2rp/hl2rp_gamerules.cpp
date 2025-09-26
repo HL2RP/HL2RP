@@ -20,16 +20,15 @@
 
 #define HL2RP_RULES_DAYNIGHT_MAPCHANGE_THINK_CONTEXT "DayNightMapChangeThink"
 
-#define ONE_DAY_IN_SECONDS 86400
-
 extern CServerGameDLL g_ServerGameDLL;
 extern SourceHook::ISourceHook* g_SHPtr;
 extern ConVar mp_chattime, nextlevel, gMaxHomeInactivityDaysCVar, gRegionMaxRadiusCVar;
 
-static ConVar sDayNightMapCycleAllowCVar("sv_allow_daynight_mapcycle", "1",
+ConVar gDayNightChangeHourCVar("sv_daynight_change_hour", "7", FCVAR_ARCHIVE | FCVAR_NOTIFY,
+	"Hour at which to switch between maps from day/night cycle", true, 0.0f, true, 12.0f);
+
+static ConVar sDayNightMapCycleEnableCVar("sv_enable_daynight_mapcycle", "1",
 	FCVAR_ARCHIVE | FCVAR_NOTIFY, "Whether to switch maps from day/night cycle automatically"),
-	sDayNightChangeHourCVar("sv_daynight_change_hour", "7", FCVAR_ARCHIVE | FCVAR_NOTIFY,
-		"Hour at which to switch between maps from day/night cycle", true, 0.0f, true, 12.0f),
 	sPoliceWaveCountCVar("sv_police_wave_count", "5", FCVAR_ARCHIVE | FCVAR_NOTIFY,
 		"Amount of police NPCs to spawn or keep in each wave"),
 	sPoliceWavePeriodCVar("sv_police_wave_period", "60", FCVAR_ARCHIVE | FCVAR_NOTIFY,
@@ -507,6 +506,12 @@ void CHL2RPRules::InitDefaultAIRelationships()
 	CBaseCombatCharacter::SetDefaultRelationship(CLASS_METROPOLICE, CLASS_PLAYER, D_NU, DEF_RELATIONSHIP_PRIORITY);
 }
 
+bool CHL2RPRules::IsDayTime(const tm& targetTime)
+{
+	return (targetTime.tm_hour >= gDayNightChangeHourCVar.GetInt()
+		&& targetTime.tm_hour < gDayNightChangeHourCVar.GetInt() + 12);
+}
+
 const char* CHL2RPRules::GetIdealMapAlias()
 {
 	return (mMapGroups.Count() == 1 ? mMapGroups[0] : STRING(gpGlobals->mapname));
@@ -623,7 +628,7 @@ void CHL2RPRules::Think()
 
 	if (!g_fGameOver)
 	{
-		if (sDayNightMapCycleAllowCVar.GetBool())
+		if (sDayNightMapCycleEnableCVar.GetBool())
 		{
 			CHL2RPRulesProxy* pProxy = static_cast<CHL2RPRulesProxy*>
 				(gEntList.FindEntityByClassname(NULL, "hl2rp_gamerules"));
@@ -631,18 +636,13 @@ void CHL2RPRules::Think()
 			if (mpNextDayNightMap == NULL)
 			{
 				tm targetTime;
-				time_t timeStamp = 0;
-				VCRHook_Time((long*)&timeStamp);
-				timeStamp += mp_chattime.GetInt();
-				Plat_localtime(&timeStamp, &targetTime);
+				UTIL_GetServerTime(targetTime, mp_chattime.GetInt());
 
 				for (auto& season : mSeasons)
 				{
 					if (season.mIsTimeLess || IsSeasonApplicable(season, targetTime))
 					{
-						EMapCycleTime cycleTime = (targetTime.tm_hour >= sDayNightChangeHourCVar.GetInt()
-							&& targetTime.tm_hour < sDayNightChangeHourCVar.GetInt() + 12) ?
-							EMapCycleTime::Day : EMapCycleTime::Night;
+						EMapCycleTime cycleTime = IsDayTime(targetTime) ? EMapCycleTime::Day : EMapCycleTime::Night;
 
 						if (season.mEligibleMaps[cycleTime].HasElement(STRING(gpGlobals->mapname))
 							|| season.mNonEligibleMaps[cycleTime].HasElement(STRING(gpGlobals->mapname)))
@@ -667,7 +667,7 @@ void CHL2RPRules::Think()
 								mDayNightMapChangeTime = gpGlobals->realtime + mp_chattime.GetFloat();
 								SendDayNightMapTimeLeft(true);
 								Msg("%s\n", CLocalizeFmtStr<>().Localize("#HL2RP_DayNight_MapChange",
-									mpNextDayNightMap, mp_chattime.GetString()));
+									mpNextDayNightMap, mp_chattime.GetInt()));
 								break;
 							}
 						}
