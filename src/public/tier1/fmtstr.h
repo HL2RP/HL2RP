@@ -34,7 +34,7 @@
 		static int scAsserted = 0; \
 	\
 		va_start(arg_ptr, lastArg); \
-		result = V_vsnprintfRet( (szBuf), (nBufSize)-1, (*(ppszFormat)), arg_ptr, &bTruncated ); \
+		result = V_vsnprintfRet( (szBuf), nBufSize, (*(ppszFormat)), arg_ptr, &bTruncated ); \
 		va_end(arg_ptr); \
 	\
 		(szBuf)[(nBufSize)-1] = 0; \
@@ -58,7 +58,7 @@
 		static int scAsserted = 0; \
 	\
 		va_start(arg_ptr, lastArg); \
-		result = V_vsnprintfRet( (szBuf), (nBufSize)-1, (*(ppszFormat)), arg_ptr, &bTruncated ); \
+		result = V_vsnprintfRet( (szBuf), nBufSize, (*(ppszFormat)), arg_ptr, &bTruncated ); \
 		va_end(arg_ptr); \
 	\
 		(szBuf)[(nBufSize)-1] = 0; \
@@ -126,7 +126,7 @@ public:
 		static int s_nWarned = 0; 
 
 		InitQuietTruncation();
-		result = V_vsnprintfRet( m_szBuf, SIZE_BUF - 1, pszFormat, arg_ptr, &bTruncated );
+		result = V_vsnprintfRet( m_szBuf, SIZE_BUF, pszFormat, arg_ptr, &bTruncated );
 		m_szBuf[SIZE_BUF - 1] = 0; 
 		if ( bTruncated && !m_bQuietTruncation && ( s_nWarned < 5 ) ) 
 		{ 
