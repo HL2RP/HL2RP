@@ -2676,9 +2676,9 @@ bool LoadMapFile( const char *pszFileName )
 
 				for (epair_t* pPair = g_LoadingMap->entities[i].epairs; pPair != NULL; pPair = pPair->next)
 				{
-					if (Q_stricmp(pPair->key, "hammerid") != 0)
+					if (Q_stricmp(pPair->key, "hammerid") != 0) // Prevent later handling the entity as originated from BSP in any custom logic
 					{
-						pEntity->SetString(pPair->key, pPair->value);
+						pEntity->CreateKey(pPair->key)->SetStringValue(pPair->value);
 					}
 				}
 
