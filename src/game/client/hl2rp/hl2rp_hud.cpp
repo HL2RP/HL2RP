@@ -19,7 +19,7 @@ class CHL2RPHUD : public CHudElement, public Panel
 	DECLARE_CLASS_SIMPLE(CHL2RPHUD, Panel)
 
 	CPanelAnimationVar(Color, mTextColor, "textColor", "");
-	int mTextPosition[2]; // Preferred text position, which may be adjusted on overflow during Paint
+	int mTextPosition[2]; // Desired text position (relative to screen), equivalent to the loaded panel's
 
 protected:
 	CHL2RPHUD(const char* pElementName, const char* pPanelName);
@@ -48,16 +48,27 @@ void CHL2RPHUD::ApplySettings(KeyValues* pSettings, float defaultXPos, float def
 
 	if (IsSettingEmpty(pSettings, "xPos"))
 	{
-		pSettings->SetInt("xPos", screenSize[0] * defaultXPos);
+		// Set a scale-based position (unless requesting center) to prevent base class from computing a wrong one
+		pSettings->SetString("xPos",
+			VarArgs("%s%f", defaultXPos == HL2RP_CENTER_HUD_SPECIAL_POS ? "" : "p", defaultXPos));
+	}
+	else
+	{
+		defaultXPos = pSettings->GetFloat("xPos");
 	}
 
 	if (IsSettingEmpty(pSettings, "yPos"))
 	{
-		pSettings->SetInt("yPos", screenSize[1] * defaultYPos);
+		pSettings->SetString("yPos", VarArgs("p%f", defaultYPos)); // Similar to above
 	}
 
 	BaseClass::ApplySettings(pSettings);
 	GetPos(mTextPosition[0], mTextPosition[1]);
+
+	if (defaultXPos == HL2RP_CENTER_HUD_SPECIAL_POS)
+	{
+		mTextPosition[0] = defaultXPos;
+	}
 
 	// Match screen bounds as otherwise updating them to minimally wrap the
 	// text in Paint creates flickering and ephemeral incorrect positions
