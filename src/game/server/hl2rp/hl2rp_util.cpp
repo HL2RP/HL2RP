@@ -15,6 +15,27 @@
 #define NETMSG_TYPE_BITS 6
 #define SVC_MENU         29
 
+SUtlField SUtlField::FromKeyValues(KeyValues* pKeyValues)
+{
+	switch (pKeyValues->GetDataType())
+	{
+	case KeyValues::TYPE_INT:
+	{
+		return pKeyValues->GetInt();
+	}
+	case KeyValues::TYPE_UINT64:
+	{
+		return pKeyValues->GetUint64();
+	}
+	case KeyValues::TYPE_FLOAT:
+	{
+		return pKeyValues->GetFloat();
+	}
+	}
+
+	return pKeyValues->GetString();
+}
+
 SUtlField::operator const char* () const
 {
 	return mString;
@@ -199,6 +220,41 @@ const char* UTIL_GetCommandIssuerName()
 	return (pPlayer != NULL ? pPlayer->GetPlayerName() : "CONSOLE");
 }
 
+bool UTIL_CheckCmdArgCount(const CCommand& args, int minCount)
+{
+	if (args.ArgC() > minCount) // Check "greater than" to account for command name itself
+	{
+		return true;
+	}
+
+	// Show full description, for now (the allowed arguments, if present, are part of it)
+	ConCommand* pCommand = g_pCVar->FindCommand(args.Arg(0));
+
+	if (pCommand != NULL)
+	{
+		UTIL_ReplyToCommand(HUD_PRINTTALK, "#HL2RP_Command_Usage", pCommand->GetName(), pCommand->GetHelpText());
+	}
+
+	return false;
+}
+
+bool UTIL_CheckCommandAccess(int minAccessFlag)
+{
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_GetCommandClient());
+
+	if (pPlayer != NULL)
+	{
+		if (pPlayer->IsAdmin(minAccessFlag))
+		{
+			return true;
+		}
+
+		pPlayer->Print(HUD_PRINTTALK, "#HL2RP_Command_Access_Denied");
+	}
+
+	return UTIL_IsCommandIssuedByServerAdmin();
+}
+
 void UTIL_ReplyToCommand(int type, const char* pText, const char* pArg1, const char* pArg2)
 {
 	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_GetCommandClient());
@@ -208,7 +264,58 @@ void UTIL_ReplyToCommand(int type, const char* pText, const char* pArg1, const c
 		return pPlayer->Print(type, pText, pArg1, pArg2);
 	}
 
-	Msg("%s\n", (*pText == '#') ? CLocalizeFmtStr<>().Localize(pText, pArg1, pArg2) : pText);
+	Msg("%s\n", (*pText == '#') ? CLocalizeFmtCStr().Localize(pText, pArg1, pArg2) : pText);
+}
+
+bool UTIL_FindCmdTarget(const CCommand& args, CHL2Roleplayer*& pTarget, int userIdMinArgs, int userIdPos)
+{
+	pTarget = NULL;
+	bool allowAimTarget = true;
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_GetCommandClient());
+
+	if (args.ArgC() > userIdMinArgs) // Check "greater than" to account for command name itself
+	{
+		int userId;
+
+		if (sscanf(args.Arg(userIdPos), "%i", &userId) > 0) // Check if userId arg is numeric, to limit search type
+		{
+			allowAimTarget = false;
+			pTarget = ToHL2Roleplayer(UTIL_PlayerByUserId(userId));
+		}
+		// Special case: if there are more args behind userId needed to search by such, disable aim target search.
+		// Otherwise, we consider userId arg may be valid for other text arguments, so we allow fallback search.
+		else if (userIdMinArgs > userIdPos)
+		{
+			allowAimTarget = false;
+		}
+	}
+
+	if (allowAimTarget && pPlayer != NULL)
+	{
+		pTarget = ToHL2Roleplayer(pPlayer->mAimInfo.mhMainEntity);
+	}
+
+	if (pTarget != NULL)
+	{
+		return true;
+	}
+
+	UTIL_ReplyToCommand(HUD_PRINTTALK, "#HL2RP_Target_NotFound");
+	return false;
+}
+
+void UTIL_LogAdminAction(CHL2Roleplayer* pPlayer, const char* pActionFmt, ...)
+{
+	if (pPlayer != NULL)
+	{
+		va_list args;
+		va_start(args, pActionFmt);
+		CLocalizeFmtCStr msg;
+		msg.Format("%t '%s' (%s) %s\n", pPlayer->mAccessFlags.IsBitSet(EPlayerAccessFlag::Root) ?
+			"#HL2RP_Root" : "#HL2RP_Admin", pPlayer->GetPlayerName(), pPlayer->GetNetworkIDString(), pActionFmt);
+		LogV(msg, args);
+		va_end(args);
+	}
 }
 
 INetChannel* GetPlayerNetChannel(CBasePlayer* pPlayer)

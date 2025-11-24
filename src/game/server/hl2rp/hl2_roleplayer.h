@@ -3,6 +3,7 @@
 #pragma once
 
 #include <hl2_roleplayer_shared.h>
+#include "hl2rp_util.h"
 #include <smartptr.h>
 
 #define HL2_ROLEPLAYER_HUD_THINK_PERIOD    1.0f
@@ -12,8 +13,11 @@
 
 #define HL2_ROLEPLAYER_CRIME_PER_HP 10
 
-#define HL2_ROLEPLAYER_NORMAL_BEAMS_WIDTH 2.0f
-#define HL2_ROLEPLAYER_SMALL_BEAMS_WIDTH  1.0f
+#define HL2_ROLEPLAYER_FOCUS_BEAM_WIDTH 2.0f // To highlight a certain entity
+#define HL2_ROLEPLAYER_FOCUS_BEAM_COLOR COLOR_GREEN // Generic color, may not fit all scenarios
+
+#define HL2_ROLEPLAYER_PROP_SPAWN_FLOOR_OFFSET 45.0f
+#define HL2_ROLEPLAYER_PROP_SPAWN_FRONT_OFFSET 64.0f
 
 #define CPlayerDatabaseProp(Type, name, enumValue) \
 	class CPlayerDatabasePropListener_##name : public CDefaultNetworkVarListener \
@@ -62,9 +66,11 @@ class CHL2Roleplayer : public CBaseHL2Roleplayer
 	DECLARE_CLASS(CHL2Roleplayer, CBaseHL2Roleplayer)
 	DECLARE_HL2RP_SERVERCLASS()
 
+	void Precache() OVERRIDE;
 	void InitialSpawn() OVERRIDE;
 	void Spawn() OVERRIDE;
 	CBaseEntity* EntSelectSpawnPoint() OVERRIDE;
+	int ObjectCaps() OVERRIDE;
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_iMaxHealth);
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED_EX(m_iHealth);
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED_EX(m_ArmorValue);
@@ -80,15 +86,16 @@ class CHL2Roleplayer : public CBaseHL2Roleplayer
 	void UpdateWeaponPosture() OVERRIDE;
 	void PlayerUse() OVERRIDE;
 	CBaseEntity* FindUseEntity() OVERRIDE;
+	void Use(CBaseEntity*, CBaseEntity*, USE_TYPE, float) OVERRIDE;
 	void PostThink() OVERRIDE;
 	void ModifyOrAppendCriteria(AI_CriteriaSet&) OVERRIDE;
 	int OnTakeDamage(const CTakeDamageInfo&) OVERRIDE;
 	void Event_Killed(const CTakeDamageInfo&) OVERRIDE;
 	void OnChatMessagePassed(CBasePlayer*, bool) OVERRIDE;
-	void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtStr<>&) OVERRIDE HL2RP_LEGACY_FUNCTION;
+	void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtCStr&) OVERRIDE HL2RP_LEGACY_FUNCTION;
 
 	void HUDThink();
-	void GetMainHUD(CLocalizeFmtStr<>&);
+	void GetMainHUD(CLocalizeFmtCStr&);
 	void SendMainHUD() HL2RP_LEGACY_FUNCTION;
 	void SendAimingEntityHUD() HL2RP_LEGACY_FUNCTION;
 	bool FixHUDChannel(int&);
@@ -97,8 +104,6 @@ class CHL2Roleplayer : public CBaseHL2Roleplayer
 	CHUDExpireTimer mHUDExpireTimers[EPlayerHUDType::_Count];
 
 public:
-	CHL2Roleplayer();
-
 	bool IsBot() const OVERRIDE;
 	void ChangeTeam(int = TEAM_INVALID) OVERRIDE;
 	void SetAnimation(PLAYER_ANIM) OVERRIDE;
@@ -116,15 +121,16 @@ public:
 	void LocalPrint(int type, const char* pText, const char* pArg = "") HL2RP_LEGACY_FUNCTION;
 	void LocalDisplayHUDHint(EPlayerHUDHintType, const char* pToken,
 		const char* pArg1 = "", const char* pArg2 = "") HL2RP_LEGACY_FUNCTION;
-	void Print(int type, const char* pText, const char* pArg1 = "", const char* pArg2 = "");
+	void Print(int type, const char* pText, const char* pArg1 = "", const char* pArg2 = "", const char* pArg3 = "");
 	void SendHUDHint(EPlayerHUDHintType, const char* pToken, const char* pArg1 = "", const char* pArg2 = "");
 	void OnPreSendHUDMessage(bf_write*);
 	void SendHUDMessage(EPlayerHUDType, const char* pMessage, float xPos, float yPos,
 		const Color&, float holdTime = HL2_ROLEPLAYER_HUD_THINK_PERIOD + HL2_ROLEPLAYER_HUD_EXTRA_HOLD_TIME);
-	void SendBeam(const Vector& end, const Color&, float width = HL2_ROLEPLAYER_NORMAL_BEAMS_WIDTH);
+	void SendBeam(const Vector& end, const Color&, float width);
+	void SendEntityBeam(CBaseEntity*, const Color & = HL2RP_SMALL_BEAM_COLOR, float width = HL2RP_SMALL_BEAM_WIDTH); // Sends a beam ending on an entity
 	void SendRootDialog(INetworkDialog*);
-	void PushAndSendDialog(INetworkDialog*);
-	void RewindCurrentDialog();
+	void SendChildDialog(INetworkDialog*);
+	void RewindDialogStack(int endIndex, const char* pCancelReason = ""); // Kills dialogs up to endIndex (inclusive) from tail, handling cancellations
 
 	float mFirstSpawnTime;
 	CPlayerDatabaseNetworkProp(string_t, mJobName, EPlayerDatabasePropType::Job);

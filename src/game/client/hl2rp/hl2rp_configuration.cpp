@@ -3,6 +3,7 @@
 #include <cbase.h>
 #include "hl2rp_configuration.h"
 #include <hl2rp_shareddefs.h>
+#include <hl2rp_util_shared.h>
 #include <filesystem.h>
 #include <ienginevgui.h>
 #include <vgui_controls/MenuItem.h>
@@ -10,7 +11,7 @@
 #include <vgui_controls/PropertyPage.h>
 #include <vgui_controls/QueryBox.h>
 
-#define HL2RP_CONFIGURATION_USER_DATA_FILE (HL2RP_CONFIG_PATH "user_data.txt")
+#define HL2RP_CONFIGURATION_USER_DATA_FILE "user_data.txt"
 
 using namespace vgui;
 
@@ -113,7 +114,7 @@ CHL2RPConfiguration::CHL2RPConfiguration() : mUserData("UserData")
 
 void CHL2RPConfiguration::PostInit()
 {
-	mUserData->LoadFromFile(filesystem, HL2RP_CONFIGURATION_USER_DATA_FILE);
+	HL2RP_LoadConfigFile(mUserData, HL2RP_CONFIGURATION_USER_DATA_FILE);
 
 #if 0 // NOTE: Disabled until game's SDK and GameUI controls ABI (vtable) get sync'ed again. Currently fails.
 	// Force localize now the game menu buttons that couldn't be localized at startup (tied to mod's localization)

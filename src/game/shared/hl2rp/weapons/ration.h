@@ -50,7 +50,7 @@ class CRation : public RATION_BASECLASS
 
 	void MergeNearbyRations();
 	void RevertExcessClip1();
-	void EmitSoundToOwner(int type, CBasePlayer*);
+	void EmitSoundToOwner(int type, CHL2Roleplayer*) HL2RP_CLIENT_OR_LEGACY_FUNCTION;
 
 	CNetworkVar(EPOVState, mPOVState)
 

@@ -6,11 +6,22 @@
 #include <prediction.h>
 #include <usermessages.h>
 
-static void RecvProxy_ZoneWithin(const CRecvProxyData* pData, void*, void* pOut)
+static void RecvProxy_Money(const CRecvProxyData* pData, void* pStruct, void* pAmount)
 {
-	((EHANDLE*)pOut)->Set(HL2RPRules()->mCityZoneByIndex
+	C_PlayerMoney* pMoney = (C_PlayerMoney*)pStruct;
+	pMoney->mVariationData.Update(*pMoney);
+	RecvProxy_Int32ToInt32(pData, pMoney, pAmount);
+}
+
+static void RecvProxy_ZoneWithin(const CRecvProxyData* pData, void*, void* pHandle)
+{
+	((EHANDLE*)pHandle)->Set(HL2RPRules()->mCityZoneByIndex
 		.GetElementOrDefault<int, C_BaseEntity*>(pData->m_Value.m_Int));
 }
+
+BEGIN_RECV_TABLE_NOBASE(C_PlayerMoney, DT_PlayerMoney)
+RecvPropInt(RECVINFO(mAmount), 0, RecvProxy_Money)
+END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_HL2Roleplayer)
 DEFINE_PRED_FIELD(mIsInStickyWalkMode, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE) // Needed to fix prediction conflicts
@@ -27,6 +38,7 @@ RecvPropInt(RECVINFO(mMiscFlags)),
 RecvPropBool(RECVINFO(mIsInStickyWalkMode)),
 RecvPropString(RECVINFO(mJobName)),
 RecvPropArray(RecvPropEHandle(RECVINFO(mZonesWithin[0]), RecvProxy_ZoneWithin), mZonesWithin),
+RecvPropDataTable(RECVINFO_DT(mPocket), 0, &REFERENCE_RECV_TABLE(DT_PlayerMoney))
 END_RECV_TABLE()
 
 // Simulates server-side UserMessages on client, for direct display (no networking)

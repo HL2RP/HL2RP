@@ -40,27 +40,27 @@ void CMainMenu::SelectItem(CItem* pItem)
 	{
 	case EItemAction::Inventory:
 	{
-		return mpPlayer->PushAndSendDialog(new CInventoryMenu(mpPlayer));
+		return mpPlayer->SendChildDialog(new CInventoryMenu(mpPlayer));
 	}
 	case EItemAction::ChangeJob:
 	{
-		return mpPlayer->PushAndSendDialog(new CFactionChangeMenu(mpPlayer));
+		return mpPlayer->SendChildDialog(new CFactionChangeMenu(mpPlayer));
 	}
 	case EItemAction::ChangeModel:
 	{
-		return mpPlayer->PushAndSendDialog(new CModelGroupChangeMenu(mpPlayer));
+		return mpPlayer->SendChildDialog(new CModelGroupChangeMenu(mpPlayer));
 	}
 	case EItemAction::Actions:
 	{
-		return mpPlayer->PushAndSendDialog(new CActionsMenu(mpPlayer));
+		return mpPlayer->SendChildDialog(new CActionsMenu(mpPlayer));
 	}
 	case EItemAction::Settings:
 	{
-		return mpPlayer->PushAndSendDialog(new CSettingsMenu(mpPlayer));
+		return mpPlayer->SendChildDialog(new CSettingsMenu(mpPlayer));
 	}
 	case EItemAction::Admin:
 	{
-		return mpPlayer->PushAndSendDialog(new CAdminMenu(mpPlayer));
+		return mpPlayer->SendChildDialog(new CAdminMenu(mpPlayer));
 	}
 	}
 }
@@ -93,7 +93,7 @@ void CInventoryMenu::SelectItem(CItem* pItem)
 #ifdef HL2RP_LEGACY
 	case EItemAction::HiddenWeapons:
 	{
-		return mpPlayer->PushAndSendDialog(new CHiddenWeaponsMenu(mpPlayer));
+		return mpPlayer->SendChildDialog(new CHiddenWeaponsMenu(mpPlayer));
 	}
 #endif // HL2RP_LEGACY
 	case EItemAction::_Count:
@@ -124,7 +124,7 @@ void CFactionChangeMenu::SelectItem(CItem* pItem)
 	{
 		if (HL2RPRules()->mJobByName[pItem->mAction].Count() > 0)
 		{
-			return mpPlayer->PushAndSendDialog(new CJobChangeMenu(mpPlayer, pItem->mAction));
+			return mpPlayer->SendChildDialog(new CJobChangeMenu(mpPlayer, pItem->mAction));
 		}
 
 		mpPlayer->ChangeFaction(pItem->mAction);
@@ -157,7 +157,7 @@ void CJobChangeMenu::Think()
 {
 	if (!mpPlayer->HasFactionAccess(mFaction))
 	{
-		mpPlayer->RewindCurrentDialog();
+		mpPlayer->RewindDialogStack(mStackIndex, "#HL2RP_Dialog_Access_Lost");
 	}
 }
 
@@ -228,7 +228,7 @@ void CModelGroupChangeMenu::SelectItem(CItem* pItem)
 	{
 		if (HL2RPRules()->mPlayerModelsByGroup[pItem->mAction]->Count() > 1)
 		{
-			return mpPlayer->PushAndSendDialog(new CModelChangeMenu(mpPlayer, pItem->mAction));
+			return mpPlayer->SendChildDialog(new CModelChangeMenu(mpPlayer, pItem->mAction));
 		}
 
 		mpPlayer->SetModel(pItem->mAction, 0);
@@ -250,7 +250,7 @@ void CModelChangeMenu::Think()
 {
 	if (!mpPlayer->HasModelGroupAccess(mModelGroupIndex))
 	{
-		mpPlayer->RewindCurrentDialog();
+		mpPlayer->RewindDialogStack(mStackIndex, "#HL2RP_Dialog_Access_Lost");
 	}
 }
 
@@ -327,6 +327,7 @@ CSettingsMenu::CSettingsMenu(CHL2Roleplayer* pPlayer) : CNetworkMenu(pPlayer, "#
 	AddItem(EItemAction::ClearHUDHints, "#HL2RP_HUDHints_Clear");
 #endif // HL2RP_LEGACY
 
+	AddItem(EItemAction::Money, "#HL2RP_Menu_Settings_Money");
 	AddItem(EItemAction::Region, "#HL2RP_Menu_Settings_Region");
 }
 
@@ -337,14 +338,64 @@ void CSettingsMenu::SelectItem(CItem* pItem)
 #ifdef HL2RP_LEGACY
 	case EItemAction::ClearHUDHints:
 	{
-		return mpPlayer->PushAndSendDialog(new CHUDHintsClearMenu(mpPlayer));
+		return mpPlayer->SendChildDialog(new CHUDHintsClearMenu(mpPlayer));
 	}
 #endif // HL2RP_LEGACY
+	case EItemAction::Money:
+	{
+		return mpPlayer->SendChildDialog(new CMoneySettingsMenu(mpPlayer));
+	}
 	case EItemAction::Region:
 	{
-		return mpPlayer->PushAndSendDialog(new CRegionSettingsMenu(mpPlayer));
+		return mpPlayer->SendChildDialog(new CRegionSettingsMenu(mpPlayer));
 	}
 	}
+}
+
+CMoneySettingsMenu::CMoneySettingsMenu(CHL2Roleplayer* pPlayer)
+	: CNetworkMenu(pPlayer, "#HL2RP_Menu_Settings_Money", "#HL2RP_Menu_Money_Msg")
+{
+
+}
+
+void CMoneySettingsMenu::UpdateItems()
+{
+	RemoveAllItems();
+	mpPlayer->mMiscFlags.IsBitSet(EPlayerMiscFlag::IsMoneyVariationSoundDisabled) ?
+		AddItem(EItemAction::EnableVariationSound, "#HL2RP_Menu_Money_EnableVarSound")
+		: AddItem(EItemAction::DisableVariationSound, "#HL2RP_Menu_Money_DisableVarSound");
+	mpPlayer->mMiscFlags.IsBitSet(EPlayerMiscFlag::IsMoneyDropSoundDisabled) ?
+		AddItem(EItemAction::EnableDropSound, "#HL2RP_Menu_Money_EnableDropSound")
+		: AddItem(EItemAction::DisableDropSound, "#HL2RP_Menu_Money_DisableDropSound");
+}
+
+void CMoneySettingsMenu::SelectItem(CItem* pItem)
+{
+	switch (pItem->mAction)
+	{
+	case EItemAction::EnableVariationSound:
+	{
+		mpPlayer->mMiscFlags.ClearBit(EPlayerMiscFlag::IsMoneyVariationSoundDisabled);
+		break;
+	}
+	case EItemAction::DisableVariationSound:
+	{
+		mpPlayer->mMiscFlags.SetBit(EPlayerMiscFlag::IsMoneyVariationSoundDisabled);
+		break;
+	}
+	case EItemAction::EnableDropSound:
+	{
+		mpPlayer->mMiscFlags.ClearBit(EPlayerMiscFlag::IsMoneyDropSoundDisabled);
+		break;
+	}
+	case EItemAction::DisableDropSound:
+	{
+		mpPlayer->mMiscFlags.SetBit(EPlayerMiscFlag::IsMoneyDropSoundDisabled);
+		break;
+	}
+	}
+
+	Send();
 }
 
 CRegionSettingsMenu::CRegionSettingsMenu(CHL2Roleplayer* pPlayer)
@@ -434,15 +485,12 @@ CHUDHintsClearMenu::CHUDHintsClearMenu(CHL2Roleplayer* pPlayer)
 
 void CHUDHintsClearMenu::SelectItem(CItem* pItem)
 {
-	switch (pItem->mAction)
-	{
-	case EItemAction::Accept:
+	if (pItem->mAction == EItemAction::Accept)
 	{
 		mpPlayer->mLearnedHUDHints = 0;
 	}
-	}
 
-	mpPlayer->RewindCurrentDialog();
+	mpPlayer->RewindDialogStack(mStackIndex);
 }
 #endif // HL2RP_LEGACY
 
@@ -468,8 +516,9 @@ void CPropertyDoorMenu::UpdateItems()
 	if (ValidateProperty())
 	{
 		CBaseLocalizeFmtStr<> message(mpPlayer, mMessage);
-		message.Format("%t\n\n- ID: %s\n- %t", "#HL2RP_Menu_Property_Msg",
-			(int)mpProperty->mDatabaseId, "#HL2RP_Menu_Msg_LinkedMapAlias", mpProperty->mpMapAlias);
+		message.Format("%t\n\n- %t: %t\n- ID: %s\n- %t", "#HL2RP_Menu_Property_Msg", "#HL2RP_Type",
+			CHL2RP_Property::GetTypeToken(mpProperty->mType), (int)mpProperty->mDatabaseId,
+			"#HL2RP_Menu_Msg_LinkedMapAlias", mpProperty->mpMapAlias);
 
 		if (mpPlayer->IsAdmin())
 		{
@@ -558,24 +607,47 @@ void CPropertyDoorMenu::UpdateItems()
 
 void CPropertyDoorMenu::Think()
 {
-	if (!mPropertyId.IsValid() && ValidateProperty())
+	bool hasLocationalAccess = false;
+
+	if (ValidateProperty())
 	{
-		mPropertyId = mpProperty->mDatabaseId;
+		if (!mPropertyId.IsValid())
+		{
+			mPropertyId = mpProperty->mDatabaseId;
+			Send();
+		}
+
+		// Check if initial locational criteria is met, to reuse further below. We regard being at home (through zone).
+		hasLocationalAccess = mpPlayer->IsAdmin() || mpProperty->IsOwner(mpPlayer)
+			&& mpProperty->mhZone.IsValid() && mpProperty->mhZone == mpPlayer->mZonesWithin[ECityZoneType::Home];
+	}
+	else if (mPropertyId.IsValid())
+	{
+		mPropertyId = {};
 		Send();
 	}
 
 	if (mhDoor != NULL)
 	{
-		CHL2RP_PropertyDoorData* pPropertyData;
-
-		if (!mDoorId.IsValid() && IsDoorSaved(pPropertyData))
+		if (mpPlayer->IsAlive() && (hasLocationalAccess || mpPlayer->IsWithinInteractRadius(mhDoor)))
 		{
-			mDoorId = pPropertyData->mDatabaseId;
-			Send();
-		}
+			CHL2RP_PropertyDoorData* pPropertyData;
 
-		mpPlayer->SendBeam(mhDoor->WorldSpaceCenter(), HL2RP_HUD_COLOR_GREEN, HL2_ROLEPLAYER_SMALL_BEAMS_WIDTH);
+			if (!mDoorId.IsValid() && IsDoorSaved(pPropertyData))
+			{
+				mDoorId = pPropertyData->mDatabaseId;
+				Send();
+			}
+
+			return mpPlayer->SendEntityBeam(mhDoor);
+		}
 	}
+	else if (hasLocationalAccess && mpPlayer->IsAlive())
+	{
+		return;
+	}
+
+	mpPlayer->RewindDialogStack(mStackIndex, "#HL2RP_Dialog_Entity_Contact_Lost");
 }
 
 void CPropertyDoorMenu::SelectItem(CItem* pItem)
@@ -584,17 +656,16 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 	{
 	case EItemAction::CreateProperty:
 	{
-		CNetworkMenu* pMenu = new CNetworkMenu(mpPlayer, "#HL2RP_Menu_Property_Type_Title", "", true, pItem->mAction);
-		pMenu->AddItem(0, "#HL2RP_Menu_Property_Type_Public", EHL2RP_PropertyType::Public);
-		pMenu->AddItem(0, "#HL2RP_Menu_Property_Type_Home", EHL2RP_PropertyType::Home);
-		pMenu->AddItem(0, "#HL2RP_Faction_Combine", EHL2RP_PropertyType::Combine);
-		pMenu->AddItem(0, "#HL2RP_Admin", EHL2RP_PropertyType::Admin);
-		return mpPlayer->PushAndSendDialog(pMenu);
+		CNetworkMenu* pMenu = new CNetworkMenu(mpPlayer, "#HL2RP_Menu_Property_Type_Title", "", pItem->mAction, true, true);
+		pMenu->AddItem(0, CHL2RP_Property::GetTypeToken(EHL2RP_PropertyType::Public), EHL2RP_PropertyType::Public);
+		pMenu->AddItem(0, CHL2RP_Property::GetTypeToken(EHL2RP_PropertyType::Home), EHL2RP_PropertyType::Home);
+		pMenu->AddItem(0, CHL2RP_Property::GetTypeToken(EHL2RP_PropertyType::Combine), EHL2RP_PropertyType::Combine);
+		pMenu->AddItem(0, CHL2RP_Property::GetTypeToken(EHL2RP_PropertyType::Admin), EHL2RP_PropertyType::Admin);
+		return mpPlayer->SendChildDialog(pMenu);
 	}
 	case EItemAction::SetPropertyName:
 	{
-		return mpPlayer->PushAndSendDialog(new CNetworkEntryBox(mpPlayer,
-			"#HL2RP_Menu_Property_SetName", "", pItem->mAction, true));
+		return mpPlayer->SendChildDialog(new CNetworkEntryBox(mpPlayer, pItem->mDisplay, "", pItem->mAction, true));
 	}
 	case EItemAction::LinkZone:
 	{
@@ -634,8 +705,8 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 		CBaseEntity* pEntity = mpPlayer->mAimInfo.mhMainEntity;
 		CHL2RP_PropertyDoorData* pPropertyData = UTIL_GetPropertyDoorData(pEntity);
 
-		if (pPropertyData != NULL && pPropertyData->mProperty == NULL && mpPlayer->IsAdmin()
-			&& ValidateProperty() && mpPlayer->IsWithinDistance(pEntity, HL2_ROLEPLAYER_USE_KEEP_MAX_DIST))
+		if (pPropertyData != NULL && pPropertyData->mProperty == NULL
+			&& mpPlayer->IsAdmin() && ValidateProperty() && mpPlayer->IsWithinInteractRadius(pEntity))
 		{
 			mhDoor = pEntity;
 			mDoorId = {};
@@ -674,7 +745,7 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 	{
 		if (HL2RPRules()->mMapGroups.Count() > 1)
 		{
-			return mpPlayer->PushAndSendDialog(new CMapGroupMenu(mpPlayer, pItem->mAction));
+			return mpPlayer->SendChildDialog(new CMapGroupMenu(mpPlayer, pItem->mAction));
 		}
 
 		LinkToMapAlias(HL2RPRules()->mMapGroups[0]);
@@ -705,16 +776,15 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 	}
 	case EItemAction::SetDoorName:
 	{
-		return mpPlayer->PushAndSendDialog(new CNetworkEntryBox(mpPlayer,
-			"#HL2RP_Menu_Property_SetDoorName", "", pItem->mAction));
+		return mpPlayer->SendChildDialog(new CNetworkEntryBox(mpPlayer, pItem->mDisplay, "", pItem->mAction));
 	}
 	case EItemAction::GiveKey:
 	{
 		if (ValidateProperty() && mpProperty->IsOwner(mpPlayer)
 			&& (int)mpProperty->mGrantedSteamIdNumbers.Count() < gMaxHomeKeysCVar.GetInt())
 		{
-			CPlayerListMenu* pMenu = new CPlayerListMenu(mpPlayer, "#HL2RP_Menu_Property_GiveKey",
-				"#HL2RP_Menu_Property_GiveKey_Msg", pItem->mAction);
+			CPlayerListMenu* pMenu = new CPlayerListMenu(mpPlayer, pItem->mDisplay,
+				"#HL2RP_Menu_Property_GiveKey_Msg", pItem->mAction, false, true);
 			pMenu->mMessageArg = gMaxHomeKeysCVar.GetInt() - (int)mpProperty->mGrantedSteamIdNumbers.Count();
 
 			ForEachRoleplayer([&](CHL2Roleplayer* pTarget)
@@ -725,7 +795,7 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 				}
 			});
 
-			return mpPlayer->PushAndSendDialog(pMenu);
+			return mpPlayer->SendChildDialog(pMenu);
 		}
 
 		break;
@@ -734,10 +804,9 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 	{
 		if (ValidateProperty())
 		{
-			CPlayerListMenu* pMenu = new CPlayerListMenu(mpPlayer,
-				"#HL2RP_Menu_Property_ViewOrTakeKeys", "", pItem->mAction, true);
+			CPlayerListMenu* pMenu = new CPlayerListMenu(mpPlayer, pItem->mDisplay, "", pItem->mAction, false, true, true);
 			pMenu->mSteamIdNumbers.CopyFrom(mpProperty->mGrantedSteamIdNumbers);
-			return mpPlayer->PushAndSendDialog(pMenu);
+			return mpPlayer->SendChildDialog(pMenu);
 		}
 
 		break;
@@ -749,7 +818,7 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 
 		if (IsDoorSaved(pPropertyData) && pPropertyData->mProperty.Get()->HasAccess(mpPlayer))
 		{
-			if (mpPlayer->IsWithinDistance(mhDoor, HL2_ROLEPLAYER_USE_KEEP_MAX_DIST))
+			if (mpPlayer->IsWithinInteractRadius(mhDoor))
 			{
 				UTIL_SetDoorLockState(mhDoor, mpPlayer, pItem->mAction == EItemAction::LockDoor, true);
 				break;
@@ -765,8 +834,7 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 		CBaseEntity* pEntity = mpPlayer->mAimInfo.mhMainEntity;
 		CHL2RP_PropertyDoorData* pPropertyData = UTIL_GetPropertyDoorData(pEntity);
 
-		if (pPropertyData != NULL && pPropertyData->mProperty != NULL
-			&& mpPlayer->IsWithinDistance(pEntity, HL2_ROLEPLAYER_USE_KEEP_MAX_DIST))
+		if (pPropertyData != NULL && pPropertyData->mProperty != NULL && mpPlayer->IsWithinInteractRadius(pEntity))
 		{
 			if (pPropertyData->mProperty != mpProperty)
 			{
@@ -923,17 +991,117 @@ void CPropertyDoorMenu::LinkToMapAlias(const char* pAlias)
 }
 
 CMapGroupMenu::CMapGroupMenu(CHL2Roleplayer* pPlayer, int action)
-	: CNetworkMenu(pPlayer, "#HL2RP_Menu_LinkToMapGroup", "", true)
+	: CNetworkMenu(pPlayer, "#HL2RP_Menu_LinkToMapGroup", "", action, true, true)
 {
 	FOR_EACH_DICT_FAST(HL2RPRules()->mMapGroups, i)
 	{
-		AddItem(action, HL2RPRules()->mMapGroups[i]);
+		AddItem(0, HL2RPRules()->mMapGroups[i]);
 	}
 }
 
-CAdminMenu::CAdminMenu(CHL2Roleplayer* pPlayer) : CNetworkMenu(pPlayer, "#HL2RP_Menu_Admin", "", true)
+COtherPlayerMenu::COtherPlayerMenu(CHL2Roleplayer* pPlayer, CHL2Roleplayer* pOther) : CNetworkMenu(pPlayer), mhOther(pOther)
 {
-	AddItem(EItemAction::ManageDispensers, "#HL2RP_Menu_Dispensers");
+
+}
+
+void COtherPlayerMenu::UpdateItems()
+{
+	if (mhOther != NULL)
+	{
+		CBaseLocalizeFmtStr<>(mpPlayer, mTitle).Localize("#HL2RP_Menu_OtherPlayer_Title", mhOther->GetPlayerName());
+		RemoveItemByAction(EItemAction::GiveMoney);
+
+		if (mpPlayer->mPocket > 0)
+		{
+			AddItem(EItemAction::GiveMoney, "#HL2RP_Menu_GiveMoney");
+		}
+	}
+}
+
+void COtherPlayerMenu::Think()
+{
+	if (mpPlayer->IsAlive() && mhOther != NULL && mhOther->IsAlive() && mpPlayer->IsWithinInteractRadius(mhOther))
+	{
+		return mpPlayer->SendEntityBeam(mhOther);
+	}
+
+	mpPlayer->RewindDialogStack(mStackIndex, "#HL2RP_Dialog_Player_Contact_Lost");
+}
+
+void COtherPlayerMenu::SelectItem(CItem* pItem)
+{
+	if (mhOther != NULL)
+	{
+		switch (pItem->mAction)
+		{
+		case EItemAction::GiveMoney:
+		{
+			return mpPlayer->SendChildDialog(new CMoneyTransferMenu(mpPlayer, pItem->mDisplay, pItem->mAction));
+		}
+		}
+	}
+}
+
+void COtherPlayerMenu::HandleChildNotice(int action, const SUtlField& info)
+{
+	if (mhOther != NULL)
+	{
+		switch (action)
+		{
+		case EItemAction::GiveMoney:
+		{
+			if (mpPlayer->mPocket >= info.mInt)
+			{
+				int givenAmount = mhOther->AddPocket(info.mInt);
+				mpPlayer->AddPocket(-givenAmount);
+				mpPlayer->Print(HUD_PRINTTALK, "#HL2RP_Money_Given",
+					UTIL_FormatMoney(mpPlayer, givenAmount), mhOther->GetPlayerName());
+				return mhOther->Print(HUD_PRINTTALK, "#HL2RP_Money_Received",
+					UTIL_FormatMoney(mhOther.Get(), givenAmount), mpPlayer->GetPlayerName());
+			}
+
+			return mpPlayer->Print(HUD_PRINTTALK, "#HL2RP_Not_Enough_Money", UTIL_FormatMoney(mpPlayer, info.mInt));
+		}
+		}
+	}
+}
+
+CMoneyTransferMenu::CMoneyTransferMenu(CHL2Roleplayer* pPlayer, const char* pTitle, int action)
+	: CNetworkMenu(pPlayer, pTitle, "#HL2RP_Menu_Amount_Msg", action, false, true)
+{
+
+}
+
+void CMoneyTransferMenu::UpdateItems()
+{
+	RemoveAllItems();
+	SMoneyPropData data(mpPlayer->mPocket); // TODO: Condition source (pocket/bank)
+	auto& propsData = HL2RPRules()->mMoneyPropsData;
+
+	for (int i = 0, end = propsData.FindLessOrEqual(&data); i <= end; ++i)
+	{
+		AddItem(i, UTIL_FormatMoney(mpPlayer, propsData[i]->mAmount), propsData[i]->mAmount);
+	}
+}
+
+void CMoneyTransferMenu::SelectItem(CItem* pItem)
+{
+	NoticeParent(mAction, pItem->mInfo, false);
+}
+
+CAdminMenu::CAdminMenu(CHL2Roleplayer* pPlayer) : CNetworkMenu(pPlayer, "#HL2RP_Menu_Admin", "", 0, true)
+{
+
+}
+
+void CAdminMenu::UpdateItems()
+{
+	RemoveItemByAction(EItemAction::ManageDispensers);
+
+	if (mpPlayer->IsAlive())
+	{
+		AddItem(EItemAction::ManageDispensers, "#HL2RP_Menu_Dispensers");
+	}
 }
 
 void CAdminMenu::SelectItem(CItem* pItem)
@@ -942,7 +1110,7 @@ void CAdminMenu::SelectItem(CItem* pItem)
 	{
 	case EItemAction::ManageDispensers:
 	{
-		return mpPlayer->PushAndSendDialog(new CDispensersMenu(mpPlayer, NULL));
+		return mpPlayer->SendChildDialog(new CDispensersMenu(mpPlayer, NULL));
 	}
 	}
 }
@@ -995,28 +1163,45 @@ void CDispensersMenu::UpdateItems()
 
 void CDispensersMenu::Think()
 {
+	const char* pCancelReason = "#HL2RP_Dialog_Entity_Contact_Lost";
+
 	if (mhDispenser != NULL)
 	{
-		if (mpPlayer->HasCombineGrants(mhDispenser->HasSpawnFlags(RATION_DISPENSER_SF_COMBINE_CONTROLLED))
-			&& (mAllowCreationAsAdmin ? mpPlayer->IsAdmin()
-				: mpPlayer->IsWithinDistance(mhDispenser, HL2_ROLEPLAYER_USE_KEEP_MAX_DIST)))
+		if (mpPlayer->HasCombineGrants(mhDispenser->HasSpawnFlags(RATION_DISPENSER_SF_COMBINE_CONTROLLED)))
 		{
+			if (!mpPlayer->IsAlive())
+			{
+				return mpPlayer->RewindDialogStack(mStackIndex, pCancelReason);
+			}
+			else if (mAllowCreationAsAdmin)
+			{
+				if (!mpPlayer->IsAdmin())
+				{
+					return mpPlayer->RewindDialogStack(mStackIndex, "#HL2RP_Dialog_Access_Lost");
+				}
+			}
+			else if (!mpPlayer->IsWithinInteractRadius(mhDispenser))
+			{
+				return mpPlayer->RewindDialogStack(mStackIndex, pCancelReason);
+			}
+
 			if (!mDispenserId.IsValid() && mhDispenser->mDatabaseId.IsValid())
 			{
 				mDispenserId = mhDispenser->mDatabaseId;
 				Send();
 			}
 
-			return mpPlayer->SendBeam(mhDispenser->GetAbsOrigin(),
-				HL2RP_HUD_COLOR_GREEN, HL2_ROLEPLAYER_SMALL_BEAMS_WIDTH);
+			return mpPlayer->SendEntityBeam(mhDispenser);
 		}
+
+		pCancelReason = "#HL2RP_Dialog_Access_Lost";
 	}
 	else if (mAllowCreationAsAdmin && mpPlayer->IsAdmin())
 	{
 		return;
 	}
 
-	mpPlayer->RewindCurrentDialog();
+	mpPlayer->RewindDialogStack(mStackIndex, pCancelReason);
 }
 
 void CDispensersMenu::SelectItem(CItem* pItem)
@@ -1064,8 +1249,8 @@ void CDispensersMenu::SelectItem(CItem* pItem)
 		{
 		case EItemAction::SetRations:
 		{
-			return mpPlayer->PushAndSendDialog(new CNetworkEntryBox(mpPlayer, "#HL2RP_Menu_Dispenser_SetRations",
-				"#HL2RP_Menu_Dispenser_SetRations_Msg", pItem->mAction, true));
+			return mpPlayer->SendChildDialog(new CNetworkEntryBox(mpPlayer,
+				pItem->mDisplay, "#HL2RP_Menu_Dispenser_SetRations_Msg", pItem->mAction, true));
 		}
 		case EItemAction::SetCC:
 		case EItemAction::UnsetCC:
@@ -1105,7 +1290,7 @@ void CDispensersMenu::SelectItem(CItem* pItem)
 		{
 			if (HL2RPRules()->mMapGroups.Count() > 1)
 			{
-				return mpPlayer->PushAndSendDialog(new CMapGroupMenu(mpPlayer, pItem->mAction));
+				return mpPlayer->SendChildDialog(new CMapGroupMenu(mpPlayer, pItem->mAction));
 			}
 
 			LinkToMapAlias(HL2RPRules()->mMapGroups[0]);

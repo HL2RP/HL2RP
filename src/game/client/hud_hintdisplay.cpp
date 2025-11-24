@@ -827,7 +827,7 @@ void CHudHintKeyDisplay::MsgFunc_HL2RP_KeyHintText(bf_read& msg)
 			msg.ReadString(pArg, sizeof(args[0]));
 		}
 
-		CLocalizeFmtStr<char> text;
+		CLocalizeFmtCStr text;
 		StartTextDisplay(StringFuncs<char>::ToUpper((char*)text.Localize(args[0], args[1], args[2])));
 		learnedHUDHints.SetBit(type);
 		gHL2RPConfiguration.mUserData->SetInt(HL2RP_LEARNED_HUD_HINTS_FIELD_NAME, learnedHUDHints);

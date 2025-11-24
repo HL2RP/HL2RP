@@ -102,9 +102,6 @@ class CEntityMapData;
 class INextBot;
 class IHasAttributes;
 
-template<typename = char>
-class CLocalizeFmtStr;
-
 typedef CUtlVector< CBaseEntity* > EntityList_t;
 
 #if defined( HL2_DLL )
@@ -1246,7 +1243,7 @@ public:
 #ifdef HL2RP
 	virtual bool IsLocked();
 	virtual CHL2RP_PropertyDoorData* GetPropertyDoorData();
-	virtual void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtStr<>&) {}
+	virtual void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtCStr&) {}
 
 	CBasePlayer* UTIL_GetLocalPlayer();
 

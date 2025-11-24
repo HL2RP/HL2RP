@@ -28,5 +28,5 @@ CHL2RPRules* HL2RPRules()
 	return static_cast<CHL2RPRules*>(GameRules());
 }
 
-ConVar gRegionMaxRadiusCVar("sv_region_max_radius", "350.0", FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_REPLICATED,
+ConVar gRegionMaxRadiusCVar("sv_region_max_radius", "350.0", FCVAR_ARCHIVE | FCVAR_NOTIFY | FCVAR_REPLICATED_HL2RP,
 	"Max. regional communication distance between players");

@@ -11,10 +11,35 @@
 
 #define RATION_DISPENSER_CRIME_EFFECTS_COOLDOWN 5.0f
 
+#define RATION_DISPENSER_SUPPLY_SPRITE_PATH "sprites/plasmaember.vmt"
+#define RATION_DISPENSER_DENY_SPRITE_PATH   "sprites/redglow2.vmt"
+
+#define RATION_DISPENSER_LOCK_SOUND   "Buttons.snd41"
+#define RATION_DISPENSER_LOCKED_SOUND "Buttons.snd40"
+#define RATION_DISPENSER_SUPPLY_SOUND "Buttons.snd5"
+#define RATION_DISPENSER_DENY_SOUND   "NPC_AttackHelicopter.BadlyDamagedAlert"
+
 BEGIN_DATADESC(CRationDispenserProp)
 DEFINE_KEYFIELD_NOT_SAVED(mpMapAlias, FIELD_STRING, HL2RP_MAP_ALIAS_FIELD_NAME),
 DEFINE_KEYFIELD_NOT_SAVED(mRationsAmmo, FIELD_INTEGER, "rations")
 END_DATADESC()
+
+void CRationDispenserProp::Precache()
+{
+	BaseClass::Precache();
+	PrecacheModel(RATION_DISPENSER_MODEL_PATH);
+	PrecacheModel(RATION_DISPENSER_SUPPLY_SPRITE_PATH);
+	PrecacheModel(RATION_DISPENSER_DENY_SPRITE_PATH);
+	PrecacheScriptSound(RATION_DISPENSER_LOCK_SOUND);
+	PrecacheScriptSound(RATION_DISPENSER_LOCKED_SOUND);
+	PrecacheScriptSound(RATION_DISPENSER_SUPPLY_SOUND);
+	PrecacheScriptSound(RATION_DISPENSER_DENY_SOUND);
+}
+
+int CRationDispenserProp::ObjectCaps()
+{
+	return (BaseClass::ObjectCaps() | FCAP_IMPULSE_USE);
+}
 
 void CRationDispenserProp::UnlockThink()
 {
@@ -26,7 +51,7 @@ void CRationDispenserProp::UnlockThink()
 		{
 			if (pPlayer->IsAlive() && pPlayer->mCrime < 1 && pPlayer->mFaction == EFaction::Citizen)
 			{
-				pPlayer->SendBeam(GetAbsOrigin(), COLOR_GREEN);
+				pPlayer->SendBeam(GetAbsOrigin(), HL2_ROLEPLAYER_FOCUS_BEAM_COLOR, HL2_ROLEPLAYER_FOCUS_BEAM_WIDTH);
 			}
 		});
 	}

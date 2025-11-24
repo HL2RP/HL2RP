@@ -5,6 +5,11 @@
 #include "hl2rp_util_shared.h"
 #include <hl2mp_gamerules.h>
 
+#ifdef CLIENT_DLL
+#define CBaseHL2RPRules  C_BaseHL2RPRules
+#define CHL2RPRulesProxy C_HL2RPRulesProxy
+#endif // CLIENT_DLL
+
 class CHL2RPRules;
 
 class CBaseHL2RPRules : public CHL2MPRules

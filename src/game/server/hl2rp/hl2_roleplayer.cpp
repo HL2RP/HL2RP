@@ -39,6 +39,10 @@ static void SendProxy_ZoneWithin(const SendProp*, const void*, const void* pData
 	pOut->m_Int = ((EHANDLE*)pData)->GetEntryIndex();
 }
 
+BEGIN_SEND_TABLE_NOBASE(CPlayerMoney, DT_PlayerMoney)
+SendPropInt(SENDINFO(mAmount))
+END_SEND_TABLE()
+
 IMPLEMENT_HL2RP_NETWORKCLASS(HL2Roleplayer)
 SendPropInt(SENDINFO(m_iMaxHealth)),
 SendPropInt(SENDINFO(mDatabaseIOFlags)),
@@ -50,6 +54,7 @@ SendPropInt(SENDINFO(mMiscFlags)),
 SendPropBool(SENDINFO(mIsInStickyWalkMode)),
 SendPropStringT(SENDINFO(mJobName)),
 SendPropArray(SendPropInt(SENDINFO_ARRAY(mZonesWithin), -1, 0, SendProxy_ZoneWithin), mZonesWithin),
+SendPropDataTable(SENDINFO_DT(mPocket), &REFERENCE_SEND_TABLE(DT_PlayerMoney))
 END_SEND_TABLE()
 #endif // HL2RP_FULL
 
@@ -60,6 +65,7 @@ const char* gPlayerDatabasePropNames[EPlayerDatabasePropType::_Count] =
 {
 	"name",
 	"seconds",
+	"pocket",
 	"crime",
 	"faction",
 	"job",
@@ -115,9 +121,14 @@ void CHL2Roleplayer::CHUDExpireTimer::Set(EPlayerHUDType originalType, float del
 	mOriginalType = originalType;
 }
 
-CHL2Roleplayer::CHL2Roleplayer()
+void CHL2Roleplayer::Precache()
 {
-
+	BaseClass::Precache();
+	PrecacheModel(HL2RP_MAIN_BEAM_PATH);
+	PrecacheScriptSound(NETWORK_DIALOG_REWIND_SOUND);
+	PrecacheScriptSound(NETWORK_MENU_ITEM_SOUND);
+	PrecacheScriptSound(HL2RP_PROPERTY_DOOR_LOCK_SOUND);
+	PrecacheScriptSound(HL2RP_PROPERTY_DOOR_UNLOCK_SOUND);
 }
 
 void CHL2Roleplayer::InitialSpawn()
@@ -229,6 +240,11 @@ CBaseEntity* CHL2Roleplayer::EntSelectSpawnPoint()
 	}
 
 	return BaseClass::EntSelectSpawnPoint();
+}
+
+int CHL2Roleplayer::ObjectCaps()
+{
+	return (BaseClass::ObjectCaps() | FCAP_IMPULSE_USE);
 }
 
 void CHL2Roleplayer::PrintWelcomeInfo()
@@ -555,6 +571,17 @@ CBaseEntity* CHL2Roleplayer::FindUseEntity()
 		pEntity : BaseClass::FindUseEntity());
 }
 
+void CHL2Roleplayer::Use(CBaseEntity* pActivator, CBaseEntity*, USE_TYPE type, float)
+{
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(pActivator);
+
+	if (pPlayer != NULL && (type == USE_TOGGLE || type == USE_SPECIAL2)
+		&& (IsDebug() || !IsBot()) && pPlayer->mAimInfo.mhMainEntity == this)
+	{
+		pPlayer->SendRootDialog(new COtherPlayerMenu(pPlayer, this));
+	}
+}
+
 void CHL2Roleplayer::PostThink()
 {
 	BaseClass::PostThink();
@@ -621,7 +648,7 @@ void CHL2Roleplayer::LocalDisplayHUDHint(EPlayerHUDHintType type,
 
 void CHL2Roleplayer::SendMainHUD()
 {
-	CLocalizeFmtStr<> text(this);
+	CLocalizeFmtCStr text(this);
 	GetMainHUD(text);
 	SendHUDMessage(EPlayerHUDType::Main, text, HL2RP_MAIN_HUD_DEFAULT_X_POS, HL2RP_MAIN_HUD_DEFAULT_Y_POS,
 		(mCrime > 0) ? HL2RP_MAIN_HUD_DEFAULT_CRIMINAL_TEXT_COLOR : HL2RP_MAIN_HUD_DEFAULT_NORMAL_TEXT_COLOR);
@@ -631,7 +658,7 @@ void CHL2Roleplayer::SendAimingEntityHUD()
 {
 	if (mAimInfo.mhMainEntity != NULL && mAimInfo.mEndDistance < PLAYER_USE_RADIUS)
 	{
-		CLocalizeFmtStr<> text(this);
+		CLocalizeFmtCStr text(this);
 		mAimInfo.mhMainEntity->GetHUDInfo(this, text);
 
 		if (text.mLength > 0)
@@ -644,15 +671,15 @@ void CHL2Roleplayer::SendAimingEntityHUD()
 }
 #endif // HL2RP_LEGACY
 
-void CHL2Roleplayer::Print(int type, const char* pText, const char* pArg1, const char* pArg2)
+void CHL2Roleplayer::Print(int type, const char* pText, const char* pArg1, const char* pArg2, const char* pArg3)
 {
 #ifdef HL2RP_LEGACY
-	CLocalizeFmtStr<> localizedText(this, type == HUD_PRINTTALK);
+	CLocalizeFmtCStr localizedText(this, type == HUD_PRINTTALK);
 
 	// Auto localize
 	if (*pText == '#')
 	{
-		pText = localizedText.Localize(pText, pArg1, pArg2);
+		pText = localizedText.Localize(pText, pArg1, pArg2, pArg3);
 	}
 
 	if (type == HUD_PRINTTALK)
@@ -664,7 +691,7 @@ void CHL2Roleplayer::Print(int type, const char* pText, const char* pArg1, const
 	}
 #endif // HL2RP_LEGACY
 
-	ClientPrint(this, type, pText, pArg1, pArg2);
+	ClientPrint(this, type, pText, pArg1, pArg2, pArg3);
 }
 
 void CHL2Roleplayer::HUDThink()
@@ -675,7 +702,7 @@ void CHL2Roleplayer::HUDThink()
 
 #ifdef HL2RP_LEGACY
 		SendAimingEntityHUD();
-		CLocalizeFmtStr<> text(this);
+		CLocalizeFmtCStr text(this);
 		CUtlVector<CBasePlayer*> regionPlayers;
 		GetPlayersInRegion(regionPlayers);
 
@@ -735,7 +762,7 @@ void CHL2Roleplayer::SendHUDHint(EPlayerHUDHintType type, const char* pToken, co
 		WRITE_STRING(pArg2);
 		MessageEnd();
 #else
-		CLocalizeFmtStr<> text(this);
+		CLocalizeFmtCStr text(this);
 		SendHUDMessage(EPlayerHUDType::Alert, StringFuncs<char>::ToUpper((char*)text.Localize(pToken, pArg1, pArg2)),
 			HL2RP_CENTER_HUD_SPECIAL_POS, HL2RP_ALERT_HUD_DEFAULT_Y_POS,
 			HL2RP_ALERT_HUD_DEFAULT_COLOR, HL2_ROLEPLAYER_ALERT_HUD_HOLD_TIME);
@@ -968,6 +995,48 @@ void CHL2Roleplayer::Event_Killed(const CTakeDamageInfo& info)
 	{
 		ClearActiveWeapon();
 	}
+	// Lose cash and send related message including the amount (even when 0)
+	else if (!FBitSet(m_iSuicideCustomKillFlags, EPlayerSuicideFlag_LockScore)) // Skip during team changes (use related flag)
+	{
+		CHL2Roleplayer* pAttacker = ToHL2Roleplayer(info.GetAttacker());
+
+		// Check we weren't killed by a police (either player or NPC)
+		if (pAttacker != NULL ? pAttacker->mFaction == EFaction::Citizen
+			: (info.GetAttacker() == NULL || !FClassnameIs(info.GetAttacker(), "npc_hl2rp_police")))
+		{
+			int amount = mPocket;
+
+			if (pAttacker != NULL && pAttacker != this)
+			{
+				amount = Min<int>(amount, pAttacker->mPocket);
+			}
+			else
+			{
+				pAttacker = NULL;
+			}
+
+			amount -= amount / 2; // Set to lose the highest "half" (in case of uneven division)
+
+			if (HL2RPRules()->DropMoney(amount, this, false))
+			{
+				AddPocket(-amount);
+			}
+			else
+			{
+				amount = 0;
+			}
+
+			if (pAttacker != NULL)
+			{
+				Print(HUD_PRINTTALK, "#HL2RP_Killed_By_Player",
+					pAttacker->GetPlayerName(), "#HL2RP_Money_Lost", UTIL_FormatMoney(this, amount));
+			}
+			else
+			{
+				Print(HUD_PRINTTALK, "#HL2RP_Death_In_World", "#HL2RP_Money_Lost", UTIL_FormatMoney(this, amount));
+			}
+		}
+	}
 
 	BaseClass::Event_Killed(info);
 	SetArmorValue(0);
@@ -1006,7 +1075,7 @@ void CHL2Roleplayer::OnChatMessagePassed(CBasePlayer* pTarget, bool teamOnly)
 		origin.z += HL2_ROLEPLAYER_BEAM_RING_WIDTH / 2.0f; // Clear ground
 		Color color = HL2RP_REGION_HUD_PLAYERS_DEFAULT_COLOR;
 		te->BeamRingPoint(filter, 0.0f, origin, 0.0f, HL2_ROLEPLAYER_BEAM_RING_RADIUS,
-			PrecacheModel(HL2_ROLEPLAYER_BEAMS_PATH), 0, 0, 0, HL2_ROLEPLAYER_BEAM_RING_DURATION,
+			PrecacheModel(HL2RP_MAIN_BEAM_PATH), 0, 0, 0, HL2_ROLEPLAYER_BEAM_RING_DURATION,
 			HL2_ROLEPLAYER_BEAM_RING_WIDTH, 0, 0.0f, color.r(), color.g(), color.b(), color.a(), 0);
 	}
 }
@@ -1017,59 +1086,62 @@ void CHL2Roleplayer::SendBeam(const Vector& end, const Color& color, float width
 	filter.SetIgnorePredictionCull(true);
 	Vector start = EyePosition();
 	start.z -= HL2_ROLEPLAYER_BEAMS_EYE_OFFSET_DOWN;
-	te->BeamPoints(filter, 0.0f, &start, &end, PrecacheModel(HL2_ROLEPLAYER_BEAMS_PATH),
+	te->BeamPoints(filter, 0.0f, &start, &end, PrecacheModel(HL2RP_MAIN_BEAM_PATH),
 		0, 0, 0, HL2_ROLEPLAYER_HUD_THINK_PERIOD, width, width, 0, 0.0f,
 		color.r(), color.g(), color.b(), HL2_ROLEPLAYER_BEAMS_ALPHA, 0);
+}
+
+void CHL2Roleplayer::SendEntityBeam(CBaseEntity* pEntity, const Color& color, float width)
+{
+	SendBeam(pEntity->WorldSpaceCenter(), color, width);
 }
 
 void CHL2Roleplayer::SendRootDialog(INetworkDialog* pDialog)
 {
 	mDialogStack.PurgeAndDeleteElements();
-	PushAndSendDialog(pDialog);
+	SendChildDialog(pDialog);
 }
 
-void CHL2Roleplayer::PushAndSendDialog(INetworkDialog* pDialog)
+void CHL2Roleplayer::SendChildDialog(INetworkDialog* pDialog)
 {
-	mDialogStack.AddToTail(pDialog);
+	pDialog->mStackIndex = mDialogStack.AddToTail(pDialog);
 	pDialog->Send();
 }
 
-void CHL2Roleplayer::RewindCurrentDialog()
+void CHL2Roleplayer::RewindDialogStack(int endIndex, const char* pCancelReason)
 {
-	// Kill current dialog
-	delete mDialogStack.Tail();
-	mDialogStack.RemoveMultipleFromTail(1);
-
-	if (!mDialogStack.IsEmpty())
+	// Kill dialogs up to endIndex (inclusive) safely, in reverse order
+	while (mDialogStack.IsValidIndex(endIndex))
 	{
-		mDialogStack.Tail()->Send();
-		CSingleUserRecipientFilter filter(this);
-		EmitSound(filter, GetSoundSourceIndex(), NETWORK_DIALOG_REWIND_SOUND);
+		delete mDialogStack[endIndex];
+		mDialogStack.FastRemove(endIndex);
 	}
+
+	EmitLocalSound(NETWORK_DIALOG_REWIND_SOUND, true);
+
+	// If new stack is empty, assume we rewinded due to an auto-cancellation, and send a dialog with the reason
+	if (mDialogStack.IsEmpty())
+	{
+		return SendChildDialog(new CNetworkMsgDialog(this, "#HL2RP_Dialog_Cancelled", pCancelReason));
+	}
+	// Otherwise, if there's a cancel reason, display it in chat, since parent dialog must be re-displayed instead
+	else if (*pCancelReason != '\0')
+	{
+		Print(HUD_PRINTTALK, CLocalizeFmtCStr(this, true).Format("%t: %t", "#HL2RP_Dialog_Cancelled", pCancelReason));
+	}
+
+	mDialogStack.Tail()->Send();
 }
 
-static void HandleAccessChangeCommand(const CCommand& args, bool grant)
+static void HandleAccessChangeCmd(const CCommand& args, bool grant)
 {
-	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_GetCommandClient());
-
-	if (UTIL_IsCommandIssuedByServerAdmin()
-		|| (pPlayer != NULL && pPlayer->mAccessFlags.IsBitSet(EPlayerAccessFlag::Root)))
+	if (UTIL_CheckCmdArgCount(args) && UTIL_CheckCommandAccess(EPlayerAccessFlag::Root))
 	{
-		CHL2Roleplayer* pTarget = NULL;
-		int userId = Q_atoi(args.Arg(1));
+		CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_GetCommandClient()), * pTarget;
 
-		if (userId > 0)
+		if (UTIL_FindCmdTarget(args, pTarget, 1))
 		{
-			pTarget = ToHL2Roleplayer(UTIL_PlayerByUserId(userId));
-		}
-		else if (pPlayer != NULL)
-		{
-			pTarget = ToHL2Roleplayer(pPlayer->mAimInfo.mhMainEntity);
-		}
-
-		if (pTarget != NULL)
-		{
-			CLocalizeFmtStr<> issuerFlagsText(pPlayer, true), targetFlagsText(pTarget, true);
+			CLocalizeFmtCStr issuerFlagsText(pPlayer, true), targetFlagsText(pTarget, true), logFlagsText;
 			bool flagsChanged = false, useAllFlags = (args.FindArg("all") != NULL);
 
 			const char* flagTokens[EPlayerAccessFlag::_Count][2] =
@@ -1103,8 +1175,10 @@ static void HandleAccessChangeCommand(const CCommand& args, bool grant)
 					flagsChanged = true;
 					issuerFlagsText += pSeparator;
 					targetFlagsText += pSeparator;
-					issuerFlagsText.Format("%s", gHL2RPLocalizer.Localize(pPlayer, flagTokens[i][1]));
-					targetFlagsText.Format("%s", gHL2RPLocalizer.Localize(pTarget, flagTokens[i][1]));
+					logFlagsText += pSeparator;
+					issuerFlagsText.Format("%s", gHL2RPLocalizer.Localize(pPlayer, flagTokens[i][1])); // Format as argument to allow colorizing
+					targetFlagsText.Format("%s", gHL2RPLocalizer.Localize(pTarget, flagTokens[i][1])); // Same as above
+					logFlagsText.Localize(flagTokens[i][1]);
 					pSeparator = ", ";
 				}
 			}
@@ -1114,13 +1188,20 @@ static void HandleAccessChangeCommand(const CCommand& args, bool grant)
 				// Print before checking derived access, so that messages like team change get printed later
 				UTIL_ReplyToCommand(HUD_PRINTTALK, grant ? "#HL2RP_Access_Granted_Issuer"
 					: "#HL2RP_Access_Removed_Issuer", pTarget->GetPlayerName(), issuerFlagsText);
-				pTarget->Print(HUD_PRINTTALK, grant ? "#HL2RP_Access_Granted_Target"
-					: "#HL2RP_Access_Removed_Target", UTIL_GetCommandIssuerName(), targetFlagsText);
+
+				if (pPlayer != pTarget)
+				{
+					pTarget->Print(HUD_PRINTTALK, grant ? "#HL2RP_Access_Granted_Target"
+						: "#HL2RP_Access_Removed_Target", UTIL_GetCommandIssuerName(), targetFlagsText);
+				}
+
+				UTIL_LogAdminAction(pPlayer, "%s '%s' (%s) access to: %s", grant ?
+					"granted" : "removed", pTarget->GetPlayerName(), pTarget->GetNetworkIDString(), logFlagsText.mDest);
 				string_t oldJobName = pTarget->mJobName;
 
 				if (!pTarget->HasFactionAccess(pTarget->mFaction))
 				{
-					pTarget->ChangeFaction(~pTarget->mFaction);
+					pTarget->ChangeFaction(EFaction::Citizen);
 				}
 				else if (oldJobName != NULL_STRING)
 				{
@@ -1139,11 +1220,11 @@ static void HandleAccessChangeCommand(const CCommand& args, bool grant)
 CON_COMMAND(give_access, "[userid] [all|cop|vipcitizen|vipcop|admin|root]..."
 	" - Gives a player certain grant/s. If userid isn't set, command will target aiming player.")
 {
-	HandleAccessChangeCommand(args, true);
+	HandleAccessChangeCmd(args, true);
 }
 
 CON_COMMAND(remove_access, "[userid] [all|cop|vipcitizen|vipcop|admin|root]..."
 	" - Removes grant/s from a player. If userid isn't set, command will target aiming player.")
 {
-	HandleAccessChangeCommand(args, false);
+	HandleAccessChangeCmd(args, false);
 }

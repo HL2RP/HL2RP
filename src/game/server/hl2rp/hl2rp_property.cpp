@@ -14,6 +14,13 @@ ConVar gMaxMapPlayerHomesCVar("sv_max_map_player_homes", "1", FCVAR_ARCHIVE | FC
 	gMaxHomeInactivityDaysCVar("sv_max_home_inactivity_days", "60", FCVAR_ARCHIVE | FCVAR_NOTIFY,
 		"Maximum days since owner's last seen time before disowning a home. 0 = Disable the feature.");
 
+const char* CHL2RP_Property::GetTypeToken(EHL2RP_PropertyType type)
+{
+	const char* tokens[] = { "#HL2RP_Menu_Property_Type_Public",
+		"#HL2RP_Menu_Property_Type_Home", "#HL2RP_Faction_Combine", "#HL2RP_Admin" };
+	return tokens[type];
+}
+
 CHL2RP_Property::~CHL2RP_Property()
 {
 	UnlinkZone();

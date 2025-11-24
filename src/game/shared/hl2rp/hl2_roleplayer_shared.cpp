@@ -6,6 +6,7 @@
 
 #ifdef GAME_DLL
 #include <hl2_roleplayer.h>
+#include <inetwork_dialog.h>
 #endif // GAME_DLL
 
 #ifdef HL2RP_CLIENT_OR_LEGACY
@@ -17,6 +18,7 @@
 #else
 #include <c_hl2_roleplayer.h>
 #include <c_hl2rp_gamerules.h>
+#include <prediction.h>
 #endif // GAME_DLL
 #endif // HL2RP_CLIENT_OR_LEGACY
 
@@ -24,19 +26,31 @@
 
 #define HL2_ROLEPLAYER_EXTRA_AIM_TRACE_DIST 32.0f // Max. distance behind hit world brush to search for an usable entity
 
+#define HL2_ROLEPLAYER_MONEY_VARIATION_DURATION 5.0f
+
 extern ConVar gRegionMaxRadiusCVar;
 
 LINK_ENTITY_TO_CLASS(player, CHL2Roleplayer)
 
-class CExtraAimTraceFilter : public CTraceFilterSimple
+// Trace filter for player's view that needs to be permissive to detect stuff discarded by usual filters otherwise.
+// For example, money props held by physcannon that may be picked up would fail by PassServerEntityFilter.
+class CAimTraceFilter : public CTraceFilterSimple
 {
 	TraceType_t GetTraceType() const OVERRIDE
 	{
-		return TRACE_ENTITIES_ONLY;
+		return mTraceType;
+	}
+
+	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) OVERRIDE
+	{
+		return (StandardFilterRules(pHandleEntity, contentsMask) && pHandleEntity != GetPassEntity());
 	}
 
 public:
-	CExtraAimTraceFilter(IHandleEntity* pPassEntity) : CTraceFilterSimple(pPassEntity, COLLISION_GROUP_NONE) {}
+	CAimTraceFilter(IHandleEntity* pPassEntity, TraceType_t traceType = TRACE_EVERYTHING)
+		: CTraceFilterSimple(pPassEntity, COLLISION_GROUP_NONE), mTraceType(traceType) {}
+
+	TraceType_t mTraceType;
 };
 
 CHL2Roleplayer* ToHL2Roleplayer(CBasePlayer* pPlayer)
@@ -55,19 +69,9 @@ void CBaseHL2Roleplayer::Spawn()
 	StopWalking();
 }
 
-void CBaseHL2Roleplayer::Precache()
+bool CBaseHL2Roleplayer::IsAdmin(int minAccessFlag)
 {
-	BaseClass::Precache();
-	PrecacheModel(HL2_ROLEPLAYER_BEAMS_PATH);
-	PrecacheScriptSound(NETWORK_DIALOG_REWIND_SOUND);
-	PrecacheScriptSound(NETWORK_MENU_ITEM_SOUND);
-	PrecacheScriptSound(HL2RP_PROPERTY_DOOR_LOCK_SOUND);
-	PrecacheScriptSound(HL2RP_PROPERTY_DOOR_UNLOCK_SOUND);
-}
-
-bool CBaseHL2Roleplayer::IsAdmin()
-{
-	return (mAccessFlags >= INDEX_TO_FLAG(EPlayerAccessFlag::Admin));
+	return (mAccessFlags >= INDEX_TO_FLAG(minAccessFlag));
 }
 
 bool CBaseHL2Roleplayer::HasCombineGrants(bool extraCombineCheck)
@@ -81,9 +85,9 @@ bool CBaseHL2Roleplayer::IsDamageProtected()
 		(mZonesWithin[ECityZoneType::NoKill] != NULL && mCrime < 1 && mFaction == EFaction::Citizen)));
 }
 
-bool CBaseHL2Roleplayer::IsWithinDistance(CBaseEntity* pOther, float maxDistance, bool fromEye)
+bool CBaseHL2Roleplayer::IsWithinInteractRadius(CBaseEntity* pOther, float radius)
 {
-	return (pOther->GetAbsOrigin() - (fromEye ? EyePosition() : GetAbsOrigin())).IsLengthLessThan(maxDistance);
+	return (pOther->GetAbsOrigin() - GetAbsOrigin()).IsLengthLessThan(radius);
 }
 
 void CHL2Roleplayer::HandleWalkChanges(CMoveData* pMv)
@@ -142,8 +146,8 @@ void CBaseHL2Roleplayer::GetAimInfo(SPlayerAimInfo& info)
 	float maxDistance = HasCombineGrants() ?
 		HL2_ROLEPLAYER_COMBINE_AIM_TRACE_DIST : HL2_ROLEPLAYER_CITIZEN_AIM_TRACE_DIST;
 	trace_t trace;
-	UTIL_TraceLine(start, start + forward * maxDistance,
-		PhysicsSolidMaskForEntity(), this, COLLISION_GROUP_NONE, &trace);
+	CAimTraceFilter filter(this);
+	UTIL_TraceLine(start, start + forward * maxDistance, PhysicsSolidMaskForEntity(), &filter, &trace);
 	info.mhMainEntity = trace.m_pEnt;
 
 	if (trace.m_pEnt != NULL)
@@ -156,8 +160,8 @@ void CBaseHL2Roleplayer::GetAimInfo(SPlayerAimInfo& info)
 		if (trace.DidHitWorld())
 		{
 			maxDistance = Min(HL2_ROLEPLAYER_EXTRA_AIM_TRACE_DIST, maxDistance - info.mEndDistance);
-			CExtraAimTraceFilter filter(this);
 			trace_t extraTrace;
+			filter.mTraceType = TRACE_ENTITIES_ONLY;
 			UTIL_TraceLine(trace.endpos, trace.endpos + forward * maxDistance,
 				PhysicsSolidMaskForEntity(), &filter, &extraTrace);
 
@@ -183,6 +187,30 @@ void CBaseHL2Roleplayer::GetAimInfo(SPlayerAimInfo& info)
 }
 
 #ifdef HL2RP_CLIENT_OR_LEGACY
+void CPlayerMoney::SVariationData::Update(int amount)
+{
+	if (mEndTimer.Expired())
+	{
+		mOldAmount = amount;
+	}
+
+	mEndTimer.Set(HL2_ROLEPLAYER_MONEY_VARIATION_DURATION);
+}
+
+const char* CPlayerMoney::Format(CLocalizeFmtCStr&& dest) // Formats current amount, including recent variations
+{
+	UTIL_FormatMoney(dest, mAmount);
+
+	if (!mVariationData.mEndTimer.Expired() && mAmount != mVariationData.mOldAmount)
+	{
+		int amountDiff = mAmount - mVariationData.mOldAmount;
+		dest += (amountDiff > 0) ? " +" : " ";
+		UTIL_FormatMoney(dest, amountDiff);
+	}
+
+	return dest;
+}
+
 bool CBaseHL2Roleplayer::GetZoneHUD(CLocalizeFmtStr<>& dest)
 {
 	for (int i = mZonesWithin.Count(); --i >= 0;)
@@ -236,7 +264,7 @@ void CBaseHL2Roleplayer::GetPlayersInRegion(CUtlVector<CBasePlayer*>& players)
 			CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_PlayerByIndex(i));
 
 			if (pPlayer != NULL && pPlayer != this && pPlayer->mMiscFlags.IsBitSet(EPlayerMiscFlag::IsRegionListEnabled)
-				&& pPlayer->IsAlive() && IsWithinDistance(pPlayer, gRegionMaxRadiusCVar.GetFloat(), false))
+				&& pPlayer->IsAlive() && IsWithinInteractRadius(pPlayer, gRegionMaxRadiusCVar.GetFloat()))
 			{
 				if (players.AddToTail(pPlayer) >= HL2_ROLEPLAYER_REGION_MAX_PLAYERS)
 				{
@@ -274,8 +302,23 @@ void CHL2Roleplayer::GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtStr<>& text
 
 void CHL2Roleplayer::GetMainHUD(CLocalizeFmtStr<>& dest)
 {
-	SRelativeTime time(mSeconds);
-	dest.Localize("#HL2RP_HUD_Main", "#HL2RP_Duration_HHMMSS", time.mHours, time.mMinutes, time.mSeconds,
-		DATABASE_PROP_STRING(mJobName), mCrime->Get());
+	dest.Localize("#HL2RP_HUD_Main", UTIL_FormatDuration(this, mSeconds), mPocket.Format(this),
+		DATABASE_PROP_STRING(mJobName), UTIL_FormatInteger(this, mCrime));
 }
 #endif // HL2RP_CLIENT_OR_LEGACY
+
+void CBaseHL2Roleplayer::EmitLocalSound(const char* pName, bool overwrite)
+{
+#ifdef CLIENT_DLL
+	if (prediction->IsFirstTimePredicted())
+#endif // CLIENT_DLL
+	{
+		if (overwrite)
+		{
+			StopSound(pName);
+		}
+
+		CSingleUserRecipientFilter filter(this);
+		EmitSound(filter, GetSoundSourceIndex(), pName);
+	}
+}

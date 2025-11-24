@@ -60,6 +60,8 @@ $Project
 			$File "hl2rp\hl2rp_gameinterface.h"
 			$File "hl2rp\hl2rp_gamerules.cpp"
 			$File "hl2rp\hl2rp_gamerules.h"
+			$File "hl2rp\hl2rp_money.cpp"
+			$File "hl2rp\hl2rp_money.h"
 			$File "hl2rp\hl2rp_npc_police.cpp"
 			$File "hl2rp\hl2rp_npc_police.h"
 			$File "hl2rp\hl2rp_property.cpp"

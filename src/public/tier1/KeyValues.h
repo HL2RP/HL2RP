@@ -92,7 +92,7 @@ public:
 	{
 	public:
 		explicit inline AutoDelete( KeyValues *pKeyValues ) : m_pKeyValues( pKeyValues ) {}
-		explicit inline AutoDelete( const char *pchKVName ) : m_pKeyValues( new KeyValues( pchKVName ) ) {}
+		explicit inline AutoDelete( const char *pchKVName = "" ) : m_pKeyValues( new KeyValues( pchKVName ) ) {}
 		inline ~AutoDelete( void ) { if( m_pKeyValues ) m_pKeyValues->deleteThis(); }
 		inline void Assign( KeyValues *pKeyValues ) { m_pKeyValues = pKeyValues; }
 		KeyValues *operator->()	{ return m_pKeyValues; }

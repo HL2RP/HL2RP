@@ -312,6 +312,10 @@ public:
 		{
 			soundemitterbase->AddSoundOverrides( scriptfile );
 		}
+
+#ifdef HL2RP
+		soundemitterbase->AddSoundOverrides("scripts/hl2rp_sounds.txt", true);
+#endif // HL2RP
 #endif
 
 #if !defined( CLIENT_DLL )

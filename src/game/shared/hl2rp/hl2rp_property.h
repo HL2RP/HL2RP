@@ -33,6 +33,8 @@ public:
 	bool HasAccess(CHL2Roleplayer*, bool forLockingDoors = true);
 
 #ifdef GAME_DLL
+	static const char* GetTypeToken(EHL2RP_PropertyType);
+
 	~CHL2RP_Property();
 
 	void LinkZone(CCityZone*, const Vector& samplePoint);

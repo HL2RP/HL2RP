@@ -168,9 +168,9 @@ const char* CHL2RPLocalizer::LocalizeAsUTF8(CBasePlayer* pPlayer, const char* pT
 {
 	if (*pToken == '#') // Check if token is localizable, for reusability
 	{
-		++pToken;
 		const char* pLanguage = (pPlayer != NULL && !pPlayer->IsBot()) ?
-			engine->GetClientConVarValue(pPlayer->entindex(), "cl_language") : HL2RP_LOCALIZER_DEFAULT_LANGUAGE;
+			engine->GetClientConVarValue(pPlayer->entindex(), LANGUAGE_CVAR_NAME)
+			: ConVarRef(LANGUAGE_CVAR_NAME, true).GetString();
 
 		for (int i = 0; i < 2; pLanguage = HL2RP_LOCALIZER_DEFAULT_LANGUAGE, ++i)
 		{
@@ -178,7 +178,7 @@ const char* CHL2RPLocalizer::LocalizeAsUTF8(CBasePlayer* pPlayer, const char* pT
 
 			if (mLocalizationByLanguage.IsValidIndex(localizationIndex))
 			{
-				const char* pText = mLocalizationByLanguage[localizationIndex]->GetElementOrDefault(pToken, "");
+				const char* pText = mLocalizationByLanguage[localizationIndex]->GetElementOrDefault(pToken + 1, "");
 
 				if (*pText != '\0')
 				{
@@ -348,7 +348,8 @@ int CHL2RPLocalizer::InternalFormat(CBasePlayer* pPlayer, LC* pDest, int maxLen,
 			}
 
 			len += Copy(pDest + len, pFormat, Min(2, maxLen - len));
-		} while (len + 1 < maxLen && AdvanceCharacter<LC>(pFormat));
+		}
+		while (len + 1 < maxLen && AdvanceCharacter<LC>(pFormat));
 	}
 
 	Assert(pDest[len] == '\0');

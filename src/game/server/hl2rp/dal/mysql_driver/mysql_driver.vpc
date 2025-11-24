@@ -13,7 +13,7 @@ $Configuration
 {
 	$Compiler
 	{
-		$AdditionalIncludeDirectories "$BASE,$SRCDIR\game\server\hl2rp,$SRCDIR\thirdparty\mysql,.."
+		$AdditionalIncludeDirectories "$BASE,$SRCDIR\game\shared\hl2rp,$SRCDIR\thirdparty\mysql,.."
 	}
 }
 

@@ -6,14 +6,14 @@
 #pragma once
 
 #include "isql_driver.h"
-#include <hl2rp_util.h>
+#include <hl2rp_util_shared.h>
+#include <generic.h>
 #include <utldict.h>
 #include <utlmultilist.h>
 
 #define IDTO_PRIMARY_COLUMN_NAME "id"
 
 class CNodeDTOHandler;
-class KeyValues;
 
 class CFieldDictionaryDTO : public CDefaultGetAdapter<CUtlDict<SUtlField>>
 {

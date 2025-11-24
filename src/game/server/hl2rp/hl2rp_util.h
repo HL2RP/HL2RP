@@ -2,49 +2,8 @@
 #define HL2RP_UTIL_H
 #pragma once
 
-#include <generic.h>
-#include <string_t.h>
-#include <utlmap.h>
 #include <utlpair.h>
-#include <utlstring.h>
 
-struct SUtlField
-{
-	enum class EType
-	{
-		Null, // For SQL NULL values saving (e.g. FK fields reset)
-		Int,
-		UInt64,
-		Float,
-		String
-	};
-
-	SUtlField() : mType(EType::Null) {}
-	SUtlField(int value) : mUInt64(value), mType(EType::Int) {}
-	SUtlField(uint64 value) : mUInt64(value), mType(EType::UInt64) {}
-	SUtlField(float value) : mFloat(value), mType(EType::Float) {}
-	SUtlField(const char* pValue) : mString(pValue), mType(EType::String) {}
-	SUtlField(const string_t& value) : SUtlField(STRING(value)) {}
-
-	operator const char* () const;
-
-	int ToInt() const;
-	uint64 ToUInt64() const;
-	float ToFloat() const;
-	CUtlString ToString() const;
-
-	union
-	{
-		int mInt;
-		uint64 mUInt64;
-		float mFloat;
-	};
-
-	CUtlConstString mString;
-	EType mType;
-};
-
-#ifdef GAME_DLL
 class CPlayerEquipment
 {
 	bool mAllowClipsFallback; // Whether to keep default clip/s from a new weapon when we don't have
@@ -63,8 +22,22 @@ protected:
 
 void UTIL_GetServerTime(tm&, int offset = 0);
 
+// Command helpers
 const char* UTIL_GetCommandIssuerName();
+bool UTIL_CheckCmdArgCount(const CCommand& args, int minCount = 1); // Checks for min. arg count (*NOT* counting command name), printing usage at failure
+bool UTIL_CheckCommandAccess(int minAccessFlag); // If issuer is a player, checks for minimum access flag. Otherwise, checks for host.
 void UTIL_ReplyToCommand(int type, const char* pText, const char* pArg1 = "", const char* pArg2 = "");
+
+// Locates a player (based on userid or aim target), replying with a message in case of failure.
+// The combination of userIdMinArgs and userIdPos determines if userid-based search is required, in the following way:
+// 1. Function checks if arg count is at least userIdMinArgs (min. arg count to check userid), *NOT* counting command name.
+// 2. If userid is numeric, then it'll be the only possible search method. Player is then searched by it.
+//    Else: if there are more args required behind userid to employ related search, the process ends with failure.
+//    Otherwise, the function assumes that userid arg may be valid for other text args, so it allows aim target search.
+// If first check fails, the function directly searches by aim target (when issuer is a player).
+bool UTIL_FindCmdTarget(const CCommand& args, CHL2Roleplayer*& pTarget, int userIdMinArgs = 2, int userIdPos = 1);
+
+void UTIL_LogAdminAction(CHL2Roleplayer*, const char*, ...); // Logs an admin action (if player is valid), prefixed by their identity for auditing
 
 void UTIL_SendDialog(CBasePlayer*, KeyValues* pData, DIALOG_TYPE);
 
@@ -73,6 +46,5 @@ CUtlString& UTIL_TrimQuotableString(CUtlString&&);
 bool UTIL_IsPropertyDoor(CBaseEntity*);
 CHL2RP_PropertyDoorData* UTIL_GetPropertyDoorData(CBaseEntity*);
 void UTIL_SetDoorLockState(CBaseEntity*, CHL2Roleplayer* pActivator, bool lock, bool save);
-#endif // GAME_DLL
 
 #endif // !HL2RP_UTIL_H

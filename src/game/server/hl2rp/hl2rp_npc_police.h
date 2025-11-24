@@ -18,7 +18,7 @@ class CHL2RPNPCPolice : public CHL2RPCharacter<CNPC_MetroPolice>
 
 	void Spawn() OVERRIDE;
 	void UpdateOnRemove() OVERRIDE;
-	void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtStr<>&) OVERRIDE HL2RP_LEGACY_FUNCTION;
+	void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtCStr&) OVERRIDE HL2RP_LEGACY_FUNCTION;
 	void GatherConditions() OVERRIDE;
 	int SelectSchedule() OVERRIDE;
 	void StartTask(const Task_t*) OVERRIDE;

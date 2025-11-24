@@ -6,9 +6,14 @@
 
 	"Tokens"
 	{
-		"HL2RP_Access_Granted_Issuer"	"You have granted %1 access to: %2"
-		"HL2RP_Access_Removed_Issuer"	"You have removed access from %1 to: %2"
+		"HL2RP_Access_Granted_Issuer"	"You granted %1 access to: %2"
+		"HL2RP_Access_Removed_Issuer"	"You removed access from %1 to: %2"
+		"HL2RP_Command_Usage"			"Usage: %1 %2"
 		"HL2RP_DayNight_MapChange"		"Changing map from day/night cycle to %1 in %2..."
 		"HL2RP_ManagePropertyDoor"		"Manage Property/Door"
+		"HL2RP_Money_Added_Issuer"		"You added %1 to %2's Pocket"
+		"HL2RP_Money_Display"			"%1s%2" // 1: Token. 2: Amount.
+		"HL2RP_Target_NotFound"			"Target not found"
+		"HL2RP_Thousand_Separator"		","
 	}
 }

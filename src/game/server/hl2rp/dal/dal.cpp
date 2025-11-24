@@ -233,13 +233,12 @@ int CDAL::Run()
 
 IDatabaseConnection* CDAL::LoadDatabaseConfiguration()
 {
-	KeyValuesAD configuration("");
+	KeyValuesAD configuration;
 	const char* pDatabaseName = DAL_DEFAULT_DATABASE_NAME;
 
-	if (!configuration->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "database.cfg")
-		&& !configuration->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "database_default.cfg"))
+	if (!HL2RP_LoadConfigFile(configuration, "database.cfg") && !HL2RP_LoadConfigFile(configuration, "database_default.cfg"))
 	{
-		Warning("Failed to load database configuration from file: '%sdatabase.cfg'\n", HL2RP_CONFIG_PATH);
+		Warning("Failed to load database configuration from file: '%s/database.cfg'\n", HL2RP_CONFIG_PATH);
 	}
 	else
 	{

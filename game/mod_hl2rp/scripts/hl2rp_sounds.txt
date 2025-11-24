@@ -1,0 +1,9 @@
+"HL2RP.MoneyDrop"
+{
+	"wave" "roleplay/gem.mp3"
+}
+
+"HL2RP.MoneyGain"
+{
+	"wave" "roleplay/cashregister.wav"
+}

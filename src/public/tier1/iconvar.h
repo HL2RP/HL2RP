@@ -86,6 +86,12 @@ class CCommand;
 
 #define FCVAR_MATERIAL_THREAD_MASK ( FCVAR_RELOAD_MATERIALS | FCVAR_RELOAD_TEXTURES | FCVAR_MATERIAL_SYSTEM_THREAD )	
 
+#ifdef HL2RP_FULL
+#define FCVAR_REPLICATED_HL2RP FCVAR_REPLICATED
+#elif (defined HL2RP)
+#define FCVAR_REPLICATED_HL2RP 0 // Empty flag for Legacy version (HL2DM), to prevent errors in client console due to missing ConVar
+#endif // HL2RP_FULL
+
 //-----------------------------------------------------------------------------
 // Called when a ConVar changes value
 // NOTE: For FCVAR_NEVER_AS_STRING ConVars, pOldValue == NULL

@@ -75,7 +75,7 @@ void CHL2RPNPCPolice::UpdateOnRemove()
 }
 
 #ifdef HL2RP_LEGACY
-void CHL2RPNPCPolice::GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtStr<>& text)
+void CHL2RPNPCPolice::GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtCStr& text)
 {
 	text.Localize("#HL2RP_Police");
 }

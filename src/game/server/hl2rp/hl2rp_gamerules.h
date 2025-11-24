@@ -4,10 +4,12 @@
 
 #include "sourcehooks.h"
 #include <hl2rp_gamerules_shared.h>
+#include "hl2rp_util.h"
 #include <hl2rp_shareddefs.h>
 #include <bitflags.h>
 #include <fmtstr.h>
 #include <GameEventListener.h>
+#include <UtlSortVector.h>
 
 SCOPED_ENUM(ESeasonRangePart,
 	Start,
@@ -29,6 +31,7 @@ SCOPED_ENUM(EHL2RPDatabaseIOFlag,
 )
 
 class CHL2RP_Property;
+class CMoneyProp;
 
 using FileFindHandle_t = int;
 
@@ -42,6 +45,20 @@ public:
 	bool mIsGod;
 	CAutoLessFuncAdapter<CUtlRBTree<int>> mModelGroupIndices;
 	CBitFlags<> mRequiredAccessFlag;
+};
+
+struct SMoneyPropData
+{
+	class CLess
+	{
+	public:
+		bool Less(SMoneyPropData*, SMoneyPropData*, void*);
+	};
+
+	SMoneyPropData(int amount) : mAmount(amount) {}
+
+	int mAmount;
+	CAutoLessFuncAdapter<CUtlMap<const char*, SUtlField>> mFieldByName;
 };
 
 class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
@@ -100,12 +117,14 @@ class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
 	bool EndDayNightMapChange();
 	Activity TranslateActivity(CBaseCombatCharacter*, Activity,
 		Activity& fallbackActivity, bool weaponActStrict, int& sequence);
+	void SpawnMoneyProps();
 
 	CUtlRBTree<const char*> mExcludedUploadExts;
 	CUtlVector<CSeasonData> mSeasons;
 	const char* mpNextDayNightMap = NULL;
 	float mDayNightMapChangeTime;
 	CAutoLessFuncAdapter<CAutoDeleteAdapter<CUtlMap<Activity, CActivityList*>>> mActivityFallbacksMap;
+	CUtlLinkedList<CHandle<CMoneyProp>> mMoneyPropsToSpawn; // Pending props to spawn from money drops
 	CSimpleSimTimer mPoliceWaveTimer;
 
 public:
@@ -114,17 +133,19 @@ public:
 	bool IsDayTime(const tm&);
 	const char* GetIdealMapAlias(); // Returns the unique map group, if possible, current map otherwise
 	Activity GetBestTranslatedActivity(CBaseCombatCharacter*, Activity, bool weaponActStrict, int& sequence);
+	bool DropMoney(int, CHL2Roleplayer*, bool front); // Returns true if whole amount was dropped, false if not at all
 	void AddPlayerName(uint64, const char*);
 	void SendPlayerName(int index, CRecipientFilter && = CBroadcastRecipientFilter()) HL2RP_FULL_FUNCTION;
 
 	CHUDMsgInterceptor mHUDMsgInterceptor;
 	IResponseSystem* mpPlayerResponseSystem;
 	CBitFlags<> mDatabaseIOFlags;
+	CPlayerModelsMap mPlayerModelsByGroup;
 	CDefaultGetAdapter<CUtlRBTree<const char*>> mMapGroups;
+	CAutoLessFuncAdapter<CUtlRBTree<EHANDLE>> mWavePolices;
 	CAutoLessFuncAdapter<CUtlRBTree<CHL2RP_Property*>> mProperties;
 	CAutoDeleteAdapter<CUtlMap<const char*, CJobData*>> mJobByName[EFaction::_Count];
-	CPlayerModelsMap mPlayerModelsByGroup;
-	CAutoLessFuncAdapter<CUtlRBTree<EHANDLE>> mWavePolices;
+	CAutoDeleteAdapter<CUtlSortVector<SMoneyPropData*, SMoneyPropData::CLess>> mMoneyPropsData;
 };
 
 #endif // !HL2RP_GAMERULES_H

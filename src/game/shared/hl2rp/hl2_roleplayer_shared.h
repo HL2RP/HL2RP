@@ -13,11 +13,14 @@
 #include <c_hl2mp_player.h>
 #include <simtimer.h>
 
+#define CPlayerMoney       C_PlayerMoney
 #define CBaseHL2Roleplayer C_BaseHL2Roleplayer
 #endif // GAME_DLL
 
-#define CALL_PLAYER_DATABASE_PROP_CHANGE_FUNC(VarType, pProp, enumValue) \
-	OnDatabasePropChanged((SPlayerDatabasePropProxy<VarType>::Inner&)pProp, enumValue);
+#define DATABASE_PROP_STRING(value) STRING((string_t)value)
+
+#define CALL_PLAYER_DATABASE_PROP_CHANGE_FUNC(Type, pProp, enumValue) \
+	OnDatabasePropChanged((SPlayerDatabasePropProxy<Type>::Inner&)pProp, enumValue);
 
 #define CPlayerNetworkProp(Type, name) CPlayerNetworkPropEx(Type, name) {}
 
@@ -29,7 +32,9 @@
 	CPlayerNetworkPropEx(Type, name) \
 	{ CALL_PLAYER_DATABASE_PROP_CHANGE_FUNC(Type, name, enumValue) }
 
-#define DATABASE_PROP_STRING(value) STRING((string_t)value)
+#define CPlayerEmbeddedMoneyProp(enumValue) \
+	CNetworkVarEmbedded(CPlayerMoney, m##enumValue); \
+	int Add##enumValue(int amount) { return AddMoney(amount, m##enumValue, EPlayerDatabasePropType::enumValue); }
 
 template<class T, typename S>
 struct SPlayerDatabasePropProxyBase
@@ -74,8 +79,6 @@ using CPlayerDatabasePropBase = typename SPlayerDatabasePropProxy<T, Listener>::
 
 #define HL2_ROLEPLAYER_DOUBLE_KEYPRESS_MAX_DELAY 0.3f
 
-#define HL2_ROLEPLAYER_BEAMS_PATH "materials/sprites/laserbeam.vmt"
-
 SCOPED_ENUM(EPlayerDatabaseIOFlag,
 	UpdateMainDataOnLoaded,
 	UpdateAmmunitionOnLoaded,
@@ -85,9 +88,11 @@ SCOPED_ENUM(EPlayerDatabaseIOFlag,
 	IsEquipmentSaveDisabled // Active while restorable equipment exists
 )
 
+// NOTE: These values must have a matching string at gPlayerDatabasePropNames
 SCOPED_ENUM(EPlayerDatabasePropType,
 	Name,
 	Seconds,
+	Pocket,
 	Crime,
 	Faction,
 	Job,
@@ -116,10 +121,18 @@ SCOPED_ENUM(EPlayerAccessFlag, // NOTE: Don't change order
 	Root
 )
 
+// NOTE: The default state for each flag should be 'off', so that the 'on' state is explicitly set
+// by some action and thus acceptable to be kept when loading player data, as loaded flags add to the current.
+// So, for "features" that should be enabled by default, the flag name should mention "disabled" (or similar),
+// and the flag shouldn't be set initially (e.g. when joining the game), but when the player requests it.
 SCOPED_ENUM(EPlayerMiscFlag,
+	IsMoneyVariationSoundDisabled,
+	IsMoneyDropSoundDisabled,
 	IsRegionListEnabled,
 	AllowsRegionVoiceOnly
 )
+
+class CBaseHL2Roleplayer;
 
 struct SPlayerAimInfo // Information from max. two continuous traces
 {
@@ -129,32 +142,53 @@ struct SPlayerAimInfo // Information from max. two continuous traces
 	float mEndDistance; // Distance to deepest usable hit entity
 };
 
+class CPlayerMoney
+{
+	DECLARE_CLASS_NOBASE(CPlayerMoney)
+	DECLARE_EMBEDDED_NETWORKVAR()
+
+public:
+#ifdef HL2RP_CLIENT_OR_LEGACY
+	struct SVariationData
+	{
+		void Update(int amount);
+
+		int mOldAmount;
+		CSimpleSimTimer mEndTimer;
+	} mVariationData;
+#endif // HL2RP_CLIENT_OR_LEGACY
+
+	operator int() { return mAmount; }
+
+	const char* Format(CLocalizeFmtCStr&&);
+
+	CPlayerNetworkProp(int, mAmount);
+};
+
 class CBaseHL2Roleplayer : public CHL2RPCharacter<CHL2MP_Player>
 {
 	DECLARE_CLASS(CBaseHL2Roleplayer, CHL2RPCharacter)
 
-	void Precache() OVERRIDE;
+	virtual void OnDatabasePropChanged(const SUtlField&, EPlayerDatabasePropType) {}
 
-#ifdef GAME_DLL
-	virtual void OnDatabasePropChanged(const SUtlField&, EPlayerDatabasePropType) = 0;
-#else
-	void OnDatabasePropChanged(...) {}
-#endif // GAME_DLL
+	int AddMoney(int, CPlayerMoney&, EPlayerDatabasePropType); // Plays sound, handles variations. Returns applied delta (overflow-safe).
 
 public:
-	bool IsAdmin();
+	bool IsAdmin(int minAccessFlag = EPlayerAccessFlag::Admin);
 	bool HasCombineGrants(bool extraCombineCheck = true);
 	bool IsDamageProtected();
-	bool IsWithinDistance(CBaseEntity*, float maxDistance, bool fromEye = true);
+	bool IsWithinInteractRadius(CBaseEntity*, float radius = HL2_ROLEPLAYER_USE_KEEP_MAX_DIST);
 	void GetAimInfo(SPlayerAimInfo&);
 	bool GetZoneHUD(CLocalizeFmtStr<>&);
 	void GetPlayersInRegion(CUtlVector<CBasePlayer*>&);
 	int GetRegionHUD(const CUtlVector<CBasePlayer*>&, CLocalizeFmtStr<>&); // Returns the player lines count
+	void EmitLocalSound(const char*, bool overwrite = false);
 
 	CNetworkVar(bool, mIsInStickyWalkMode);
 	CNetworkArray(CHandle<CCityZone>, mZonesWithin, ECityZoneType::_Count);
 	CPlayerNetworkProp(CBitFlags<>, mDatabaseIOFlags);
 	CPlayerDatabaseNetworkProp(int, mSeconds, EPlayerDatabasePropType::Seconds);
+	CPlayerEmbeddedMoneyProp(Pocket);
 	CPlayerDatabaseNetworkProp(int, mCrime, EPlayerDatabasePropType::Crime);
 	CPlayerDatabaseNetworkProp(int, mFaction, EPlayerDatabasePropType::Faction);
 	CPlayerDatabaseNetworkProp(CBitFlags<>, mAccessFlags, EPlayerDatabasePropType::AccessFlags);

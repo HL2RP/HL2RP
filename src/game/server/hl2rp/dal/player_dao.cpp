@@ -14,6 +14,9 @@
 // Max. delay since player loads to print welcome message (client may not display too early messages)
 #define PLAYER_DAO_WELCOME_PRINT_MAX_DELAY 2.0f
 
+static ConVar sInitialMoneyCVar("sv_initial_player_money", "5000",
+	FCVAR_ARCHIVE, "Initial amount of money that new Citizens will receive into their pocket");
+
 class CSQLPlayerMainTableSetupDTO : public CSQLTableSetupDTO
 {
 public:
@@ -22,6 +25,7 @@ public:
 		mPrimaryKeyColumnIndices.AddToTail(CreateUInt64Column(IDTO_PRIMARY_COLUMN_NAME));
 		CreateVarCharColumn(gPlayerDatabasePropNames[EPlayerDatabasePropType::Name], MAX_PLAYER_NAME_LENGTH);
 		CreateIntColumn(gPlayerDatabasePropNames[EPlayerDatabasePropType::Seconds]);
+		CreateIntColumn(gPlayerDatabasePropNames[EPlayerDatabasePropType::Pocket]);
 		CreateIntColumn(gPlayerDatabasePropNames[EPlayerDatabasePropType::Crime]);
 		CreateIntColumn(gPlayerDatabasePropNames[EPlayerDatabasePropType::Faction]);
 		CreateTextColumn(gPlayerDatabasePropNames[EPlayerDatabasePropType::Job]);
@@ -93,12 +97,14 @@ void CPlayerLoadDAO::HandleCompletion()
 
 	if (pMainData->IsEmpty())
 	{
+		pPlayer->AddPocket(sInitialMoneyCVar.GetInt());
 		pPlayer->mDatabaseIOFlags.SetBit(EPlayerDatabaseIOFlag::IsNewCitizenPrintPending);
 	}
 	else
 	{
 		CFieldDictionaryDTO& mainData = pMainData->Head();
 		pPlayer->mSeconds += mainData.GetInt(gPlayerDatabasePropNames[EPlayerDatabasePropType::Seconds]);
+		pPlayer->mPocket.mAmount += mainData.GetInt(gPlayerDatabasePropNames[EPlayerDatabasePropType::Pocket]);
 		pPlayer->mCrime += mainData.GetInt(gPlayerDatabasePropNames[EPlayerDatabasePropType::Crime]);
 		int faction = Clamp(mainData.GetInt(gPlayerDatabasePropNames[EPlayerDatabasePropType::Faction]),
 			0, EFaction::_Count - 1), jobHealth = 0;
@@ -229,6 +235,7 @@ CPlayersMainDataSaveDAO::CPlayersMainDataSaveDAO(CHL2Roleplayer* pPlayer)
 	CRecordNodeDTO* pMainData = CreateRecord(pPlayer);
 	AddField(pMainData, pPlayer->GetPlayerName(), EPlayerDatabasePropType::Name);
 	AddField(pMainData, pPlayer->mSeconds->Get(), EPlayerDatabasePropType::Seconds);
+	AddField(pMainData, (int)pPlayer->mPocket, EPlayerDatabasePropType::Pocket);
 	AddField(pMainData, pPlayer->mCrime->Get(), EPlayerDatabasePropType::Crime);
 	AddField(pMainData, pPlayer->mFaction->Get(), EPlayerDatabasePropType::Faction);
 	AddField(pMainData, pPlayer->mJobName.Get(), EPlayerDatabasePropType::Job);

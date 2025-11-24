@@ -62,9 +62,6 @@ class ConVar;
 class CDmgAccumulator;
 class IHasAttributes;
 
-template<typename = wchar_t>
-class CLocalizeFmtStr;
-
 struct CSoundParameters;
 
 typedef unsigned int			AimEntsListHandle_t;

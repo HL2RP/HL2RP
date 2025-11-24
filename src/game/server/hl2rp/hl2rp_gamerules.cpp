@@ -16,7 +16,7 @@
 #define DOWNLOADABLE_FILE_TABLENAME "downloadables"
 
 #define HL2RP_RULES_UPLOAD_PATH_ID   "upload"
-#define HL2RP_RULES_UPLOAD_LIST_FILE (HL2RP_CONFIG_PATH "upload.txt")
+#define HL2RP_RULES_UPLOAD_LIST_FILE (HL2RP_CONFIG_PATH "/upload.txt")
 
 #define HL2RP_RULES_DAYNIGHT_MAPCHANGE_THINK_CONTEXT "DayNightMapChangeThink"
 
@@ -128,6 +128,11 @@ void CJobData::AddModelGroup(const char* pGroup)
 	}
 }
 
+bool SMoneyPropData::CLess::Less(SMoneyPropData* pLeft, SMoneyPropData* pRight, void*)
+{
+	return (pLeft->mAmount < pRight->mAmount);
+}
+
 CHL2RPRules::CSeasonData::CSeasonData()
 {
 	for (int i = 0; i < EMapCycleTime::_Count; ++i)
@@ -159,7 +164,8 @@ void CHL2RPRules::CPlayerModelDict::AddModel(KeyValues* pModelKV, INetworkString
 				Q_StripExtension(alias, alias, sizeof(alias));
 				Q_snprintf(path.Access() + path.Length(), path.GetMaxLength() - path.Length(), "/%s", pName);
 				AddExactModel(alias, path, pModelPrecache);
-			} while ((pName = filesystem->FindNext(findHandle)) != NULL);
+			}
+			while ((pName = filesystem->FindNext(findHandle)) != NULL);
 		}
 
 		return filesystem->FindClose(findHandle);
@@ -241,13 +247,13 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 
 	DevMsg("HL2RPRules: Took %s ms to register %s downloadable files\n", Q_pretifynum(Plat_MSTime() - startTime),
 		Q_pretifynum(pDownloadables->GetNumStrings() - oldDownloadablesCount));
-	KeyValuesAD mapGroupsKV(""), seasonsKV(""), dayNightMapCycleKV(""), modelsKV(""), jobsKV("");
+	KeyValuesAD configKV;
 	CAutoLessFuncAdapter<CUtlRBTree<const char*>> seasonNames; // Correlative with loaded seasons
 
 	// Load related map groups
-	if (mapGroupsKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "mapgroups.txt"))
+	if (HL2RP_LoadConfigFile(configKV, "mapgroups.txt"))
 	{
-		FOR_EACH_TRUE_SUBKEY(mapGroupsKV, pMapGroupKV)
+		FOR_EACH_TRUE_SUBKEY(configKV, pMapGroupKV)
 		{
 			FOR_EACH_VALUE(pMapGroupKV, pMapKV)
 			{
@@ -261,9 +267,9 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 	}
 
 	// Load seasons
-	if (seasonsKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "seasons.txt"))
+	if (HL2RP_LoadConfigFile(configKV, "seasons.txt"))
 	{
-		FOR_EACH_TRUE_SUBKEY(seasonsKV, pSeasonKV)
+		FOR_EACH_TRUE_SUBKEY(configKV, pSeasonKV)
 		{
 			if (!seasonNames.HasElement(pSeasonKV->GetName()))
 			{
@@ -303,9 +309,9 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 	}
 
 	// Load day/night mapcycle
-	if (dayNightMapCycleKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "daynight_mapcycle.txt"))
+	if (HL2RP_LoadConfigFile(configKV, "daynight_mapcycle.txt"))
 	{
-		FOR_EACH_TRUE_SUBKEY(dayNightMapCycleKV, pMapGroupKV)
+		FOR_EACH_TRUE_SUBKEY(configKV, pMapGroupKV)
 		{
 			if (mMapGroups.HasElement(pMapGroupKV->GetName()))
 			{
@@ -360,13 +366,13 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 	}
 
 	// Load player models
-	if (modelsKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "models.txt"))
+	if (HL2RP_LoadConfigFile(configKV, "models.txt"))
 	{
 		const char* typeNames[EPlayerModelType::_Count] = { "Job", "Public", "VIP", "Admin", "Root" };
 
 		for (int i = 0; i < ARRAYSIZE(typeNames); ++i)
 		{
-			KeyValues* pTypeKV = modelsKV->FindKey(typeNames[i]);
+			KeyValues* pTypeKV = configKV->FindKey(typeNames[i]);
 
 			if (pTypeKV != NULL)
 			{
@@ -401,13 +407,13 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 	}
 
 	// Load jobs data
-	if (jobsKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "jobs.txt"))
+	if (HL2RP_LoadConfigFile(configKV, "jobs.txt"))
 	{
 		const char* factionNames[EFaction::_Count] = { "Citizen", "Combine" };
 
 		for (int i = 0; i < ARRAYSIZE(factionNames); ++i)
 		{
-			KeyValues* pFactionKV = jobsKV->FindKey(factionNames[i]);
+			KeyValues* pFactionKV = configKV->FindKey(factionNames[i]);
 
 			if (pFactionKV != NULL)
 			{
@@ -417,6 +423,34 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 					{
 						mJobByName[i].Insert(pJobKV->GetName(), new CJobData(pJobKV, i));
 					}
+				}
+			}
+		}
+	}
+
+	// Load currency data (money props setup)
+	if (HL2RP_LoadConfigFile(configKV, "currency.txt"))
+	{
+		FOR_EACH_TRUE_SUBKEY(configKV, amountKV)
+		{
+			int amount = Q_atoi(amountKV->GetName());
+
+			if (amount > 0) // Avoid negative money (which would affect economy)
+			{
+				CPlainAutoPtr<SMoneyPropData> data(new SMoneyPropData(amount));
+
+				if (mMoneyPropsData.InsertIfNotFound(data.Get()) >= 0)
+				{
+					FOR_EACH_VALUE(amountKV, fieldKV)
+					{
+						data->mFieldByName.InsertOrReplace(fieldKV->GetName(), SUtlField::FromKeyValues(fieldKV));
+					}
+
+					const char* pPath = data->mFieldByName.GetElementOrDefault("model", "");
+					int index = CBaseEntity::PrecacheModel(pPath);
+					DevMsg("HL2RPRules: Loaded currency amount '%i' with model: '%s' (index: %i)\n",
+						amount, pPath, index);
+					data.Detach(); // Prevent destruction
 				}
 			}
 		}
@@ -554,7 +588,7 @@ const char* CHL2RPRules::GetChatFormat(bool teamOnly, CBasePlayer* pPlayer)
 // Called when request is team only
 bool CHL2RPRules::PlayerCanHearChat(CBasePlayer* pListener, CBasePlayer* pSpeaker)
 {
-	return ToHL2Roleplayer(pListener)->IsWithinDistance(pSpeaker, gRegionMaxRadiusCVar.GetFloat(), false);
+	return ToHL2Roleplayer(pListener)->IsWithinInteractRadius(pSpeaker, gRegionMaxRadiusCVar.GetFloat());
 }
 
 bool CHL2RPRules::CanPlayerHearVoice(CBasePlayer* pListener, CBasePlayer* pSpeaker, bool allTalk)
@@ -666,7 +700,7 @@ void CHL2RPRules::Think()
 								mpNextDayNightMap = season.mEligibleMaps[cycleTime][index];
 								mDayNightMapChangeTime = gpGlobals->realtime + mp_chattime.GetFloat();
 								SendDayNightMapTimeLeft(true);
-								Msg("%s\n", CLocalizeFmtStr<>().Localize("#HL2RP_DayNight_MapChange",
+								Msg("%s\n", CLocalizeFmtCStr().Localize("#HL2RP_DayNight_MapChange",
 									mpNextDayNightMap, mp_chattime.GetInt()));
 								break;
 							}
@@ -683,6 +717,8 @@ void CHL2RPRules::Think()
 		{
 			mpNextDayNightMap = NULL; // Fully end countdown, so we'll create a new one once cvar is re-enabled
 		}
+
+		SpawnMoneyProps();
 
 		if (mPoliceWaveTimer.Expired())
 		{

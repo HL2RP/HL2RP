@@ -3,7 +3,6 @@
 #pragma once
 
 #include "inetwork_dialog.h"
-#include <hl2rp_util_shared.h>
 
 class CHL2RP_Property;
 class CRationDispenserProp;
@@ -99,6 +98,7 @@ class CSettingsMenu : public CNetworkMenu
 {
 	SCOPED_ENUM(EItemAction,
 		ClearHUDHints,
+		Money,
 		Region
 	);
 
@@ -106,6 +106,22 @@ class CSettingsMenu : public CNetworkMenu
 
 public:
 	CSettingsMenu(CHL2Roleplayer*);
+};
+
+class CMoneySettingsMenu : public CNetworkMenu
+{
+	SCOPED_ENUM(EItemAction,
+		EnableVariationSound,
+		DisableVariationSound,
+		EnableDropSound,
+		DisableDropSound
+	);
+
+	void UpdateItems() OVERRIDE;
+	void SelectItem(CItem*) OVERRIDE;
+
+public:
+	CMoneySettingsMenu(CHL2Roleplayer*);
 };
 
 class CRegionSettingsMenu : public CNetworkMenu
@@ -193,12 +209,40 @@ public:
 	CMapGroupMenu(CHL2Roleplayer*, int action);
 };
 
+class COtherPlayerMenu : public CNetworkMenu
+{
+	SCOPED_ENUM(EItemAction,
+		GiveMoney
+	);
+
+	void UpdateItems() OVERRIDE;
+	void Think() OVERRIDE;
+	void SelectItem(CItem*) OVERRIDE;
+	void HandleChildNotice(int, const SUtlField&) OVERRIDE;
+
+	CHandle<CHL2Roleplayer> mhOther;
+
+public:
+	COtherPlayerMenu(CHL2Roleplayer*, CHL2Roleplayer* pOther);
+};
+
+// Generic menu which adds configured amounts up to the maximum, in ascending order, and forwards selection to parent
+class CMoneyTransferMenu : public CNetworkMenu
+{
+	void UpdateItems() OVERRIDE;
+	void SelectItem(CItem*) OVERRIDE;
+
+public:
+	CMoneyTransferMenu(CHL2Roleplayer*, const char* pTitle, int action);
+};
+
 class CAdminMenu : public CNetworkMenu
 {
 	SCOPED_ENUM(EItemAction,
 		ManageDispensers
 	);
 
+	void UpdateItems() OVERRIDE;
 	void SelectItem(CItem*) OVERRIDE;
 
 public:

@@ -53,7 +53,7 @@ void CKeyValuesDriver::LoadFromFile(CFmtStrN<MAX_PATH>& path, const char* pSubDi
 {
 	int len = path.Length();
 	path += ".tmp";
-	KeyValuesAD results("");
+	KeyValuesAD results;
 
 	if (!results->LoadFromFile(filesystem, path))
 	{

@@ -1204,14 +1204,14 @@ char *V_pretifymem( float value, int digitsafterdecimal /*= 2*/, bool usebinaryo
 	return out;
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: Returns a string representation of an integer with commas
+//----------------------------------------------------------------------------------
+// Purpose: Returns a string representation of an integer with specified separator
 //			separating the 1000s (ie, 37,426,421)
 // Input  : value -		Value to convert
 // Output : Pointer to a static buffer containing the output
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------------
 #define NUM_PRETIFYNUM_BUFFERS 8 // Must be a power of two
-char *V_pretifynum( int64 inputValue )
+char *V_pretifynum( int64 inputValue, char separator )
 {
 	static char output[ NUM_PRETIFYMEM_BUFFERS ][ 32 ];
 	static int  current;
@@ -1275,9 +1275,9 @@ char *V_pretifynum( int64 inputValue )
 		if ( !divisor )
 			break;
 
-		// The remaining blocks of digits always include a comma and three digits.
+		// The remaining blocks of digits always include a separator and three digits.
 		toPrint = value / divisor;
-		V_snprintf( pchRender, outEnd - pchRender, ",%03d", toPrint );
+		V_snprintf( pchRender, outEnd - pchRender, "%c%03d", separator, toPrint );
 	}
 
 	return out;

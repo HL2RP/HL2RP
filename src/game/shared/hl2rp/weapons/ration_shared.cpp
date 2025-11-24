@@ -13,7 +13,6 @@
 #else
 #include <c_hl2_roleplayer.h>
 #include <hl2mp_gamerules.h>
-#include <prediction.h>
 #endif // GAME_DLL
 
 #define RATION_USAGE_HEALTH_GAIN 5
@@ -173,18 +172,12 @@ void CRation::RevertExcessClip1()
 	}
 }
 
-void CRation::EmitSoundToOwner(int type, CBasePlayer* pPlayer)
-{
 #ifdef HL2RP_CLIENT_OR_LEGACY
-#ifdef CLIENT_DLL
-	if (prediction->IsFirstTimePredicted())
-#endif // CLIENT_DLL
-	{
-		CSingleUserRecipientFilter filter(pPlayer);
-		EmitSound(filter, pPlayer->GetSoundSourceIndex(), GetShootSound(type));
-	}
-#endif // HL2RP_CLIENT_OR_LEGACY
+void CRation::EmitSoundToOwner(int type, CHL2Roleplayer* pPlayer)
+{
+	pPlayer->EmitLocalSound(GetShootSound(type));
 }
+#endif // HL2RP_CLIENT_OR_LEGACY
 
 void CRation::AllowPickup()
 {

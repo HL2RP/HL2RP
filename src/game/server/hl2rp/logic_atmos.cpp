@@ -174,8 +174,8 @@ void CLogicAtmos::UpdateLightValues()
 
 	byte patternRange[] = { (byte)*mLightPattern[EPeakLightTime::MidDay].ToCStr(),
 		(byte)*mLightPattern[EPeakLightTime::MidNight].ToCStr() };
-	CFmtStrN<2> pattern("%c", ComputeLightValue(patternRange, scale));
-	mOnLightPattern.Set(AllocPooledString(pattern), this, this);
+	const char* pPattern = UTIL_VarArgs("%c", ComputeLightValue(patternRange, scale));
+	mOnLightPattern.Set(AllocPooledString(pPattern), this, this);
 
 	SetNextThink(gpGlobals->curtime + LOGIC_ATMOS_LIGHT_UPDATE_PERIOD, LOGIC_ATMOS_LIGHT_UPDATE_CONTEXT);
 }

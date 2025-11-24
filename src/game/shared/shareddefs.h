@@ -27,7 +27,20 @@
 #define ANIMATION_CYCLE_MINFRAC		(1.0f / (1<<ANIMATION_CYCLE_BITS))
 
 #ifdef HL2RP
+#define LANGUAGE_CVAR_NAME "cl_language"
+
 #define DOOR_BASECLASS(Base) CHL2RP_PropertyDoor<Base>
+
+#ifdef GAME_DLL
+#define LOCCHAR_T char
+#else
+#define LOCCHAR_T wchar_t
+#endif // GAME_DLL
+
+template<typename = LOCCHAR_T>
+class CLocalizeFmtStr;
+
+using CLocalizeFmtCStr = CLocalizeFmtStr<char>;
 #else
 #define DOOR_BASECLASS(Base) Base
 #endif // HL2RP

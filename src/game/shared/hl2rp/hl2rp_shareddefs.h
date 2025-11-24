@@ -53,7 +53,7 @@
 #define HL2RP_REGION_HUD_HEADER_DEFAULT_COLOR      Color(255, 150, 150, 255)
 #define HL2RP_REGION_HUD_PLAYERS_DEFAULT_COLOR     Color(255, 100, 100, 255)
 
-#define HL2RP_CONFIG_PATH "cfg/hl2rp/"
+#define HL2RP_CONFIG_PATH "cfg/hl2rp"
 
 #define HL2RP_ENTITY_SEARCH_RADIUS_SQR (0.5f * 0.5f) // To be used during e.g. data loading
 
@@ -69,8 +69,9 @@
 #define HL2RP_LEARNED_HUD_HINTS_FIELD_NAME   "learnedHUDHints"
 #define HL2RP_LEARNED_HUD_HINTS_UPDATE_EVENT "LearnedHUDHintsUpdated"
 
-#define NETWORK_DIALOG_REWIND_SOUND "Buttons.snd9"
-#define NETWORK_MENU_ITEM_SOUND     "Buttons.snd37"
+#define HL2RP_MAIN_BEAM_PATH   "materials/sprites/laserbeam.vmt"
+#define HL2RP_SMALL_BEAM_COLOR HL2RP_HUD_COLOR_GREEN
+#define HL2RP_SMALL_BEAM_WIDTH 1.0f
 
 #define HL2RP_PROPERTY_DOOR_LOCK_SOUND   "Buttons.snd28"
 #define HL2RP_PROPERTY_DOOR_UNLOCK_SOUND "Buttons.snd21"

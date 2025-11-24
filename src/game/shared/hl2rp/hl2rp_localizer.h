@@ -5,12 +5,6 @@
 #include "hl2rp_util_shared.h"
 #include <ilocalize.h>
 
-#ifdef GAME_DLL
-#define LOCCHAR_T char
-#else
-#define LOCCHAR_T wchar_t
-#endif // GAME_DLL
-
 #define HL2RP_LOCALIZER_TOKEN_SIZE  64
 #define HL2RP_LOCALIZER_BUFFER_SIZE 512
 
@@ -92,7 +86,6 @@ class CBaseLocalizeFmtStr
 			mColorize, pFormat, buffer, sizeof...(T), mCloseArgColor);
 	}
 
-	CBasePlayer* mpPlayer;
 	LC* mpDest;
 	bool mColorize = false, mCloseArgColor = false;
 	int mMaxSize;
@@ -140,6 +133,7 @@ public:
 		return mpDest;
 	}
 
+	CBasePlayer* mpPlayer;
 	int mLength = 0;
 };
 

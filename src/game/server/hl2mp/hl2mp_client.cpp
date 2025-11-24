@@ -76,7 +76,7 @@ void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 	// Try using language-specific MOTD file variant
 	extern INetworkStringTable* g_pStringTableInfoPanel;
 	const char* pLanguageMOTDName = UTIL_VarArgs("motd_%s",
-		engine->GetClientConVarValue(pPlayer->entindex(), "cl_language"));
+		engine->GetClientConVarValue(pPlayer->entindex(), LANGUAGE_CVAR_NAME));
 
 	if (g_pStringTableInfoPanel->FindStringIndex(pLanguageMOTDName) != INVALID_STRING_INDEX)
 	{

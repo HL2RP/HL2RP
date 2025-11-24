@@ -40,7 +40,7 @@ void LoadExportableEntsFile(const char* pFileName)
 {
 	char path[MAX_PATH];
 	V_sprintf_safe(path, "maps/entities/%s.txt", pFileName);
-	KeyValuesAD entities("");
+	KeyValuesAD entities;
 
 	if (entities->LoadFromFile(filesystem, path))
 	{

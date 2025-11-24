@@ -89,7 +89,8 @@ void CRation::HandleAnimEvent(animevent_t* pEvent)
 {
 	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
 
-	if (pPlayer != NULL && pEvent->event == EVENT_WEAPON_THROW && m_iClip1 > 0)
+	if (pPlayer != NULL && pEvent->event == EVENT_WEAPON_THROW
+		&& m_iClip1 > 0 && !enginetrace->PointOutsideWorld(pPlayer->WorldSpaceCenter()))
 	{
 		// Prepare new ration to throw
 		QAngle angles(pPlayer->EyeAngles().x, pPlayer->EyeAngles().y, 0.0f);
@@ -107,13 +108,9 @@ void CRation::HandleAnimEvent(animevent_t* pEvent)
 		AngleMatrix(angles, rotation);
 		RotateAABB(rotation, pRation->WorldAlignMins(), pRation->WorldAlignMaxs(), mins, maxs);
 		trace_t trace;
-		UTIL_TraceHull(pPlayer->WorldSpaceCenter(), origin, mins, maxs, pPlayer->PhysicsSolidMaskForEntity(),
-			pPlayer, pPlayer->GetCollisionGroup(), &trace);
-
-		if (trace.DidHit())
-		{
-			origin = trace.endpos;
-		}
+		UTIL_TraceHull(pPlayer->WorldSpaceCenter(), origin, mins, maxs,
+			pPlayer->PlayerSolidMask(true), pPlayer, pPlayer->GetCollisionGroup(), &trace);
+		origin = trace.endpos;
 
 		// Throw it
 		Vector velocity = pPlayer->GetAbsVelocity() + forward * RATION_THROW_AIR_SPEED;
