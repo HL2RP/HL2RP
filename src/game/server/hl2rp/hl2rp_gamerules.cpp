@@ -128,6 +128,11 @@ void CJobData::AddModelGroup(const char* pGroup)
 	}
 }
 
+bool SMoneyPropData::CLess::Less(SMoneyPropData* pLeft, SMoneyPropData* pRight, void*)
+{
+	return (pLeft->mAmount < pRight->mAmount);
+}
+
 CHL2RPRules::CSeasonData::CSeasonData()
 {
 	for (int i = 0; i < EMapCycleTime::_Count; ++i)
@@ -241,7 +246,7 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 
 	DevMsg("HL2RPRules: Took %s ms to register %s downloadable files\n", Q_pretifynum(Plat_MSTime() - startTime),
 		Q_pretifynum(pDownloadables->GetNumStrings() - oldDownloadablesCount));
-	KeyValuesAD mapGroupsKV(""), seasonsKV(""), dayNightMapCycleKV(""), modelsKV(""), jobsKV("");
+	KeyValuesAD mapGroupsKV(""), seasonsKV(""), dayNightMapCycleKV(""), currencyKV(""), modelsKV(""), jobsKV("");
 	CAutoLessFuncAdapter<CUtlRBTree<const char*>> seasonNames; // Correlative with loaded seasons
 
 	// Load related map groups
@@ -416,6 +421,34 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 					if (!mJobByName[i].IsValidIndex(mJobByName[i].Find(pJobKV->GetName())))
 					{
 						mJobByName[i].Insert(pJobKV->GetName(), new CJobData(pJobKV, i));
+					}
+				}
+			}
+		}
+	}
+
+	// Load currency data (money props setup)
+	if (currencyKV->LoadFromFile(filesystem, HL2RP_CONFIG_PATH "currency.txt"))
+	{
+		FOR_EACH_TRUE_SUBKEY(currencyKV, amountKV)
+		{
+			int amount = Q_atoi(amountKV->GetName());
+
+			if (amount > 0) // Early prevent negative money affecting economy
+			{
+				// TODO: Considerar sustituir el CUtlSortVector por un CUtlMap<int, SMoneyPropData*>, lo cual permitiria
+				// prescindir de hacer un "new SMoneyPropData" aqui al no necesitarse para insertar ordenadamente.
+				// Ademas, permitiria eliminar el mAmount y el constructor, resultando mas coherente la nomenclatura de
+				// la clase, y eliminando el CLess.
+				CPlainAutoPtr<SMoneyPropData> data(new SMoneyPropData(amount));
+				int index = mMoneyPropsData.InsertIfNotFound(data.Detach());
+
+				if (mMoneyPropsData.IsValidIndex(index))
+				{
+					FOR_EACH_VALUE(amountKV, dataKV)
+					{
+						mMoneyPropsData[index]->mFieldByKey
+							.InsertOrReplace(dataKV->GetName(), SUtlField::FromKeyValues(dataKV));
 					}
 				}
 			}

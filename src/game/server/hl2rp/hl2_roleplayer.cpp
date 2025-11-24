@@ -1048,6 +1048,17 @@ void CHL2Roleplayer::RewindCurrentDialog()
 	}
 }
 
+void CHL2Roleplayer::DropMoney(int money)
+{
+	auto& propsData = HL2RPRules()->mMoneyPropsData;
+	SMoneyPropData propData(money);
+
+	for (int index; index = propsData.FindLessOrEqual(&propData), propsData.IsValidIndex(index);)
+	{
+
+	}
+}
+
 static void HandleAccessChangeCommand(const CCommand& args, bool grant)
 {
 	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_GetCommandClient());

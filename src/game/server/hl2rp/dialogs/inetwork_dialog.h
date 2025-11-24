@@ -67,7 +67,7 @@ protected:
 		class CLess
 		{
 		public:
-			bool Less(CItem* const&, CItem* const&, void*);
+			bool Less(CItem*, CItem*, void*);
 		};
 
 		int mAction;

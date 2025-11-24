@@ -120,7 +120,7 @@ CNetworkMenu::CItem::CItem(int action, const SUtlField& info, const char* pDispl
 	*mDisplay = toupper(*mDisplay); // Fix casing from e.g. cached KeyValues
 }
 
-bool CNetworkMenu::CItem::CLess::Less(CItem* const& pLeft, CItem* const& pRight, void*)
+bool CNetworkMenu::CItem::CLess::Less(CItem* pLeft, CItem* pRight, void*)
 {
 	return (pLeft->mAction <= pRight->mAction);
 }

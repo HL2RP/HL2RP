@@ -15,6 +15,27 @@
 #define NETMSG_TYPE_BITS 6
 #define SVC_MENU         29
 
+SUtlField SUtlField::FromKeyValues(KeyValues* pKeyValues)
+{
+	switch (pKeyValues->GetDataType())
+	{
+	case KeyValues::TYPE_INT:
+	{
+		return pKeyValues->GetInt();
+	}
+	case KeyValues::TYPE_UINT64:
+	{
+		return pKeyValues->GetUint64();
+	}
+	case KeyValues::TYPE_FLOAT:
+	{
+		return pKeyValues->GetFloat();
+	}
+	}
+
+	return pKeyValues->GetString();
+}
+
 SUtlField::operator const char* () const
 {
 	return mString;

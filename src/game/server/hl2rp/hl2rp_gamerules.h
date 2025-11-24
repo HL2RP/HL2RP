@@ -8,6 +8,7 @@
 #include <bitflags.h>
 #include <fmtstr.h>
 #include <GameEventListener.h>
+#include <UtlSortVector.h>
 
 SCOPED_ENUM(ESeasonRangePart,
 	Start,
@@ -42,6 +43,20 @@ public:
 	bool mIsGod;
 	CAutoLessFuncAdapter<CUtlRBTree<int>> mModelGroupIndices;
 	CBitFlags<> mRequiredAccessFlag;
+};
+
+struct SMoneyPropData
+{
+	class CLess
+	{
+	public:
+		bool Less(SMoneyPropData*, SMoneyPropData*, void*);
+	};
+
+	SMoneyPropData(int amount) : mAmount(amount) {}
+
+	int mAmount;
+	CAutoLessFuncAdapter<CUtlMap<const char*, SUtlField>> mFieldByKey;
 };
 
 class CHL2RPRules : public CBaseHL2RPRules, CGameEventListener
@@ -120,10 +135,11 @@ public:
 	CHUDMsgInterceptor mHUDMsgInterceptor;
 	IResponseSystem* mpPlayerResponseSystem;
 	CBitFlags<> mDatabaseIOFlags;
+	CPlayerModelsMap mPlayerModelsByGroup;
 	CDefaultGetAdapter<CUtlRBTree<const char*>> mMapGroups;
 	CAutoLessFuncAdapter<CUtlRBTree<CHL2RP_Property*>> mProperties;
 	CAutoDeleteAdapter<CUtlMap<const char*, CJobData*>> mJobByName[EFaction::_Count];
-	CPlayerModelsMap mPlayerModelsByGroup;
+	CAutoDeleteAdapter<CUtlSortVector<SMoneyPropData*, SMoneyPropData::CLess>> mMoneyPropsData;
 	CAutoLessFuncAdapter<CUtlRBTree<EHANDLE>> mWavePolices;
 };
 

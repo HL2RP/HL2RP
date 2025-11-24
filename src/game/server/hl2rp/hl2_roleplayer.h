@@ -92,6 +92,7 @@ class CHL2Roleplayer : public CBaseHL2Roleplayer
 	void SendMainHUD() HL2RP_LEGACY_FUNCTION;
 	void SendAimingEntityHUD() HL2RP_LEGACY_FUNCTION;
 	bool FixHUDChannel(int&);
+	void DropMoney(int);
 
 	float mSpecialUseLastTime;
 	CHUDExpireTimer mHUDExpireTimers[EPlayerHUDType::_Count];

@@ -1,0 +1,20 @@
+// Currency setup. Configures the prop features tied to designated amounts (keys), for dropping money.
+// The attributes within each amount are normal entity KeyValues, to freely customize the props.
+// Dropping will iteratively spawn props, consuming the higher configured amounts first, until no money remains.
+// If too much props are required, the server will limit them and add the remaining amount to the first one.
+
+"Currency"
+{
+	"1"
+	{
+		"model" "items/boxmrounds.mdl"
+		"scale" "0.5"
+		"color" "255 255 0 255"
+	}
+
+	"5"
+	{
+		"model" "items/boxmrounds.mdl"
+		"color" "0 0 255 255"
+	}
+}

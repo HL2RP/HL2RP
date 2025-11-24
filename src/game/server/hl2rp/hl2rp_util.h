@@ -8,6 +8,8 @@
 #include <utlpair.h>
 #include <utlstring.h>
 
+class KeyValues;
+
 struct SUtlField
 {
 	enum class EType
@@ -18,6 +20,8 @@ struct SUtlField
 		Float,
 		String
 	};
+
+	static SUtlField FromKeyValues(KeyValues*); // Converts the value tied to the KV
 
 	SUtlField() : mType(EType::Null) {}
 	SUtlField(int value) : mUInt64(value), mType(EType::Int) {}
