@@ -10,6 +10,9 @@
 #include <GameEventListener.h>
 #include <UtlSortVector.h>
 
+#define HL2RP_RULES_MAX_MONEY_PROPS_PER_TICK 10
+#define HL2RP_RULES_MAX_MONEY_DROP_DURATION  0.5f
+
 SCOPED_ENUM(ESeasonRangePart,
 	Start,
 	End
@@ -30,6 +33,7 @@ SCOPED_ENUM(EHL2RPDatabaseIOFlag,
 )
 
 class CHL2RP_Property;
+class CMoneyProp;
 
 using FileFindHandle_t = int;
 
@@ -129,6 +133,7 @@ public:
 	bool IsDayTime(const tm&);
 	const char* GetIdealMapAlias(); // Returns the unique map group, if possible, current map otherwise
 	Activity GetBestTranslatedActivity(CBaseCombatCharacter*, Activity, bool weaponActStrict, int& sequence);
+	bool IsMoneyDropFull(int propsCount); // Returns whether the amount of props is maxed out due to certain limits
 	void AddPlayerName(uint64, const char*);
 	void SendPlayerName(int index, CRecipientFilter && = CBroadcastRecipientFilter()) HL2RP_FULL_FUNCTION;
 
@@ -140,6 +145,7 @@ public:
 	CAutoLessFuncAdapter<CUtlRBTree<CHL2RP_Property*>> mProperties;
 	CAutoDeleteAdapter<CUtlMap<const char*, CJobData*>> mJobByName[EFaction::_Count];
 	CAutoDeleteAdapter<CUtlSortVector<SMoneyPropData*, SMoneyPropData::CLess>> mMoneyPropsData;
+	CUtlVector<CHandle<CMoneyProp>> mPendingMoneyProps;
 	CAutoLessFuncAdapter<CUtlRBTree<EHANDLE>> mWavePolices;
 };
 

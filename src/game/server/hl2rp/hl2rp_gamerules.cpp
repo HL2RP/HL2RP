@@ -4,6 +4,7 @@
 #include "hl2rp_gamerules.h"
 #include "hl2rp_gameinterface.h"
 #include "hl2_roleplayer.h"
+#include "prop_money.h"
 #include <hl2rp_localizer.h>
 #include <hl2rp_property.h>
 #include <activitylist.h>
@@ -436,10 +437,6 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 
 			if (amount > 0) // Early prevent negative money affecting economy
 			{
-				// TODO: Considerar sustituir el CUtlSortVector por un CUtlMap<int, SMoneyPropData*>, lo cual permitiria
-				// prescindir de hacer un "new SMoneyPropData" aqui al no necesitarse para insertar ordenadamente.
-				// Ademas, permitiria eliminar el mAmount y el constructor, resultando mas coherente la nomenclatura de
-				// la clase, y eliminando el CLess.
 				CPlainAutoPtr<SMoneyPropData> data(new SMoneyPropData(amount));
 				int index = mMoneyPropsData.InsertIfNotFound(data.Detach());
 
@@ -572,6 +569,12 @@ bool CHL2RPRules::IsSeasonApplicable(const CSeasonData& season, const tm& target
 	}
 
 	return false;
+}
+
+bool CHL2RPRules::IsMoneyDropFull(int propsCount)
+{
+	return (engine->GetEntityCount() + propsCount >= MAX_EDICTS
+		|| TICKS_TO_TIME(propsCount / HL2RP_RULES_MAX_MONEY_PROPS_PER_TICK) >= HL2RP_RULES_MAX_MONEY_DROP_DURATION);
 }
 
 const char* CHL2RPRules::GetChatFormat(bool teamOnly, CBasePlayer* pPlayer)
@@ -715,6 +718,16 @@ void CHL2RPRules::Think()
 		else
 		{
 			mpNextDayNightMap = NULL; // Fully end countdown, so we'll create a new one once cvar is re-enabled
+		}
+
+		for (int i = Min(HL2RP_RULES_MAX_MONEY_PROPS_PER_TICK, mPendingMoneyProps.Size());
+			i > 0 && !mPendingMoneyProps.IsEmpty(); mPendingMoneyProps.Remove(0))
+		{
+			if (mPendingMoneyProps.Head() != NULL)
+			{
+				DispatchSpawn(mPendingMoneyProps.Head());
+				--i;
+			}
 		}
 
 		if (mPoliceWaveTimer.Expired())

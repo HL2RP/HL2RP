@@ -3,6 +3,7 @@
 #include <cbase.h>
 #include "hl2_roleplayer.h"
 #include "hl2rp_gamerules.h"
+#include "prop_money.h"
 #include <dal.h>
 #include <hl2rp_localizer.h>
 #include <hl2rp_property.h>
@@ -1048,15 +1049,73 @@ void CHL2Roleplayer::RewindCurrentDialog()
 	}
 }
 
-void CHL2Roleplayer::DropMoney(int money)
+int CHL2Roleplayer::DropMoney(int money)
 {
+	int moneyLeft = money;
 	auto& propsData = HL2RPRules()->mMoneyPropsData;
-	SMoneyPropData propData(money);
 
-	for (int index; index = propsData.FindLessOrEqual(&propData), propsData.IsValidIndex(index);)
+	if (!propsData.IsEmpty())
 	{
+		auto& pendingProps = HL2RPRules()->mPendingMoneyProps;
+		float spiralHeight = 40.0f, spiralAngle = RandomFloat(0.0f, 360.0f);
 
+		for (int firstPropIndex = pendingProps.Count(); moneyLeft > 0; spiralHeight += 5.0f, spiralAngle += 45.0f)
+		{
+			SMoneyPropData searchData(moneyLeft);
+			int propDataIndex = propsData.FindLessOrEqual(&searchData);
+
+			if (!propsData.IsValidIndex(propDataIndex))
+			{
+				propDataIndex = 0;
+			}
+
+			// Check if the started drop request would be excessive by itself,
+			// or, if we didn't start it yet, whether external requests are.
+			// Once we're able to start the request, spawning will start after external requests get complete.
+			if (pendingProps.IsValidIndex(firstPropIndex))
+			{
+				int newPropsCount = pendingProps.Size() - firstPropIndex;
+
+				if (HL2RPRules()->IsMoneyDropFull(newPropsCount))
+				{
+					searchData.mAmount = Min(moneyLeft, propsData[propDataIndex]->mAmount);
+					pendingProps[firstPropIndex]->mAmount += searchData.mAmount;
+					moneyLeft -= searchData.mAmount;
+					break;
+				}
+			}
+			else if (HL2RPRules()->IsMoneyDropFull(pendingProps.Size()))
+			{
+				break;
+			}
+
+			CMoneyProp* pMoneyProp = static_cast<CMoneyProp*>(CBaseEntity::CreateNoSpawn("prop_money", vec3_origin, vec3_angle));
+
+			if (pMoneyProp != NULL)
+			{
+				pendingProps.AddToTail(pMoneyProp);
+				pMoneyProp->mAmount = Min(moneyLeft, propsData[propDataIndex]->mAmount);
+				moneyLeft -= pMoneyProp->mAmount;
+				auto& fields = propsData[propDataIndex]->mFieldByKey;
+
+				FOR_EACH_MAP_FAST(fields, i)
+				{
+					pMoneyProp->KeyValue(fields.Key(i), fields[i].ToString());
+				}
+
+				QAngle angles(0.0f, spiralAngle, 0.0f);
+				Vector forward, origin = GetAbsOrigin();
+				origin.z += spiralHeight;
+				AngleVectors(angles, &forward);
+				VectorMA(origin, 64.0f, forward, origin);
+				pMoneyProp->SetAbsOrigin(origin);
+				angles.y = RandomFloat(0.0f, 360.0f); // Keep self prop angles independent to the spiral's
+				pMoneyProp->SetAbsAngles(angles);
+			}
+		}
 	}
+
+	return (money - moneyLeft);
 }
 
 static void HandleAccessChangeCommand(const CCommand& args, bool grant)
