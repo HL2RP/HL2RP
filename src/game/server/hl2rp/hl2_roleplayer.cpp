@@ -32,6 +32,9 @@
 #define HL2_ROLEPLAYER_BEAM_RING_DURATION    0.2f
 #define HL2_ROLEPLAYER_BEAM_RING_WIDTH       3.0f
 
+#define HL2_ROLEPLAYER_PROP_SPAWN_FLOOR_OFFSET 45.0f
+#define HL2_ROLEPLAYER_PROP_SPAWN_FRONT_OFFSET 64.0f
+
 extern ConVar gCopVIPSkinsAllowCVar;
 
 #ifdef HL2RP_FULL
@@ -975,6 +978,79 @@ void CHL2Roleplayer::Event_Killed(const CTakeDamageInfo& info)
 	mAimInfo.mhMainEntity.Term();
 }
 
+int CHL2Roleplayer::DropMoney(int money, const Vector& origin)
+{
+	int moneyLeft = money;
+	auto& propsData = HL2RPRules()->mMoneyPropsData;
+
+	if (!propsData.IsEmpty())
+	{
+		auto& pendingProps = HL2RPRules()->mPendingMoneyProps;
+		float spiralHeight = HL2_ROLEPLAYER_PROP_SPAWN_FLOOR_OFFSET, spiralAngle = RandomFloat(0.0f, 360.0f),
+			stepAngle = (RandomInt(0, 1) > 0) ? MONEY_DROP_CIRCLE_STEP_ANGLE : -MONEY_DROP_CIRCLE_STEP_ANGLE;
+
+		for (int oldTail = pendingProps.Tail(), newPropsCount = 0; moneyLeft > 0;
+			++newPropsCount, spiralHeight += MONEY_DROP_SPIRAL_STEP_RAISE, spiralAngle += stepAngle)
+		{
+			SMoneyPropData searchData(moneyLeft);
+			int propDataIndex = propsData.FindLessOrEqual(&searchData);
+
+			if (!propsData.IsValidIndex(propDataIndex))
+			{
+				propDataIndex = 0;
+			}
+
+			// Check if the started drop request is full, or, if we didn't start it yet, whether external requests are.
+			// Once we're able to start the request, spawning will start after external requests get complete.
+			if (newPropsCount > 0)
+			{
+				if (HL2RPRules()->IsMoneyDropFull(newPropsCount))
+				{
+					// Add the remaining amount to our first spawned prop
+					oldTail = pendingProps.IsValidIndex(oldTail) ? pendingProps.Next(oldTail) : pendingProps.Tail();
+					Assert(pendingProps.IsValidIndex(oldTail));
+					searchData.mAmount = Min(moneyLeft, propsData[propDataIndex]->mAmount);
+					pendingProps[oldTail]->mAmount += searchData.mAmount;
+					moneyLeft -= searchData.mAmount;
+					break;
+				}
+			}
+			else if (HL2RPRules()->IsMoneyDropFull(pendingProps.Count()))
+			{
+				break;
+			}
+
+			CMoneyProp* pMoneyProp = static_cast<CMoneyProp*>(CBaseEntity::CreateNoSpawn("prop_money", vec3_origin, vec3_angle));
+
+			if (pMoneyProp != NULL)
+			{
+				pendingProps.AddToTail(pMoneyProp);
+				pMoneyProp->mAmount = Min(moneyLeft, propsData[propDataIndex]->mAmount);
+				moneyLeft -= pMoneyProp->mAmount;
+				auto& fields = propsData[propDataIndex]->mFieldByKey;
+
+				FOR_EACH_MAP_FAST(fields, i)
+				{
+					pMoneyProp->KeyValue(fields.Key(i), fields[i].ToString());
+				}
+
+				QAngle angles(0.0f, spiralAngle, 0.0f);
+				Vector forward, propOrigin = origin;
+				AngleVectors(angles, &forward);
+				//propOrigin += forward * MONEY_DROP_CIRCLE_RADIUS;
+				propOrigin.z += spiralHeight;
+				forward *= MONEY_DROP_SPAWN_VELOCITY_2D; // Now velocity
+				//forward.z = MONEY_DROP_SPAWN_VELOCITY_UP;
+				angles.y = RandomFloat(0.0f, 360.0f); // Prop angles, independent to the spiral's
+				pMoneyProp->Teleport(&propOrigin, &angles, &forward);
+				pMoneyProp->SetCollisionGroup(COLLISION_GROUP_DEBRIS_TRIGGER);
+			}
+		}
+	}
+
+	return (money - moneyLeft);
+}
+
 void CHL2Roleplayer::OnDatabasePropChanged(const SUtlField& field, EPlayerDatabasePropType type)
 {
 	if (mDatabaseIOFlags.IsBitSet(EPlayerDatabaseIOFlag::IsLoaded))
@@ -1047,75 +1123,6 @@ void CHL2Roleplayer::RewindCurrentDialog()
 		CSingleUserRecipientFilter filter(this);
 		EmitSound(filter, GetSoundSourceIndex(), NETWORK_DIALOG_REWIND_SOUND);
 	}
-}
-
-int CHL2Roleplayer::DropMoney(int money)
-{
-	int moneyLeft = money;
-	auto& propsData = HL2RPRules()->mMoneyPropsData;
-
-	if (!propsData.IsEmpty())
-	{
-		auto& pendingProps = HL2RPRules()->mPendingMoneyProps;
-		float spiralHeight = 40.0f, spiralAngle = RandomFloat(0.0f, 360.0f);
-
-		for (int firstPropIndex = pendingProps.Count(); moneyLeft > 0; spiralHeight += 5.0f, spiralAngle += 45.0f)
-		{
-			SMoneyPropData searchData(moneyLeft);
-			int propDataIndex = propsData.FindLessOrEqual(&searchData);
-
-			if (!propsData.IsValidIndex(propDataIndex))
-			{
-				propDataIndex = 0;
-			}
-
-			// Check if the started drop request would be excessive by itself,
-			// or, if we didn't start it yet, whether external requests are.
-			// Once we're able to start the request, spawning will start after external requests get complete.
-			if (pendingProps.IsValidIndex(firstPropIndex))
-			{
-				int newPropsCount = pendingProps.Size() - firstPropIndex;
-
-				if (HL2RPRules()->IsMoneyDropFull(newPropsCount))
-				{
-					searchData.mAmount = Min(moneyLeft, propsData[propDataIndex]->mAmount);
-					pendingProps[firstPropIndex]->mAmount += searchData.mAmount;
-					moneyLeft -= searchData.mAmount;
-					break;
-				}
-			}
-			else if (HL2RPRules()->IsMoneyDropFull(pendingProps.Size()))
-			{
-				break;
-			}
-
-			CMoneyProp* pMoneyProp = static_cast<CMoneyProp*>(CBaseEntity::CreateNoSpawn("prop_money", vec3_origin, vec3_angle));
-
-			if (pMoneyProp != NULL)
-			{
-				pendingProps.AddToTail(pMoneyProp);
-				pMoneyProp->mAmount = Min(moneyLeft, propsData[propDataIndex]->mAmount);
-				moneyLeft -= pMoneyProp->mAmount;
-				auto& fields = propsData[propDataIndex]->mFieldByKey;
-
-				FOR_EACH_MAP_FAST(fields, i)
-				{
-					pMoneyProp->KeyValue(fields.Key(i), fields[i].ToString());
-				}
-
-				QAngle angles(0.0f, spiralAngle, 0.0f);
-				Vector forward, origin = GetAbsOrigin();
-				origin.z += spiralHeight;
-				AngleVectors(angles, &forward);
-				VectorMA(origin, 64.0f, forward, origin);
-				pMoneyProp->SetAbsOrigin(origin);
-				angles.y = RandomFloat(0.0f, 360.0f); // Keep self prop angles independent to the spiral's
-				pMoneyProp->SetAbsAngles(angles);
-			}
-		}
-	}
-
-	return (money - moneyLeft);
 }
 
 static void HandleAccessChangeCommand(const CCommand& args, bool grant)
@@ -1216,4 +1223,17 @@ CON_COMMAND(remove_access, "[userid] [all|cop|vipcitizen|vipcop|admin|root]..."
 	" - Removes grant/s from a player. If userid isn't set, command will target aiming player.")
 {
 	HandleAccessChangeCommand(args, false);
+}
+
+CON_COMMAND(drop_money, "<amount>")
+{
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_GetCommandClient());
+
+	if (pPlayer != NULL)
+	{
+		Vector origin;
+		VectorMA(pPlayer->GetAbsOrigin(), HL2_ROLEPLAYER_PROP_SPAWN_FRONT_OFFSET, pPlayer->BodyDirection2D(), origin);
+		int amount = pPlayer->DropMoney(Q_atoi(args.Arg(1)), origin);
+		pPlayer->Print(HUD_PRINTTALK, UTIL_VarArgs("You drop €%i", amount));
+	}
 }

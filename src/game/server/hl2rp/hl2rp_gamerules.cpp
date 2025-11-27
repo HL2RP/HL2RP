@@ -21,6 +21,10 @@
 
 #define HL2RP_RULES_DAYNIGHT_MAPCHANGE_THINK_CONTEXT "DayNightMapChangeThink"
 
+#define HL2RP_RULES_MAX_MONEY_PROPS_PER_TICK 10
+//#define HL2RP_RULES_MAX_MONEY_PROPS_PER_TICK 1
+#define HL2RP_RULES_MAX_MONEY_DROP_DURATION  0.5f
+
 extern CServerGameDLL g_ServerGameDLL;
 extern SourceHook::ISourceHook* g_SHPtr;
 extern ConVar mp_chattime, nextlevel, gMaxHomeInactivityDaysCVar, gRegionMaxRadiusCVar;
@@ -447,6 +451,11 @@ mpPlayerResponseSystem(PrecacheCustomResponseSystem("scripts/player_responses.tx
 						mMoneyPropsData[index]->mFieldByKey
 							.InsertOrReplace(dataKV->GetName(), SUtlField::FromKeyValues(dataKV));
 					}
+
+					const char* pPath = mMoneyPropsData[index]->mFieldByKey.GetElementOrDefault("model", "");
+					index = CBaseEntity::PrecacheModel(pPath);
+					DevMsg("HL2RPRules: Loaded currency amount '%s' with model: '%s' (index: %i)\n",
+						amountKV->GetName(), pPath, index);
 				}
 			}
 		}
@@ -720,14 +729,24 @@ void CHL2RPRules::Think()
 			mpNextDayNightMap = NULL; // Fully end countdown, so we'll create a new one once cvar is re-enabled
 		}
 
-		for (int i = Min(HL2RP_RULES_MAX_MONEY_PROPS_PER_TICK, mPendingMoneyProps.Size());
-			i > 0 && !mPendingMoneyProps.IsEmpty(); mPendingMoneyProps.Remove(0))
+		bool wasEmpty = mPendingMoneyProps.IsEmpty();
+
+		for (int head, i = HL2RP_RULES_MAX_MONEY_PROPS_PER_TICK;
+			i > 0 && !mPendingMoneyProps.IsEmpty(); mPendingMoneyProps.Remove(head))
 		{
-			if (mPendingMoneyProps.Head() != NULL)
+			head = mPendingMoneyProps.Head();
+
+			if (mPendingMoneyProps[head] != NULL)
 			{
-				DispatchSpawn(mPendingMoneyProps.Head());
+				DispatchSpawn(mPendingMoneyProps[head]);
+				mPendingMoneyProps[head]->SetPhysVelocity(mPendingMoneyProps[head]->GetAbsVelocity()); // Apply configured velocity
 				--i;
 			}
+		}
+
+		if (!wasEmpty && mPendingMoneyProps.IsEmpty())
+		{
+			UTIL_ClientPrintAll(HUD_PRINTTALK, "Money drop ended");
 		}
 
 		if (mPoliceWaveTimer.Expired())

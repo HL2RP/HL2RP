@@ -92,7 +92,6 @@ class CHL2Roleplayer : public CBaseHL2Roleplayer
 	void SendMainHUD() HL2RP_LEGACY_FUNCTION;
 	void SendAimingEntityHUD() HL2RP_LEGACY_FUNCTION;
 	bool FixHUDChannel(int&);
-	int DropMoney(int); // Returns the actual amount of 'drop-queued' money
 
 	float mSpecialUseLastTime;
 	CHUDExpireTimer mHUDExpireTimers[EPlayerHUDType::_Count];
@@ -114,6 +113,7 @@ public:
 	bool HasModelGroupAccess(int groupIndex, int fallbackType = -1); // Checks access to a specific group or type
 	void ChangeFaction(int, string_t newJobName = NULL_STRING);
 	void SetModel(int groupIndex, int aliasIndex);
+	int DropMoney(int, const Vector& origin); // Returns the actual amount of 'drop-queued' money
 	void LocalPrint(int type, const char* pText, const char* pArg = "") HL2RP_LEGACY_FUNCTION;
 	void LocalDisplayHUDHint(EPlayerHUDHintType, const char* pToken,
 		const char* pArg1 = "", const char* pArg2 = "") HL2RP_LEGACY_FUNCTION;

@@ -10,9 +10,6 @@
 #include <GameEventListener.h>
 #include <UtlSortVector.h>
 
-#define HL2RP_RULES_MAX_MONEY_PROPS_PER_TICK 10
-#define HL2RP_RULES_MAX_MONEY_DROP_DURATION  0.5f
-
 SCOPED_ENUM(ESeasonRangePart,
 	Start,
 	End
@@ -145,7 +142,7 @@ public:
 	CAutoLessFuncAdapter<CUtlRBTree<CHL2RP_Property*>> mProperties;
 	CAutoDeleteAdapter<CUtlMap<const char*, CJobData*>> mJobByName[EFaction::_Count];
 	CAutoDeleteAdapter<CUtlSortVector<SMoneyPropData*, SMoneyPropData::CLess>> mMoneyPropsData;
-	CUtlVector<CHandle<CMoneyProp>> mPendingMoneyProps;
+	CUtlLinkedList<CHandle<CMoneyProp>> mPendingMoneyProps;
 	CAutoLessFuncAdapter<CUtlRBTree<EHANDLE>> mWavePolices;
 };
 
