@@ -4,14 +4,12 @@
 
 #include <props.h>
 
-#define MONEY_DROP_CIRCLE_RADIUS     20.0f
-//#define MONEY_DROP_CIRCLE_STEP_ANGLE 42.0f
-#define MONEY_DROP_CIRCLE_STEP_ANGLE 40.0f // Plugin
-
+#define MONEY_DROP_SPIRAL_STEP_ANGLE 42.0f
 #define MONEY_DROP_SPIRAL_STEP_RAISE 3.0f
+#define MONEY_DROP_SPIRAL_MAX_HEIGHT 100.0f // Max. height relative to the bottom before resetting spiral origin
 
-#define MONEY_DROP_SPAWN_VELOCITY_UP 45.0f
-#define MONEY_DROP_SPAWN_VELOCITY_2D 45.0f
+#define MONEY_DROP_SPAWN_THROW_PITCH 45.0f // Elevation angle for spawn velocity
+#define MONEY_DROP_SPAWN_VELOCITY    60.0f
 
 class CMoneyProp : public CPhysicsProp
 {

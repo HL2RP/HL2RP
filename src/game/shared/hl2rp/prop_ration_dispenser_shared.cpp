@@ -81,7 +81,7 @@ void CRationDispenserProp::GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtStr<>
 		if (mIsLocked)
 		{
 			text.Format("%t\n%t", "#HL2RP_Dispenser_Locked", pPlayer->HasCombineGrants(FBitSet(m_spawnflags,
-				RATION_DISPENSER_SF_COMBINE_CONTROLLED) > 0) ? "#HL2RP_Dispenser_Unlock" : "#HL2RP_Dispenser_LockedEx");
+				RATION_DISPENSER_SF_COMBINE_CONTROLLED)) ? "#HL2RP_Dispenser_Unlock" : "#HL2RP_Dispenser_LockedEx");
 		}
 		else if (mNextTimeAvailable > gpGlobals->curtime)
 		{
@@ -98,7 +98,7 @@ void CRationDispenserProp::GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtStr<>
 				text.Format("\n%t", "#HL2RP_Dispenser_UseHint");
 			}
 
-			if (pPlayer->HasCombineGrants(FBitSet(m_spawnflags, RATION_DISPENSER_SF_COMBINE_CONTROLLED) > 0))
+			if (pPlayer->HasCombineGrants(FBitSet(m_spawnflags, RATION_DISPENSER_SF_COMBINE_CONTROLLED)))
 			{
 				int timeLeft = mNextTimeAvailable + RATION_DISPENSER_LOCK_COOLDOWN - gpGlobals->curtime;
 

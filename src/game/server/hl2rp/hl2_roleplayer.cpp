@@ -985,12 +985,20 @@ int CHL2Roleplayer::DropMoney(int money, const Vector& origin)
 
 	if (!propsData.IsEmpty())
 	{
+		int blockMask = PlayerSolidMask(true);
 		auto& pendingProps = HL2RPRules()->mPendingMoneyProps;
-		float spiralHeight = HL2_ROLEPLAYER_PROP_SPAWN_FLOOR_OFFSET, spiralAngle = RandomFloat(0.0f, 360.0f),
-			stepAngle = (RandomInt(0, 1) > 0) ? MONEY_DROP_CIRCLE_STEP_ANGLE : -MONEY_DROP_CIRCLE_STEP_ANGLE;
+		Vector propOrigin(origin.x, origin.y, origin.z + HL2_ROLEPLAYER_PROP_SPAWN_FLOOR_OFFSET);
+
+		if (HL2RPRules()->IsMoneyDropFull(pendingProps.Count()) || FBitSet(UTIL_PointContents(propOrigin), blockMask))
+		{
+			return 0;
+		}
+
+		float spiralAngle = RandomFloat(0.0f, 360.0f),
+			stepAngle = MONEY_DROP_SPIRAL_STEP_ANGLE * Sign(RandomFloat(-1.0f));
 
 		for (int oldTail = pendingProps.Tail(), newPropsCount = 0; moneyLeft > 0;
-			++newPropsCount, spiralHeight += MONEY_DROP_SPIRAL_STEP_RAISE, spiralAngle += stepAngle)
+			++newPropsCount, propOrigin.z += MONEY_DROP_SPIRAL_STEP_RAISE, spiralAngle += stepAngle)
 		{
 			SMoneyPropData searchData(moneyLeft);
 			int propDataIndex = propsData.FindLessOrEqual(&searchData);
@@ -1000,27 +1008,15 @@ int CHL2Roleplayer::DropMoney(int money, const Vector& origin)
 				propDataIndex = 0;
 			}
 
-			// Check if the started drop request is full, or, if we didn't start it yet, whether external requests are.
-			// Once we're able to start the request, spawning will start after external requests get complete.
-			if (newPropsCount > 0)
+			// If next prop would be stuck or overcome max. height, reset the spawn origin to the initial (validated)
+			if (newPropsCount > 0 && (propOrigin.z > origin.z + MONEY_DROP_SPIRAL_MAX_HEIGHT
+				|| FBitSet(UTIL_PointContents(propOrigin), blockMask)))
 			{
-				if (HL2RPRules()->IsMoneyDropFull(newPropsCount))
-				{
-					// Add the remaining amount to our first spawned prop
-					oldTail = pendingProps.IsValidIndex(oldTail) ? pendingProps.Next(oldTail) : pendingProps.Tail();
-					Assert(pendingProps.IsValidIndex(oldTail));
-					searchData.mAmount = Min(moneyLeft, propsData[propDataIndex]->mAmount);
-					pendingProps[oldTail]->mAmount += searchData.mAmount;
-					moneyLeft -= searchData.mAmount;
-					break;
-				}
-			}
-			else if (HL2RPRules()->IsMoneyDropFull(pendingProps.Count()))
-			{
-				break;
+				propOrigin.z = origin.z;
 			}
 
-			CMoneyProp* pMoneyProp = static_cast<CMoneyProp*>(CBaseEntity::CreateNoSpawn("prop_money", vec3_origin, vec3_angle));
+			CMoneyProp* pMoneyProp =
+				static_cast<CMoneyProp*>(CBaseEntity::CreateNoSpawn("prop_money", vec3_origin, vec3_angle));
 
 			if (pMoneyProp != NULL)
 			{
@@ -1034,17 +1030,32 @@ int CHL2Roleplayer::DropMoney(int money, const Vector& origin)
 					pMoneyProp->KeyValue(fields.Key(i), fields[i].ToString());
 				}
 
-				QAngle angles(0.0f, spiralAngle, 0.0f);
-				Vector forward, propOrigin = origin;
+				// Configure remaining properties after KeyValue calls to ensure these don't override ours
+				QAngle angles(-MONEY_DROP_SPAWN_THROW_PITCH, spiralAngle, 0.0f);
+				Vector forward;
 				AngleVectors(angles, &forward);
-				//propOrigin += forward * MONEY_DROP_CIRCLE_RADIUS;
-				propOrigin.z += spiralHeight;
-				forward *= MONEY_DROP_SPAWN_VELOCITY_2D; // Now velocity
-				//forward.z = MONEY_DROP_SPAWN_VELOCITY_UP;
-				angles.y = RandomFloat(0.0f, 360.0f); // Prop angles, independent to the spiral's
+				forward *= MONEY_DROP_SPAWN_VELOCITY; // Now velocity
+				angles.Init(0.0f, RandomFloat(0.0f, 360.0f)); // Prop angles, independent to the spiral's
 				pMoneyProp->Teleport(&propOrigin, &angles, &forward);
 				pMoneyProp->SetCollisionGroup(COLLISION_GROUP_DEBRIS_TRIGGER);
+
+				if (!HL2RPRules()->IsMoneyDropFull(newPropsCount)) // Pre-check before the action below
+				{
+					continue;
+				}
 			}
+			else if (newPropsCount < 1)
+			{
+				break; // First prop failed to be created - we don't have anything else to do
+			}
+
+			// At this point, we can't create more props. Add the remaining amount to our first spawned prop.
+			oldTail = pendingProps.IsValidIndex(oldTail) ? pendingProps.Next(oldTail) : pendingProps.Tail();
+			Assert(pendingProps.IsValidIndex(oldTail));
+			searchData.mAmount = Min(moneyLeft, propsData[propDataIndex]->mAmount);
+			pendingProps[oldTail]->mAmount += searchData.mAmount;
+			moneyLeft -= searchData.mAmount;
+			break;
 		}
 	}
 
