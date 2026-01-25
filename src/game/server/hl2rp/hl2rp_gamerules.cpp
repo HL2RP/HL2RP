@@ -65,8 +65,12 @@ void CHUDMsgInterceptor::OnMessageEnd()
 	{
 		for (int i = 0; i < mpRecipientFilter->GetRecipientCount(); ++i)
 		{
-			CBasePlayer* pPlayer = UTIL_PlayerByIndex(mpRecipientFilter->GetRecipientIndex(i));
-			ToHL2Roleplayer(pPlayer)->OnPreSendHUDMessage(mpWriter);
+			CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_PlayerByIndex(mpRecipientFilter->GetRecipientIndex(i)));
+
+			if (pPlayer != NULL)
+			{
+				pPlayer->OnPreSendHUDMessage(mpWriter);
+			}
 		}
 
 		mpWriter = NULL;
@@ -585,17 +589,36 @@ const char* CHL2RPRules::GetChatFormat(bool teamOnly, CBasePlayer* pPlayer)
 	return NULL;
 }
 
-// Called when request is team only
+// Called when request is team only. If pSpeaker is a CHL2Roleplayer, checks radius. Otherwise, defaults to BaseClass.
 bool CHL2RPRules::PlayerCanHearChat(CBasePlayer* pListener, CBasePlayer* pSpeaker)
 {
-	return ToHL2Roleplayer(pListener)->IsWithinInteractRadius(pSpeaker, gRegionMaxRadiusCVar.GetFloat());
+	CHL2Roleplayer* pRPSpeaker = ToHL2Roleplayer(pSpeaker);
+	return (pRPSpeaker != NULL ? pRPSpeaker->IsWithinInteractRadius(pListener, gRegionMaxRadiusCVar.GetFloat())
+		: BaseClass::PlayerCanHearChat(pListener, pSpeaker));
 }
 
 bool CHL2RPRules::CanPlayerHearVoice(CBasePlayer* pListener, CBasePlayer* pSpeaker, bool allTalk)
 {
-	CBitFlags<> miscFlags = ToHL2Roleplayer(pListener)->mMiscFlags | ToHL2Roleplayer(pSpeaker)->mMiscFlags;
-	return ((!miscFlags.IsBitSet(EPlayerMiscFlag::AllowsRegionVoiceOnly)
-		&& (allTalk || pListener->GetTeam() == pSpeaker->GetTeam())) || PlayerCanHearChat(pListener, pSpeaker));
+	CBitFlags<> miscFlags;
+	CHL2Roleplayer* pRPListener = ToHL2Roleplayer(pListener), * pRPSpeaker = ToHL2Roleplayer(pSpeaker);
+
+	if (pRPListener != NULL)
+	{
+		miscFlags.SetFlag(pRPListener->mMiscFlags);
+	}
+
+	if (pRPSpeaker != NULL)
+	{
+		miscFlags.SetFlag(pRPSpeaker->mMiscFlags);
+	}
+
+	// If both players allow global voice, check classic team rules first
+	if (!miscFlags.IsBitSet(EPlayerMiscFlag::AllowsRegionVoiceOnly) && (allTalk || pListener->InSameTeam(pSpeaker)))
+	{
+		return true;
+	}
+
+	return PlayerCanHearChat(pListener, pSpeaker); // Fallback to radius criteria
 }
 
 Activity CHL2RPRules::GetBestTranslatedActivity(CBaseCombatCharacter* pCharacter,
@@ -762,11 +785,11 @@ void CHL2RPRules::FireGameEvent(IGameEvent* pEvent)
 #ifdef HL2RP_FULL
 	if (Q_strcmp(pEvent->GetName(), "player_disconnect") == 0)
 	{
-		CBasePlayer* pPlayer = UTIL_PlayerByUserId(pEvent->GetInt("userid"));
+		CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_PlayerByUserId(pEvent->GetInt("userid")));
 
 		if (pPlayer != NULL && pPlayer->entindex() < 2)
 		{
-			ToHL2Roleplayer(pPlayer)->OnDisconnect();
+			pPlayer->OnDisconnect();
 		}
 	}
 #endif // HL2RP_FULL

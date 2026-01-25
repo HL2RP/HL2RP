@@ -55,7 +55,7 @@ public:
 
 CHL2Roleplayer* ToHL2Roleplayer(CBasePlayer* pPlayer)
 {
-	return static_cast<CHL2Roleplayer*>(pPlayer);
+	return dynamic_cast<CHL2Roleplayer*>(pPlayer);
 }
 
 CHL2Roleplayer* ToHL2Roleplayer(CBaseEntity* pEntity)

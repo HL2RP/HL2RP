@@ -124,11 +124,11 @@ void C_HL2RPRules::FireGameEvent(IGameEvent* pEvent)
 	}
 	else if (Q_strcmp(pEvent->GetName(), "player_spawn") == 0)
 	{
-		C_BasePlayer* pPlayer = UTIL_PlayerByUserId(pEvent->GetInt("userid"));
+		C_HL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_PlayerByUserId(pEvent->GetInt("userid")));
 
 		if (pPlayer != NULL)
 		{
-			ToHL2Roleplayer(pPlayer)->mAddIntersectingEnts = true;
+			pPlayer->mAddIntersectingEnts = true;
 		}
 	}
 }

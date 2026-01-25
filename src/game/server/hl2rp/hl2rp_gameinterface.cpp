@@ -105,11 +105,11 @@ void CServerGameClients::NetworkIDValidated(const char*, const char* pNetworkId)
 
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
-		CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
+		CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_PlayerByIndex(i));
 
 		if (pPlayer != NULL && Q_strcmp(pPlayer->GetNetworkIDString(), networkId) == 0)
 		{
-			ToHL2Roleplayer(pPlayer)->LoadFromDatabase();
+			pPlayer->LoadFromDatabase();
 			break;
 		}
 	}

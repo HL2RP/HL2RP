@@ -948,12 +948,12 @@ void CPropertyDoorMenu::HandleChildNotice(int action, const SUtlField& info)
 			DAL().AddDAO(new CPropertyGrantsSaveDAO(mpProperty, info.mUInt64));
 			mpPlayer->Print(HUD_PRINTTALK, "#HL2RP_Property_Key_Taken_Issuer",
 				HL2RPRules()->mPlayerNameBySteamIdNum.GetElementOrDefault(info.mUInt64, ""));
-			CBasePlayer* pTarget = UTIL_PlayerBySteamID(info.mUInt64);
+			CHL2Roleplayer* pTarget = ToHL2Roleplayer(UTIL_PlayerBySteamID(info.mUInt64));
 
 			if (pTarget != NULL)
 			{
-				ToHL2Roleplayer(pTarget)->Print(HUD_PRINTTALK, "#HL2RP_Property_Key_Taken_Target",
-					mpPlayer->GetPlayerName(), mpProperty->mName);
+				pTarget->Print(HUD_PRINTTALK,
+					"#HL2RP_Property_Key_Taken_Target", mpPlayer->GetPlayerName(), mpProperty->mName);
 			}
 		}
 

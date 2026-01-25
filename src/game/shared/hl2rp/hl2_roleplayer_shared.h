@@ -212,11 +212,11 @@ void ForEachRoleplayer(F functor)
 {
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
-		CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
+		CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_PlayerByIndex(i));
 
 		if (pPlayer != NULL)
 		{
-			functor(ToHL2Roleplayer(pPlayer));
+			functor(pPlayer);
 		}
 	}
 }
