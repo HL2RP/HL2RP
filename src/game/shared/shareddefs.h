@@ -27,7 +27,8 @@
 #define ANIMATION_CYCLE_MINFRAC		(1.0f / (1<<ANIMATION_CYCLE_BITS))
 
 #ifdef HL2RP
-#define LANGUAGE_CVAR_NAME "cl_language"
+#define LANGUAGE_CVAR_NAME       "cl_language"
+#define PLUGIN_DIALOGS_CVAR_NAME "cl_showpluginmessages"
 
 #define DOOR_BASECLASS(Base) CHL2RP_PropertyDoor<Base>
 

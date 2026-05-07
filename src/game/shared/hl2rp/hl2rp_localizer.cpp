@@ -65,6 +65,7 @@ void CHL2RPLocalizer::LevelInitPostEntity()
 		const char* pLangShortName = GetLanguageShortName((ELanguage)language);
 		AddLocalizationFromFile("hl2rp_server", pLangShortName);
 		AddLocalizationFromFile("hl2rp_shared", pLangShortName);
+		AddLocalizationFromFileEx("gameui", pLangShortName, "GameUI_Submit");
 
 #ifdef HL2RP_LEGACY
 		AddLocalizationFromFile("hl2rp_legacy", pLangShortName);

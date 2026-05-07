@@ -11,13 +11,16 @@
 #define NETWORK_MENU_PAGE_MAX_ITEMS    8
 #define NETWORK_MENU_ITEM_DISPLAY_SIZE 64
 
-#define NETWORK_MENU_ACTION_FROM_ITEM -1
+#define NETWORK_MENU_ACTION_NONE      -1
+#define NETWORK_MENU_ACTION_FROM_ITEM NETWORK_MENU_ACTION_NONE
 
 #define NETWORK_DIALOG_REWIND_SOUND "Buttons.snd9"
 #define NETWORK_MENU_ITEM_SOUND     "Buttons.snd37"
 
 abstract_class INetworkDialog
 {
+	void ForwardToMOTD(); // Sends dialog URL to the MOTD, pointing to our MOTDDialogBuilder web module
+
 	bool mAllowParentThink; // Useful for shared logic within a hierarchy
 
 public:
@@ -26,9 +29,10 @@ public:
 
 	virtual ~INetworkDialog() = default;
 
-	virtual void Send() = 0;
 	virtual void Think();
-	virtual void HandleCommand(const CCommand&) {}
+	virtual void Send(bool allowMOTDFwd = true);
+	virtual void InitSendData(DIALOG_TYPE&, KeyValues*, bool forMOTD, bool allowESCHint) = 0;
+	virtual void HandleCommandText(const char*, bool fromMOTD) {}
 
 	int mStackIndex = -1;
 	SUtlField mMessageArg;
@@ -36,7 +40,6 @@ public:
 protected:
 	virtual void HandleChildNotice(int action, const SUtlField& info) {}
 
-	KeyValues* InitSendData(KeyValues*, bool allowESCHint);
 	void NoticeParent(int action, const SUtlField& info, bool rewind = true);
 
 	CHL2Roleplayer* mpPlayer;
@@ -48,7 +51,7 @@ protected:
 // Simple wrapper for DIALOG_TEXT and DIALOG_MSG types (selected based on 'msg' length)
 class CNetworkMsgDialog : public INetworkDialog
 {
-	void Send() OVERRIDE;
+	void InitSendData(DIALOG_TYPE&, KeyValues*, bool, bool) OVERRIDE;
 
 public:
 	using INetworkDialog::INetworkDialog;
@@ -56,8 +59,8 @@ public:
 
 class CNetworkEntryBox : public INetworkDialog
 {
-	void Send() OVERRIDE;
-	void HandleCommand(const CCommand&) OVERRIDE;
+	void InitSendData(DIALOG_TYPE&, KeyValues*, bool, bool) OVERRIDE;
+	void HandleCommandText(const char*, bool) OVERRIDE;
 
 public:
 	CNetworkEntryBox(CHL2Roleplayer*, const char* pTitle,
@@ -89,7 +92,7 @@ protected:
 		char mDisplay[NETWORK_MENU_ITEM_DISPLAY_SIZE];
 	};
 
-	void Send() OVERRIDE;
+	void Send(bool allowMOTDFwd = true) OVERRIDE;
 
 	void RemoveItem(int index);
 	void RemoveItemByAction(int);
@@ -105,37 +108,39 @@ protected:
 		}
 	}
 
-	int mCurPageItemIndex = 0;
 	bool mShowItemNumbers = false;
 	CAutoDeleteAdapter<CUtlSortVector<CItem*, CItem::CLess>> mItems; // Sorted items by action
 
 private:
-	class CPageInfo
+	class CESCPageInfo
 	{
 	public:
-		CPageInfo(CNetworkMenu*, int pageItemIndex);
+		CESCPageInfo(CNetworkMenu*, int pageItemIndex);
 
 		int mMaxPageItems = NETWORK_MENU_PAGE_MAX_ITEMS;
 	};
 
-	void HandleCommand(const CCommand&) OVERRIDE;
+	void InitSendData(DIALOG_TYPE&, KeyValues*, bool, bool) OVERRIDE;
+	void HandleCommandText(const char*, bool) OVERRIDE;
 
 	virtual void UpdateItems() {} // NOTE: Never delete the menu here, for safety (Send calls this)
-	virtual void OnPreSendDialog(int pageEndIndex, KeyValues* pSendData) {} // Called after current page index is shifted
+	virtual void OnPreSendDialog(int pageStartIndex, int pageEndIndex, KeyValues* pSendData) {} // Called after current page index is shifted
 	virtual void SelectItem(CItem*);
 
-	void AddItemSendData(KeyValues*, int index, const char* pDisplay);
+	void AddItemSendData(KeyValues*, int index, const char* pDisplay,
+		const char* pNavigationSymbol, bool forMOTD, const char* pMOTDNavigationKey);
+	void PlayItemSoundAndSend();
 	void PlayItemSound();
 
-	int mSecretToken;
 	bool mRewindIfEmpty; // Needed e.g. to keep menu when only create/update items are supported, but are hidden while an entity is saving into DB
 	bool mIsFirstDisplay = true;
+	int mCurESCItemIndex = 0, mCurMOTDItemIndex = 0; // Indices to current page's first item, for both dedicated ESC panel and MOTD variants
 };
 
 class CPlayerListMenu : public CNetworkMenu
 {
 	void UpdateItems() OVERRIDE;
-	void OnPreSendDialog(int, KeyValues*) OVERRIDE;
+	void OnPreSendDialog(int, int, KeyValues*) OVERRIDE;
 
 	bool mShowMissingPlayers;
 
@@ -144,6 +149,13 @@ public:
 		int action, bool isAdminOnly = false, bool allowParentThink = false, bool showMissingPlayers = false);
 
 	CAutoLessFuncAdapter<CUtlRBTree<uint64>> mSteamIdNumbers;
+};
+
+// Confirmation menu which passes the specified action to the parent when clicking 'Accept'; NETWORK_MENU_ACTION_NONE on cancel
+class CConfirmMenu : public CNetworkMenu
+{
+public:
+	CConfirmMenu(CHL2Roleplayer*, int acceptAction, const char* pWarning, const SUtlField& warningArg = {});
 };
 
 #endif // !INETWORK_DIALOG_H

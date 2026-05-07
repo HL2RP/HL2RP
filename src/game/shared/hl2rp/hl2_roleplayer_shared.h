@@ -129,7 +129,8 @@ SCOPED_ENUM(EPlayerMiscFlag,
 	IsMoneyVariationSoundDisabled,
 	IsMoneyDropSoundDisabled,
 	IsRegionListEnabled,
-	AllowsRegionVoiceOnly
+	AllowsRegionVoiceOnly,
+	AreMOTDDialogsDisabled
 )
 
 class CBaseHL2Roleplayer;

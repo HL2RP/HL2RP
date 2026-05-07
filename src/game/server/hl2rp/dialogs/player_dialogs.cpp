@@ -331,6 +331,18 @@ CSettingsMenu::CSettingsMenu(CHL2Roleplayer* pPlayer) : CNetworkMenu(pPlayer, "#
 	AddItem(EItemAction::Region, "#HL2RP_Menu_Settings_Region");
 }
 
+void CSettingsMenu::UpdateItems()
+{
+	RemoveItemsByActions(EItemAction::EnableMOTDDialogs, EItemAction::DisableMOTDDialogs);
+
+	if (mpPlayer->mMiscFlags.IsBitSet(EPlayerMiscFlag::AreMOTDDialogsDisabled))
+	{
+		return AddItem(EItemAction::EnableMOTDDialogs, "#HL2RP_MOTDDialogs_Enable");
+	}
+
+	AddItem(EItemAction::DisableMOTDDialogs, "#HL2RP_MOTDDialogs_Disable");
+}
+
 void CSettingsMenu::SelectItem(CItem* pItem)
 {
 	switch (pItem->mAction)
@@ -338,9 +350,19 @@ void CSettingsMenu::SelectItem(CItem* pItem)
 #ifdef HL2RP_LEGACY
 	case EItemAction::ClearHUDHints:
 	{
-		return mpPlayer->SendChildDialog(new CHUDHintsClearMenu(mpPlayer));
+		return mpPlayer->SendChildDialog(new CConfirmMenu(mpPlayer, pItem->mAction, "#HL2RP_HUDHints_Clear_Warning"));
 	}
 #endif // HL2RP_LEGACY
+	case EItemAction::EnableMOTDDialogs:
+	{
+		mpPlayer->mMiscFlags.ClearBit(EPlayerMiscFlag::AreMOTDDialogsDisabled);
+		return Send();
+	}
+	case EItemAction::DisableMOTDDialogs:
+	{
+		return mpPlayer->SendChildDialog(new CConfirmMenu(mpPlayer,
+			pItem->mAction, "#HL2RP_MOTDDialogs_Disable_Warning", PLUGIN_DIALOGS_CVAR_NAME " 1"));
+	}
 	case EItemAction::Money:
 	{
 		return mpPlayer->SendChildDialog(new CMoneySettingsMenu(mpPlayer));
@@ -348,6 +370,24 @@ void CSettingsMenu::SelectItem(CItem* pItem)
 	case EItemAction::Region:
 	{
 		return mpPlayer->SendChildDialog(new CRegionSettingsMenu(mpPlayer));
+	}
+	}
+}
+
+void CSettingsMenu::HandleChildNotice(int action, const SUtlField&)
+{
+	switch (action)
+	{
+#ifdef HL2RP_LEGACY
+	case EItemAction::ClearHUDHints:
+	{
+		mpPlayer->mLearnedHUDHints = 0;
+		break;
+	}
+#endif // HL2RP_LEGACY
+	case EItemAction::DisableMOTDDialogs:
+	{
+		return mpPlayer->mMiscFlags.SetBit(EPlayerMiscFlag::AreMOTDDialogsDisabled);
 	}
 	}
 }
@@ -474,23 +514,6 @@ void CHiddenWeaponsMenu::SelectItem(CItem* pItem)
 	{
 		mpPlayer->Weapon_Switch(pWeapon);
 	}
-}
-
-CHUDHintsClearMenu::CHUDHintsClearMenu(CHL2Roleplayer* pPlayer)
-	: CNetworkMenu(pPlayer, "#GameUI_Confirm", "#HL2RP_HUDHints_Clear_Warning")
-{
-	AddItem(EItemAction::Accept, "#GameUI_Accept");
-	AddItem(EItemAction::Cancel, "#GameUI_Cancel");
-}
-
-void CHUDHintsClearMenu::SelectItem(CItem* pItem)
-{
-	if (pItem->mAction == EItemAction::Accept)
-	{
-		mpPlayer->mLearnedHUDHints = 0;
-	}
-
-	mpPlayer->RewindDialogStack(mStackIndex);
 }
 #endif // HL2RP_LEGACY
 

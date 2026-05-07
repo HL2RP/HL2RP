@@ -323,7 +323,7 @@ INetChannel* GetPlayerNetChannel(CBasePlayer* pPlayer)
 	return static_cast<INetChannel*>(engine->GetPlayerNetInfo(pPlayer->entindex()));
 }
 
-void UTIL_SendDialog(CBasePlayer* pPlayer, KeyValues* pData, DIALOG_TYPE type)
+void UTIL_SendDialog(CBasePlayer* pPlayer, DIALOG_TYPE type, KeyValues* pData)
 {
 	INetChannel* pNetChannel = GetPlayerNetChannel(pPlayer);
 

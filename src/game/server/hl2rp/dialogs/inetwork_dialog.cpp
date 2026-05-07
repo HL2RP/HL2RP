@@ -1,3 +1,5 @@
+// This is an open source non-commercial project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include <cbase.h>
 #include "inetwork_dialog.h"
 #include <hl2_roleplayer.h>
@@ -6,6 +8,8 @@
 
 #define NETWORK_DIALOG_MAX_TIME 200
 #define NETWORK_DIALOG_CMD_NAME "dialogcmd"
+
+#define NETWORK_ENTRYBOX_CMD_NAME "entryboxtext"
 
 #define NETWORK_MENU_PAGE_PREV_INDEX -1
 #define NETWORK_MENU_PAGE_NEXT_INDEX -2
@@ -41,43 +45,35 @@ void INetworkDialog::Think()
 	}
 }
 
-KeyValues* INetworkDialog::InitSendData(KeyValues* pData, bool allowESCHint)
+void INetworkDialog::Send(bool allowMOTDFwd)
+{
+	DIALOG_TYPE type;
+	KeyValuesAD data;
+	InitSendData(type, data, false, true);
+	UTIL_SendDialog(mpPlayer, type, data);
+
+	if (allowMOTDFwd && !mpPlayer->mIsInMOTDDialogCmd && !mpPlayer->mMiscFlags.IsBitSet(EPlayerMiscFlag::AreMOTDDialogsDisabled))
+	{
+		ForwardToMOTD();
+	}
+}
+
+void INetworkDialog::InitSendData(DIALOG_TYPE& type, KeyValues* pData, bool forMOTD, bool allowESCHint)
 {
 	CLocalizeFmtCStr localizedMessage(mpPlayer);
 	localizedMessage.Localize(mMessage, mMessageArg.ToString().Get());
 
-	// HACK: Fix overflow from default panel layout by replacing rightmost line spaces with new line characters
-	for (char* pEnd = localizedMessage.mDest + localizedMessage.mLength,
-		*pCurLine = localizedMessage.mDest, *pNewLineChar; pCurLine < pEnd; pCurLine = pNewLineChar + 1)
+	if (!forMOTD)
 	{
-		if ((pNewLineChar = strchr(pCurLine, '\n')) == NULL)
-		{
-			pNewLineChar = pEnd;
-		}
-
-		if (pCurLine + NETWORK_MENU_MSG_LINE_MAX_SIZE < pNewLineChar)
-		{
-			char lineEndChar = pCurLine[NETWORK_MENU_MSG_LINE_MAX_SIZE];
-			pCurLine[NETWORK_MENU_MSG_LINE_MAX_SIZE] = '\0';
-			char* pLineEndSpace = Q_strrchr(pCurLine, ' ');
-			pCurLine[NETWORK_MENU_MSG_LINE_MAX_SIZE] = lineEndChar;
-
-			if (pLineEndSpace != NULL)
-			{
-				pNewLineChar = pLineEndSpace;
-				*pNewLineChar = '\n';
-			}
-		}
+		pData->SetColor("color", COLOR_GREEN);
+		pData->SetInt("time", NETWORK_DIALOG_MAX_TIME);
+		pData->SetInt("level", --mpPlayer->mLastDialogLevel);
 	}
 
-	pData->SetString("title", (allowESCHint && mpPlayer->mDialogStack.Size() < 2) ?
+	pData->SetString("title", (allowESCHint && mStackIndex < 1) ?
 		CLocalizeFmtCStr(mpPlayer).Format("%t (%t)", mTitle, "#HL2RP_Dialog_Open_Hint")
 		: gHL2RPLocalizer.Localize(mpPlayer, mTitle));
 	pData->SetString("msg", localizedMessage);
-	pData->SetColor("color", COLOR_GREEN);
-	pData->SetInt("time", NETWORK_DIALOG_MAX_TIME);
-	pData->SetInt("level", --mpPlayer->mLastDialogLevel);
-	return pData;
 }
 
 void INetworkDialog::NoticeParent(int action, const SUtlField& info, bool rewind)
@@ -95,11 +91,11 @@ void INetworkDialog::NoticeParent(int action, const SUtlField& info, bool rewind
 	Send();
 }
 
-void CNetworkMsgDialog::Send()
+void CNetworkMsgDialog::InitSendData(DIALOG_TYPE& type, KeyValues* pData, bool forMOTD, bool allowESCHint)
 {
-	KeyValuesAD data;
 	bool showPanel = (*mMessage != '\0');
-	UTIL_SendDialog(mpPlayer, InitSendData(data, showPanel), showPanel ? DIALOG_TEXT : DIALOG_MSG);
+	type = (showPanel ? DIALOG_TEXT : DIALOG_MSG);
+	INetworkDialog::InitSendData(type, pData, forMOTD, allowESCHint && showPanel);
 }
 
 CNetworkEntryBox::CNetworkEntryBox(CHL2Roleplayer* pPlayer, const char* pTitle, const char* pMessage, int action,
@@ -108,22 +104,33 @@ CNetworkEntryBox::CNetworkEntryBox(CHL2Roleplayer* pPlayer, const char* pTitle, 
 
 }
 
-void CNetworkEntryBox::Send()
+void CNetworkEntryBox::InitSendData(DIALOG_TYPE& type, KeyValues* pData, bool forMOTD, bool allowESCHint)
 {
-	KeyValuesAD data;
-	InitSendData(data, true)->SetString("command", NETWORK_DIALOG_CMD_NAME);
-	UTIL_SendDialog(mpPlayer, data, DIALOG_ENTRY);
+	type = DIALOG_ENTRY;
+	INetworkDialog::InitSendData(type, pData, forMOTD, allowESCHint);
+	pData->SetString("command", NETWORK_ENTRYBOX_CMD_NAME);
+
+	// If for MOTD, add 'Back' item too when needed and localized 'Submit' label
+	if (forMOTD)
+	{
+		pData->SetString("submitStr", gHL2RPLocalizer.Localize(mpPlayer, "#GameUI_Submit"));
+
+		if (mStackIndex > 0)
+		{
+			pData->SetString("back", gHL2RPLocalizer.Localize(mpPlayer, "#HL2RP_Menu_Item_Back"));
+		}
+	}
 }
 
-void CNetworkEntryBox::HandleCommand(const CCommand& args)
+void CNetworkEntryBox::HandleCommandText(const char* pText, bool)
 {
-	NoticeParent(mAction, args.ArgS());
+	NoticeParent(mAction, pText);
 }
 
-CNetworkMenu::CPageInfo::CPageInfo(CNetworkMenu* pMenu, int pageItemIndex)
+CNetworkMenu::CESCPageInfo::CESCPageInfo(CNetworkMenu* pMenu, int pageItemIndex)
 {
 	// Check special slots for navigating back, previous and next
-	if (pMenu->mpPlayer->mDialogStack.Size() > 1)
+	if (pMenu->mStackIndex > 0)
 	{
 		--mMaxPageItems;
 	}
@@ -184,94 +191,152 @@ void CNetworkMenu::RemoveAllItems()
 	mItems.PurgeAndDeleteElements();
 }
 
-void CNetworkMenu::Send()
+void CNetworkMenu::Send(bool allowMOTDFwd)
 {
 	UpdateItems();
-	CPageInfo info(this, mCurPageItemIndex);
 
 	if ((mRewindIfEmpty && mItems.IsEmpty()) || (mIsAdminOnly && !mpPlayer->IsAdmin()))
 	{
 		return mpPlayer->RewindDialogStack(mStackIndex); // Since there aren't items, try moving to parent
 	}
-	// Shift current page to the last page if overflowed due to item count changes
-	else if (mCurPageItemIndex > 0 && mCurPageItemIndex + 2 > mItems.Size())
+	// Shift current page to the last one, if overflowed due to item count changes, or current index points to the last item,
+	// as it'd be the only custom item in its page and it fits in the previous one instead ('Next' button is unneeded there)
+	else if (mCurESCItemIndex > 0 && mCurESCItemIndex + 2 > mItems.Size())
 	{
-		mCurPageItemIndex = 0;
-		info = { this, 0 };
+		CESCPageInfo info(this, 0);
 
-		for (int nextMaxPageItems = info.mMaxPageItems - 1;
-			mCurPageItemIndex + info.mMaxPageItems < mItems.Size(); info.mMaxPageItems = nextMaxPageItems)
+		for (mCurESCItemIndex = 0; mCurESCItemIndex + info.mMaxPageItems < mItems.Size(); info = { this, mCurESCItemIndex })
 		{
-			mCurPageItemIndex += info.mMaxPageItems;
+			mCurESCItemIndex += info.mMaxPageItems;
 		}
 	}
 
-	mSecretToken = rand();
-	KeyValuesAD data;
-	InitSendData(data, mIsFirstDisplay);
-	mIsFirstDisplay = false;
-	int pageEndIndex = Min(mCurPageItemIndex + info.mMaxPageItems, mItems.Size());
-
-	for (int i = mCurPageItemIndex; i < pageEndIndex; ++i)
+	// Same as above, for MOTD
+	if (mCurMOTDItemIndex >= mItems.Size())
 	{
-		AddItemSendData(data, i, mItems[i]->mDisplay);
+		int end = mItems.Size() - 1;
+		mCurMOTDItemIndex = end - end % NETWORK_MENU_PAGE_MAX_ITEMS;
 	}
 
-	if (mCurPageItemIndex > 0)
+	INetworkDialog::Send(allowMOTDFwd);
+	mIsFirstDisplay = false;
+}
+
+void CNetworkMenu::InitSendData(DIALOG_TYPE& type, KeyValues* pData, bool forMOTD, bool allowESCHint)
+{
+	type = DIALOG_MENU;
+	int pageStartIndex = mCurMOTDItemIndex, pageEndIndex = NETWORK_MENU_PAGE_MAX_ITEMS; // Default to MOTD (faster)
+
+	if (!forMOTD)
 	{
-		AddItemSendData(data, NETWORK_MENU_PAGE_PREV_INDEX, "#HL2RP_Menu_Item_Prev");
+		pageStartIndex = mCurESCItemIndex;
+		pageEndIndex = CESCPageInfo(this, pageStartIndex).mMaxPageItems;
+	}
+
+	pageEndIndex = Min(pageStartIndex + pageEndIndex, mItems.Size());
+
+	for (int i = pageStartIndex; i < pageEndIndex; ++i)
+	{
+		AddItemSendData(pData, i, mItems[i]->mDisplay, NULL, forMOTD, NULL);
+	}
+
+	if (pageStartIndex > 0)
+	{
+		AddItemSendData(pData, NETWORK_MENU_PAGE_PREV_INDEX,
+			"#HL2RP_Menu_Item_Prev", "#HL2RP_Menu_Symbol_Prev", forMOTD, "previous");
 	}
 
 	if (pageEndIndex < mItems.Size())
 	{
-		AddItemSendData(data, NETWORK_MENU_PAGE_NEXT_INDEX, "#HL2RP_Menu_Item_Next");
+		AddItemSendData(pData, NETWORK_MENU_PAGE_NEXT_INDEX,
+			"#HL2RP_Menu_Item_Next", "#HL2RP_Menu_Symbol_Next", forMOTD, "next");
 	}
 
-	if (mpPlayer->mDialogStack.Size() > 1)
+	if (mStackIndex > 0)
 	{
-		AddItemSendData(data, NETWORK_MENU_PAGE_BACK_INDEX, "#HL2RP_Menu_Item_Back");
+		AddItemSendData(pData, NETWORK_MENU_PAGE_BACK_INDEX,
+			"#HL2RP_Menu_Item_Back", "#HL2RP_Menu_Symbol_Back", forMOTD, "back");
 	}
 
-	OnPreSendDialog(pageEndIndex, data);
-	return UTIL_SendDialog(mpPlayer, data, DIALOG_MENU);
+	OnPreSendDialog(pageStartIndex, pageEndIndex, pData);
+	INetworkDialog::InitSendData(type, pData, forMOTD, allowESCHint && mIsFirstDisplay);
 }
 
-void CNetworkMenu::AddItemSendData(KeyValues* pData, int index, const char* pDisplay)
+void CNetworkMenu::AddItemSendData(KeyValues* pData, int index,
+	const char* pDisplay, const char* pNavigationSymbol, bool forMOTD, const char* pMOTDNavigationKey)
 {
-	KeyValues* pItemData = pData->CreateNewKey();
-	pItemData->SetString("msg", (mShowItemNumbers && index >= 0) ? CLocalizeFmtCStr(mpPlayer)
-		.Format("%s. %t", index - mCurPageItemIndex + 1, pDisplay) : gHL2RPLocalizer.Localize(mpPlayer, pDisplay));
-	pItemData->SetString("command", UTIL_VarArgs(NETWORK_DIALOG_CMD_NAME " %i %i", index, mSecretToken));
-}
+	const char* pLocalizedDisplay = gHL2RPLocalizer.Localize(mpPlayer, pDisplay);
 
-void CNetworkMenu::HandleCommand(const CCommand& args)
-{
-	if (Q_atoi(args.Arg(2)) == mSecretToken)
+	if (!forMOTD)
 	{
-		int index = Q_atoi(args.Arg(1));
+		// Set nested data (game format)
+		CLocalizeFmtCStr extendedDisplay(mpPlayer);
 
+		if (pNavigationSymbol != NULL)
+		{
+			pLocalizedDisplay = extendedDisplay.Format("%t %t", pNavigationSymbol, pLocalizedDisplay);
+		}
+		else if (mShowItemNumbers)
+		{
+			pLocalizedDisplay = extendedDisplay.Format("%s. %t", index - mCurESCItemIndex + 1, pLocalizedDisplay);
+		}
+
+		KeyValues* pItemData = pData->CreateNewKey();
+		pItemData->SetString("msg", pLocalizedDisplay);
+		return pItemData->SetString("command", UTIL_VarArgs(NETWORK_DIALOG_CMD_NAME " %i %i", index, mpPlayer->mDialogSecret));
+	}
+	else if (pMOTDNavigationKey != NULL)
+	{
+		return pData->SetString(pMOTDNavigationKey, pLocalizedDisplay); // Redirect navigation item to parent level (base key)
+	}
+
+	// For MOTD, set data at items group
+	KeyValues* pItemsKV = pData->FindKey("items", true);
+	pItemsKV->SetString(CNumStr(index), pLocalizedDisplay);
+}
+
+void CNetworkMenu::HandleCommandText(const char* pText, bool fromMOTD)
+{
+	int index;
+
+	if (sscanf(pText, "%i", &index) > 0 && index < mItems.Size())
+	{
 		switch (index)
 		{
 		case NETWORK_MENU_PAGE_PREV_INDEX:
 		{
-			if (mCurPageItemIndex > 0)
+			if (fromMOTD)
 			{
-				mCurPageItemIndex -= CPageInfo(this, mCurPageItemIndex - NETWORK_MENU_PAGE_MAX_ITEMS).mMaxPageItems;
-				PlayItemSound();
-				Send();
+				if (mCurMOTDItemIndex > 0)
+				{
+					mCurMOTDItemIndex -= NETWORK_MENU_PAGE_MAX_ITEMS;
+					PlayItemSoundAndSend();
+				}
+			}
+			else if (mCurESCItemIndex > 0)
+			{
+				mCurESCItemIndex -= CESCPageInfo(this, mCurESCItemIndex - NETWORK_MENU_PAGE_MAX_ITEMS).mMaxPageItems;
+				PlayItemSoundAndSend();
 			}
 
 			return;
 		}
 		case NETWORK_MENU_PAGE_NEXT_INDEX:
 		{
-			CPageInfo info(this, mCurPageItemIndex);
-
-			if (mCurPageItemIndex + info.mMaxPageItems < mItems.Size())
+			if (!fromMOTD)
 			{
-				mCurPageItemIndex += info.mMaxPageItems;
-				PlayItemSound();
-				Send();
+				CESCPageInfo info(this, mCurESCItemIndex);
+
+				if (mCurESCItemIndex + info.mMaxPageItems < mItems.Size())
+				{
+					mCurESCItemIndex += info.mMaxPageItems;
+					PlayItemSoundAndSend();
+				}
+			}
+			else if (mCurMOTDItemIndex + NETWORK_MENU_PAGE_MAX_ITEMS < mItems.Size())
+			{
+				mCurMOTDItemIndex += NETWORK_MENU_PAGE_MAX_ITEMS;
+				PlayItemSoundAndSend();
 			}
 
 			return;
@@ -282,7 +347,7 @@ void CNetworkMenu::HandleCommand(const CCommand& args)
 		}
 		}
 
-		if (index >= 0 && index < mItems.Size())
+		if (index >= 0)
 		{
 			PlayItemSound();
 			SelectItem(mItems[index]);
@@ -294,6 +359,12 @@ void CNetworkMenu::SelectItem(CItem* pItem)
 {
 	NoticeParent(mAction > NETWORK_MENU_ACTION_FROM_ITEM ? mAction : pItem->mAction,
 		pItem->mInfo.mType == SUtlField::EType::Null ? SUtlField(pItem->mDisplay) : pItem->mInfo);
+}
+
+void CNetworkMenu::PlayItemSoundAndSend()
+{
+	PlayItemSound();
+	Send();
 }
 
 void CNetworkMenu::PlayItemSound() // NOTE: Call before a Send to safely access player (handler may delete menu)
@@ -362,7 +433,7 @@ void CPlayerListMenu::UpdateItems()
 	});
 }
 
-void CPlayerListMenu::OnPreSendDialog(int pageEndIndex, KeyValues* pSendData)
+void CPlayerListMenu::OnPreSendDialog(int pageStartIndex, int pageEndIndex, KeyValues* pSendData)
 {
 	CLocalizeFmtCStr localizedMessage(mpPlayer);
 	localizedMessage += pSendData->GetString("msg");
@@ -374,22 +445,43 @@ void CPlayerListMenu::OnPreSendDialog(int pageEndIndex, KeyValues* pSendData)
 
 	localizedMessage.Localize("#HL2RP_Menu_PlayerList_Msg_Header");
 
-	for (int i = mCurPageItemIndex; i < pageEndIndex; ++i)
+	for (int i = pageStartIndex; i < pageEndIndex; ++i)
 	{
-		localizedMessage.Format("\n%s. %s", i - mCurPageItemIndex + 1, mItems[i]->mInfo.ToString().Get());
+		localizedMessage.Format("\n%s. %s", i - pageStartIndex + 1, mItems[i]->mInfo.ToString().Get());
 	}
 
 	pSendData->SetString("msg", localizedMessage);
 }
 
-CON_COMMAND_F(dialogcmd, "", FCVAR_HIDDEN | FCVAR_SERVER_CAN_EXECUTE)
+CConfirmMenu::CConfirmMenu(CHL2Roleplayer* pPlayer, int acceptAction, const char* pWarning, const SUtlField& warningArg)
+	: CNetworkMenu(pPlayer, "#GameUI_Confirm", pWarning)
+{
+	mMessageArg = warningArg;
+	AddItem(acceptAction, "#GameUI_Accept");
+	AddItem(NETWORK_MENU_ACTION_NONE, "#GameUI_Cancel");
+}
+
+static void HandleDialogCommand(const CCommand& args, bool validateSecret)
 {
 	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_GetCommandClient());
 
 	if (pPlayer != NULL && !pPlayer->mDialogStack.IsEmpty())
 	{
-		pPlayer->mDialogStack.Tail()->HandleCommand(args);
+		INetworkDialog* pDialog = pPlayer->mDialogStack.Tail();
+
+		if (!validateSecret || pPlayer->mDialogSecret == Q_atoi(args.Arg(2)))
+		{
+			pDialog->HandleCommandText(args.ArgS(), false);
+		}
 	}
 }
 
-CON_COMMAND_EXTERN(entryboxtext, dialogcmd, "<text> - Inputs entry box text");
+CON_COMMAND_F(dialogcmd, "[data] [secret]", FCVAR_HIDDEN | FCVAR_SERVER_CAN_EXECUTE)
+{
+	HandleDialogCommand(args, true); // NOTE: Require secret to prevent self player binding
+}
+
+CON_COMMAND_F(entryboxtext, "[text] - Inputs entry box text", FCVAR_HIDDEN | FCVAR_SERVER_CAN_EXECUTE)
+{
+	HandleDialogCommand(args, false); // NOTE: Skipping secret validation is acceptable here (no benefit from binding)
+}

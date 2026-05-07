@@ -1096,16 +1096,17 @@ void CHL2Roleplayer::SendEntityBeam(CBaseEntity* pEntity, const Color& color, fl
 	SendBeam(pEntity->WorldSpaceCenter(), color, width);
 }
 
-void CHL2Roleplayer::SendRootDialog(INetworkDialog* pDialog)
+void CHL2Roleplayer::SendRootDialog(INetworkDialog* pDialog, bool allowMOTDFwd)
 {
+	mDialogSecret = rand(); // Refresh secret only here, to prevent MOTD dialogs from breaking when releasing TAB (obsolete URL reload)
 	mDialogStack.PurgeAndDeleteElements();
-	SendChildDialog(pDialog);
+	SendChildDialog(pDialog, allowMOTDFwd);
 }
 
-void CHL2Roleplayer::SendChildDialog(INetworkDialog* pDialog)
+void CHL2Roleplayer::SendChildDialog(INetworkDialog* pDialog, bool allowMOTDFwd)
 {
 	pDialog->mStackIndex = mDialogStack.AddToTail(pDialog);
-	pDialog->Send();
+	pDialog->Send(allowMOTDFwd);
 }
 
 void CHL2Roleplayer::RewindDialogStack(int endIndex, const char* pCancelReason)
@@ -1117,20 +1118,21 @@ void CHL2Roleplayer::RewindDialogStack(int endIndex, const char* pCancelReason)
 		mDialogStack.FastRemove(endIndex);
 	}
 
+	bool hasCancelReason = (*pCancelReason != '\0');
 	EmitLocalSound(NETWORK_DIALOG_REWIND_SOUND, true);
 
 	// If new stack is empty, assume we rewinded due to an auto-cancellation, and send a dialog with the reason
 	if (mDialogStack.IsEmpty())
 	{
-		return SendChildDialog(new CNetworkMsgDialog(this, "#HL2RP_Dialog_Cancelled", pCancelReason));
+		return SendRootDialog(new CNetworkMsgDialog(this, "#HL2RP_Dialog_Cancelled", pCancelReason), false);
 	}
 	// Otherwise, if there's a cancel reason, display it in chat, since parent dialog must be re-displayed instead
-	else if (*pCancelReason != '\0')
+	else if (hasCancelReason)
 	{
 		Print(HUD_PRINTTALK, CLocalizeFmtCStr(this, true).Format("%t: %t", "#HL2RP_Dialog_Cancelled", pCancelReason));
 	}
 
-	mDialogStack.Tail()->Send();
+	mDialogStack.Tail()->Send(!hasCancelReason);
 }
 
 static void HandleAccessChangeCmd(const CCommand& args, bool grant)

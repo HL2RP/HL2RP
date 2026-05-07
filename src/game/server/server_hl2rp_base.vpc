@@ -1,5 +1,6 @@
 $Include "server_hl2mp.vpc"
 $Include "..\shared\hl2rp_shared_base.vpc"
+$Include "$SRCDIR\gcsdk\gcsdk_game_include.vpc"
 
 $Configuration
 {
@@ -43,6 +44,7 @@ $Project
 
 			$Folder "Dialogs"
 			{
+				$File "hl2rp\dialogs\dialog_motd_bridge.cpp"
 				$File "hl2rp\dialogs\inetwork_dialog.cpp"
 				$File "hl2rp\dialogs\inetwork_dialog.h"
 				$File "hl2rp\dialogs\player_dialogs.cpp"

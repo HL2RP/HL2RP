@@ -39,7 +39,7 @@ bool UTIL_FindCmdTarget(const CCommand& args, CHL2Roleplayer*& pTarget, int user
 
 void UTIL_LogAdminAction(CHL2Roleplayer*, const char*, ...); // Logs an admin action (if player is valid), prefixed by their identity for auditing
 
-void UTIL_SendDialog(CBasePlayer*, KeyValues* pData, DIALOG_TYPE);
+void UTIL_SendDialog(CBasePlayer*, DIALOG_TYPE, KeyValues* pData);
 
 CUtlString& UTIL_TrimQuotableString(CUtlString&&);
 

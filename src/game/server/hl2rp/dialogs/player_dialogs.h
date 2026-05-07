@@ -98,11 +98,15 @@ class CSettingsMenu : public CNetworkMenu
 {
 	SCOPED_ENUM(EItemAction,
 		ClearHUDHints,
+		EnableMOTDDialogs,
+		DisableMOTDDialogs,
 		Money,
 		Region
 	);
 
+	void UpdateItems() OVERRIDE;
 	void SelectItem(CItem*) OVERRIDE;
+	void HandleChildNotice(int, const SUtlField&) OVERRIDE;
 
 public:
 	CSettingsMenu(CHL2Roleplayer*);
@@ -148,19 +152,6 @@ class CHiddenWeaponsMenu : public CNetworkMenu
 
 public:
 	CHiddenWeaponsMenu(CHL2Roleplayer*);
-};
-
-class CHUDHintsClearMenu : public CNetworkMenu
-{
-	SCOPED_ENUM(EItemAction,
-		Accept,
-		Cancel
-	);
-
-	void SelectItem(CItem*) OVERRIDE;
-
-public:
-	CHUDHintsClearMenu(CHL2Roleplayer*);
 };
 #endif // HL2RP_LEGACY
 

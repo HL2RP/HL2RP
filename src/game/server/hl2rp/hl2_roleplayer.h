@@ -128,8 +128,8 @@ public:
 		const Color&, float holdTime = HL2_ROLEPLAYER_HUD_THINK_PERIOD + HL2_ROLEPLAYER_HUD_EXTRA_HOLD_TIME);
 	void SendBeam(const Vector& end, const Color&, float width);
 	void SendEntityBeam(CBaseEntity*, const Color & = HL2RP_SMALL_BEAM_COLOR, float width = HL2RP_SMALL_BEAM_WIDTH); // Sends a beam ending on an entity
-	void SendRootDialog(INetworkDialog*);
-	void SendChildDialog(INetworkDialog*);
+	void SendRootDialog(INetworkDialog*, bool allowMOTDFwd = true);
+	void SendChildDialog(INetworkDialog*, bool allowMOTDFwd = true);
 	void RewindDialogStack(int endIndex, const char* pCancelReason = ""); // Kills dialogs up to endIndex (inclusive) from tail, handling cancellations
 
 	float mFirstSpawnTime;
@@ -140,9 +140,10 @@ public:
 	CPlainAutoPtr<CRestorablePlayerEquipment> mRestorableEquipment;
 	SPlayerAimInfo mAimInfo;
 	CAutoLessFuncAdapter<CUtlRBTree<CHL2RP_Property*>> mHomes;
-	int mLastDialogLevel = INT_MAX;
+	int mLastDialogLevel = INT_MAX, mDialogSecret;
 	CUtlVectorAutoPurge<INetworkDialog*> mDialogStack;
-	bool mIsWeaponManuallyLowered;
+	bool mIsInMOTDDialogCmd : 1; // Prevents MOTD dialogs from being sent while handling commands from MOTDDialogBuilder (not needed)
+	bool mIsWeaponManuallyLowered : 1;
 };
 
 extern const char* gPlayerDatabasePropNames[];
