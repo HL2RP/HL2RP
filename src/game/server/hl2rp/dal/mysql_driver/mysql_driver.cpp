@@ -229,7 +229,7 @@ class CMySQLDriver : public ISQLDriver
 public:
 	CMySQLDriver()
 	{
-		mysql_init(&mConnection);
+		mysql_library_init(0, NULL, NULL);
 	}
 
 	~CMySQLDriver() OVERRIDE
@@ -242,6 +242,7 @@ public:
 bool CMySQLDriver::Connect(const char* pDatabaseName, const char* pHostName,
 	const char* pUserName, const char* pPassword, int port)
 {
+	mysql_init(&mConnection);
 	bool reportDataTruncation = false;
 	mysql_options(&mConnection, MYSQL_REPORT_DATA_TRUNCATION, &reportDataTruncation);
 	mysql_options(&mConnection, MYSQL_SET_CHARSET_NAME, "utf8mb4");
@@ -258,6 +259,7 @@ bool CMySQLDriver::Connect(const char* pDatabaseName, const char* pHostName,
 void CMySQLDriver::Close()
 {
 	mysql_close(&mConnection);
+	mConnection = {}; // Clear internal pointers for safety, in case Close gets called twice
 }
 
 void CMySQLDriver::DispatchExecuteIO(IDAO* pDAO)
