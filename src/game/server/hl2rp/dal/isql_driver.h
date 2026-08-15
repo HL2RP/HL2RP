@@ -49,6 +49,7 @@ public:
 	virtual ISQLPreparedStatement* PrepareStatement(const char*) = 0;
 	virtual void GetFeatures(SSQLDriverFeatures&) = 0;
 	virtual void GetDuplicateKeyConflictInfo(CRecordNodeDTO*, CSQLQuery&, SSQLDuplicateKeyConflictInfo&) = 0;
+	virtual uint64 GetLastInsertId() = 0;
 
 	// Retrieves the preexisting table column names, saving the results in the parameter.
 	// Returns a driver-fixed column name that contains the retrieved table column names.

@@ -99,6 +99,7 @@ class CSQLite3Driver : public ISQLDriver
 	void GetFeatures(SSQLDriverFeatures&) OVERRIDE;
 	const char* GetTableColumnNames(const char*, CRecordListDTO*) OVERRIDE;
 	void GetDuplicateKeyConflictInfo(CRecordNodeDTO*, CSQLQuery&, SSQLDuplicateKeyConflictInfo&) OVERRIDE;
+	uint64 GetLastInsertId() OVERRIDE;
 
 	sqlite3* mpConnection = NULL;
 
@@ -204,6 +205,11 @@ void CSQLite3Driver::GetDuplicateKeyConflictInfo(CRecordNodeDTO* pRecord,
 		info.mAppendIndexNames = true;
 		info.mpExtraClause = " DO UPDATE SET ";
 	}
+}
+
+uint64 CSQLite3Driver::GetLastInsertId()
+{
+	return sqlite3_last_insert_rowid(mpConnection);
 }
 
 EXPOSE_SINGLE_INTERFACE(CSQLite3Driver, ISQLDriver, SQLITE3_DRIVER_IMPL_VERSION_STRING);

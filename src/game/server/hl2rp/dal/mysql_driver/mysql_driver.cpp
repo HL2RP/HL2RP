@@ -223,6 +223,7 @@ class CMySQLDriver : public ISQLDriver
 	void GetFeatures(SSQLDriverFeatures&) OVERRIDE;
 	const char* GetTableColumnNames(const char*, CRecordListDTO*) OVERRIDE;
 	void GetDuplicateKeyConflictInfo(CRecordNodeDTO*, CSQLQuery&, SSQLDuplicateKeyConflictInfo&) OVERRIDE;
+	uint64 GetLastInsertId() OVERRIDE;
 
 	MYSQL mConnection;
 
@@ -361,6 +362,11 @@ void CMySQLDriver::GetDuplicateKeyConflictInfo(CRecordNodeDTO* pRecord,
 		const char* pIndexName = pRecord->mIndexFieldByName.GetElementName(0);
 		query.AppendFormat("`%s` = `%s`", pIndexName, pIndexName);
 	}
+}
+
+uint64 CMySQLDriver::GetLastInsertId()
+{
+	return mysql_insert_id(&mConnection);
 }
 
 EXPOSE_SINGLE_INTERFACE(CMySQLDriver, ISQLDriver, MYSQL_DRIVER_IMPL_VERSION_STRING);

@@ -705,14 +705,7 @@ void CAutoIncrementInsertDAO::ExecuteIO(CKeyValuesDriver* pDriver)
 void CAutoIncrementInsertDAO::ExecuteIO(ISQLDriver* pDriver)
 {
 	CSaveDAO::ExecuteIO(pDriver);
-	CRecordListDTO results;
-	pDriver->ExecuteQuery(&results, "SELECT MAX(`%s`) AS `%s` FROM `%s`;", mpAutoIncrementField,
-		mpAutoIncrementField, mSaveDatabase.GetElementName(0));
-
-	if (!results.IsEmpty())
-	{
-		mResultId = results[0].GetInt(mpAutoIncrementField);
-	}
+	mResultId = pDriver->GetLastInsertId();
 }
 
 CSaveDeleteDAO::CSaveDeleteDAO(bool isFirstIndexWithinUniqueKey) : CSaveDAO(isFirstIndexWithinUniqueKey)
