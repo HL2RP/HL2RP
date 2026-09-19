@@ -39,6 +39,7 @@ static void __MsgFunc_HL2RP_PropertyUpdated(bf_read& msg)
 
 	propertyById[index]->mType = (EHL2RP_PropertyType)msg.ReadByte();
 	msg.ReadString(propertyById[index]->mName, sizeof(propertyById[index]->mName));
+	propertyById[index]->mPrice = msg.ReadLong();
 	propertyById[index]->mOwnerSteamIdNumber = msg.ReadVarInt64();
 
 	if (!propertyById[index]->HasOwner())

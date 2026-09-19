@@ -1053,31 +1053,18 @@ void UTIL_HudHintText( CBaseEntity *pEntity, const char *pMessage )
 	MessageEnd();
 }
 
-void UTIL_ClientPrintFilter( IRecipientFilter& filter, int msg_dest, const char *msg_name, const char *param1, const char *param2, const char *param3, const char *param4 )
+void UTIL_ClientPrintFilter( IRecipientFilter& filter, int msg_dest, const char *msg_name,
+	const char *param1, const char *param2, const char *param3, const char *param4, const char *param5 )
 {
 	UserMessageBegin( filter, "TextMsg" );
-		WRITE_BYTE( msg_dest );
-		WRITE_STRING( msg_name );
+	WRITE_BYTE( msg_dest );
+	WRITE_STRING( msg_name );
+	const char* params[] = { param1, param2, param3, param4, param5 };
 
-		if ( param1 )
-			WRITE_STRING( param1 );
-		else
-			WRITE_STRING( "" );
-
-		if ( param2 )
-			WRITE_STRING( param2 );
-		else
-			WRITE_STRING( "" );
-
-		if ( param3 )
-			WRITE_STRING( param3 );
-		else
-			WRITE_STRING( "" );
-
-		if ( param4 )
-			WRITE_STRING( param4 );
-		else
-			WRITE_STRING( "" );
+	for (auto pParam : params)
+	{
+		WRITE_STRING(pParam);
+	}
 
 	MessageEnd();
 }
@@ -1089,7 +1076,8 @@ void UTIL_ClientPrintAll( int msg_dest, const char *msg_name, const char *param1
 	UTIL_ClientPrintFilter( filter, msg_dest, msg_name, param1, param2, param3, param4 );
 }
 
-void ClientPrint( CBasePlayer *player, int msg_dest, const char *msg_name, const char *param1, const char *param2, const char *param3, const char *param4 )
+void ClientPrint( CBasePlayer *player, int msg_dest, const char *msg_name,
+	const char *param1, const char *param2, const char *param3, const char *param4, const char *param5 )
 {
 	if ( !player )
 		return;
@@ -1097,7 +1085,7 @@ void ClientPrint( CBasePlayer *player, int msg_dest, const char *msg_name, const
 	CSingleUserRecipientFilter user( player );
 	user.MakeReliable();
 
-	UTIL_ClientPrintFilter( user, msg_dest, msg_name, param1, param2, param3, param4 );
+	UTIL_ClientPrintFilter( user, msg_dest, msg_name, param1, param2, param3, param4, param5 );
 }
 
 void UTIL_SayTextFilter( IRecipientFilter& filter, const char *pText, CBasePlayer *pPlayer, bool bChat )

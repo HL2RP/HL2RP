@@ -121,6 +121,8 @@ protected:
 // General records-loading class, which retrieves all fields
 class CLoadDAO : public IDAO
 {
+	friend class COfflinePlayerRefundDAO;
+
 	bool MustBeRemovedOnLevelShutdown() OVERRIDE;
 
 protected:

@@ -293,3 +293,50 @@ CPlayersWeaponsSaveDAO::CPlayersWeaponsSaveDAO(CBasePlayer* pPlayer, CBaseCombat
 		pWeaponData->AddNormalField("clip2", pWeapon->Clip2());
 	}
 }
+
+COfflinePlayerRefundDAO::COfflinePlayerRefundDAO(uint64 steamIdNumber, int amount)
+	: mSteamIdNumber(steamIdNumber), mAmount(amount)
+{
+	mLoadDAO.mQueryDatabase.CreateCollection(PLAYER_DAO_MAIN_COLLECTION_NAME)
+		->AddIndexField(IDTO_PRIMARY_COLUMN_NAME, steamIdNumber);
+}
+
+bool COfflinePlayerRefundDAO::MergeFrom(IDAO* pDAO)
+{
+	COfflinePlayerRefundDAO* pRefundDAO = pDAO->As(this);
+
+	if (pRefundDAO->mSteamIdNumber == mSteamIdNumber)
+	{
+		mAmount += pRefundDAO->mAmount;
+		return true;
+	}
+
+	return false;
+}
+
+void COfflinePlayerRefundDAO::ExecuteIO(CKeyValuesDriver* pDriver)
+{
+	mLoadDAO.ExecuteIO(pDriver);
+	HandleIOLoad();
+	CSaveDAO::ExecuteIO(pDriver);
+}
+
+void COfflinePlayerRefundDAO::ExecuteIO(ISQLDriver* pDriver)
+{
+	mLoadDAO.ExecuteIO(pDriver);
+	HandleIOLoad();
+	CSaveDAO::ExecuteIO(pDriver);
+}
+
+void COfflinePlayerRefundDAO::HandleIOLoad()
+{
+	CRecordListDTO* pData = mLoadDAO.mResultDatabase.GetList(PLAYER_DAO_MAIN_COLLECTION_NAME);
+
+	if (!pData->IsEmpty())
+	{
+		// TODO: Use bank instead
+		mAmount += pData->Head().GetInt(gPlayerDatabasePropNames[EPlayerDatabasePropType::Pocket]);
+		mSaveDatabase.CreateCollection(PLAYER_DAO_MAIN_COLLECTION_NAME)->AddIndexField(IDTO_PRIMARY_COLUMN_NAME, mSteamIdNumber)
+			->AddNormalField(gPlayerDatabasePropNames[EPlayerDatabasePropType::Pocket], (int)mAmount);
+	}
+}

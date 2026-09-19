@@ -121,7 +121,8 @@ public:
 	void LocalPrint(int type, const char* pText, const char* pArg = "") HL2RP_LEGACY_FUNCTION;
 	void LocalDisplayHUDHint(EPlayerHUDHintType, const char* pToken,
 		const char* pArg1 = "", const char* pArg2 = "") HL2RP_LEGACY_FUNCTION;
-	void Print(int type, const char* pText, const char* pArg1 = "", const char* pArg2 = "", const char* pArg3 = "");
+	void Print(int type, const char* pText, const char* pArg1 = "",
+		const char* pArg2 = "", const char* pArg3 = "", const char* pArg4 = "", const char* pArg5 = "");
 	void SendHUDHint(EPlayerHUDHintType, const char* pToken, const char* pArg1 = "", const char* pArg2 = "");
 	void OnPreSendHUDMessage(bf_write*);
 	void SendHUDMessage(EPlayerHUDType, const char* pMessage, float xPos, float yPos,

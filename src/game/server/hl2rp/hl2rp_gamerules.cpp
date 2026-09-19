@@ -774,7 +774,7 @@ void CHL2RPRules::Think()
 			if (mProperties[i]->HasOwner() && curTime >= mProperties[i]->mOwnerLastSeenTime + maxInactivitySeconds
 				&& UTIL_PlayerBySteamID(mProperties[i]->mOwnerSteamIdNumber) == NULL)
 			{
-				mProperties[i]->Disown(NULL, 100);
+				mProperties[i]->Disown(NULL);
 			}
 		}
 	}

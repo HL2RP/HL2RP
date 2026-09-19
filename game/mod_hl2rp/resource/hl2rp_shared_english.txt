@@ -10,6 +10,7 @@
 		"HL2RP_Access_Removed_Issuer"	"You removed access from %1 to: %2"
 		"HL2RP_Command_Usage"			"Usage: %1 %2"
 		"HL2RP_DayNight_MapChange"		"Changing map from day/night cycle to %1 in %2..."
+		"HL2RP_House_Refund_Percent"	"%1 off original purchase price"
 		"HL2RP_ManagePropertyDoor"		"Manage Property/Door"
 		"HL2RP_Money_Added_Issuer"		"You added %1 to %2's Pocket"
 		"HL2RP_Money_Display"			"%1s%2" // 1: Token. 2: Amount.

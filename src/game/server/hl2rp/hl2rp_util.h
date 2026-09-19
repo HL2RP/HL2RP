@@ -23,6 +23,7 @@ protected:
 void UTIL_GetServerTime(tm&, int offset = 0);
 
 // Command helpers
+const char* UTIL_GetIssuerNameOrDefault(CBasePlayer*); // Returns passed player name if valid, "CONSOLE" otherwise. Useful for reusing printing formats.
 const char* UTIL_GetCommandIssuerName();
 bool UTIL_CheckCmdArgCount(const CCommand& args, int minCount = 1); // Checks for min. arg count (*NOT* counting command name), printing usage at failure
 bool UTIL_CheckCommandAccess(int minAccessFlag); // If issuer is a player, checks for minimum access flag. Otherwise, checks for host.
@@ -41,7 +42,9 @@ void UTIL_LogAdminAction(CHL2Roleplayer*, const char*, ...); // Logs an admin ac
 
 void UTIL_SendDialog(CBasePlayer*, DIALOG_TYPE, KeyValues* pData);
 
+// WARNING: Temporary result buffer functions
 CUtlString& UTIL_TrimQuotableString(CUtlString&&);
+const char* UTIL_FormatPercentage(float, CFmtStr32 && = {});
 
 bool UTIL_IsPropertyDoor(CBaseEntity*);
 CHL2RP_PropertyDoorData* UTIL_GetPropertyDoorData(CBaseEntity*);

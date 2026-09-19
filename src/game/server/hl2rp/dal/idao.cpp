@@ -27,7 +27,7 @@ bool IDAO::MustBeRemovedOnLevelShutdown()
 	return false;
 }
 
-bool IDAO::MergeFrom(IDAO* pOther)
+bool IDAO::MergeFrom(IDAO*)
 {
 	return true;
 }
@@ -667,9 +667,9 @@ bool CSaveDAO::MergeFrom(IDAO* pDAO)
 	return MergeFrom(pDAO->As(this));
 }
 
-bool CSaveDAO::MergeFrom(CSaveDAO* pOther)
+bool CSaveDAO::MergeFrom(CSaveDAO* pDAO)
 {
-	mSaveDatabase.TransferDistinctFrom(pOther->mSaveDatabase);
+	mSaveDatabase.TransferDistinctFrom(pDAO->mSaveDatabase);
 	return true;
 }
 
@@ -690,7 +690,7 @@ CAutoIncrementInsertDAO::CAutoIncrementInsertDAO(const char* pCollection, const 
 
 }
 
-bool CAutoIncrementInsertDAO::MergeFrom(IDAO* pDAO)
+bool CAutoIncrementInsertDAO::MergeFrom(IDAO*)
 {
 	return false; // Keep it simple - Supporting multiple records would add some messy logic
 }

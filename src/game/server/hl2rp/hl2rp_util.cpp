@@ -214,10 +214,14 @@ void UTIL_GetServerTime(tm& destTime, int offset)
 	Plat_localtime(&timeStamp, &destTime);
 }
 
+const char* UTIL_GetIssuerNameOrDefault(CBasePlayer* pPlayer)
+{
+	return (pPlayer != NULL ? pPlayer->GetPlayerName() : "CONSOLE");
+}
+
 const char* UTIL_GetCommandIssuerName()
 {
-	CBasePlayer* pPlayer = UTIL_GetCommandClient();
-	return (pPlayer != NULL ? pPlayer->GetPlayerName() : "CONSOLE");
+	return UTIL_GetIssuerNameOrDefault(UTIL_GetCommandClient());
 }
 
 bool UTIL_CheckCmdArgCount(const CCommand& args, int minCount)
@@ -344,6 +348,11 @@ CUtlString& UTIL_TrimQuotableString(CUtlString&& dest)
 {
 	dest.Trim("'\"\t\r\n ");
 	return dest;
+}
+
+const char* UTIL_FormatPercentage(float value, CFmtStr32&& dest)
+{
+	return dest.Format(IsIntegralValue(value) ? "%.f%%" : "%.2f%%", value); // Format without padding empty fractions
 }
 
 bool UTIL_IsPropertyDoor(CBaseEntity* pEntity)

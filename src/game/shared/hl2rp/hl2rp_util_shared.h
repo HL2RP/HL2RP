@@ -158,12 +158,12 @@ template<typename T = int, class Listener = CDefaultNetworkVarListener>
 class CPositiveVar : public CNetworkVarBase<CPositiveVarBase<T>, Listener>
 {
 public:
-	CPositiveVar(T value = 0) : CNetworkVarBase<CPositiveVarBase<T>, Listener>(value) {}
+	CPositiveVar(T value = 0) : CNetworkVarBase<CPositiveVarBase<T>, Listener>(Max(0, value)) {}
 
 	template<typename S>
 	T operator=(const S& value)
 	{
-		return this->Set(value);
+		return this->Set(Max(0, value));
 	}
 
 	operator T()
