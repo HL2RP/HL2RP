@@ -145,6 +145,7 @@ void CHL2Roleplayer::InitialSpawn()
 		{
 			mHomes.InsertIfNotFound(properties[i]);
 			VCRHook_Time(&properties[i]->mOwnerLastSeenTime);
+			DAL().AddDAO(new CPropertiesSaveDAO(properties[i]));
 		}
 
 #ifdef HL2RP_FULL
@@ -671,7 +672,8 @@ void CHL2Roleplayer::SendAimingEntityHUD()
 }
 #endif // HL2RP_LEGACY
 
-void CHL2Roleplayer::Print(int type, const char* pText, const char* pArg1, const char* pArg2, const char* pArg3)
+void CHL2Roleplayer::Print(int type, const char* pText, const char* pArg1,
+	const char* pArg2, const char* pArg3, const char* pArg4, const char* pArg5)
 {
 #ifdef HL2RP_LEGACY
 	CLocalizeFmtCStr localizedText(this, type == HUD_PRINTTALK);
@@ -679,7 +681,7 @@ void CHL2Roleplayer::Print(int type, const char* pText, const char* pArg1, const
 	// Auto localize
 	if (*pText == '#')
 	{
-		pText = localizedText.Localize(pText, pArg1, pArg2, pArg3);
+		pText = localizedText.Localize(pText, pArg1, pArg2, pArg3, pArg4, pArg5);
 	}
 
 	if (type == HUD_PRINTTALK)
@@ -691,7 +693,7 @@ void CHL2Roleplayer::Print(int type, const char* pText, const char* pArg1, const
 	}
 #endif // HL2RP_LEGACY
 
-	ClientPrint(this, type, pText, pArg1, pArg2, pArg3);
+	ClientPrint(this, type, pText, pArg1, pArg2, pArg3, pArg4, pArg5);
 }
 
 void CHL2Roleplayer::HUDThink()

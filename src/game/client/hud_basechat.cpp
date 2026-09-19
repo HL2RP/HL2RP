@@ -38,6 +38,8 @@
 
 #define CHAT_WIDTH_PERCENTAGE 0.6f
 
+#define TEXTMSG_MAX_PARTS 6 // Main text/token + args
+
 #ifndef _XBOX
 ConVar hud_saytext_time( "hud_saytext_time", "12", 0 );
 ConVar cl_showtextmsg( "cl_showtextmsg", "1", 0, "Enable/disable text messages printing on the screen." );
@@ -878,7 +880,7 @@ void CBaseHudChat::MsgFunc_TextMsg( bf_read &msg )
 {
 	int msg_dest = msg.ReadByte();
 
-	char szBuf[5][CHATLINE_MAX_SIZE], *texts[5];
+	char szBuf[TEXTMSG_MAX_PARTS][CHATLINE_MAX_SIZE], *texts[TEXTMSG_MAX_PARTS];
 	char outputBuf[CHATLINE_MAX_SIZE];
 
 	for ( int i = 0; i < ARRAYSIZE(szBuf); ++i )
@@ -908,7 +910,7 @@ void CBaseHudChat::MsgFunc_TextMsg( bf_read &msg )
 	switch ( msg_dest )
 	{
 	case HUD_PRINTCENTER:
-		ConstructString(outputBuf, false, texts[0], texts[1], texts[2], texts[3], texts[4]);
+		ConstructString(outputBuf, false, texts[0], texts[1], texts[2], texts[3], texts[4], texts[5]);
 		internalCenterPrint->Print( ConvertCRtoNL( outputBuf ) );
 		break;
 
@@ -916,7 +918,7 @@ void CBaseHudChat::MsgFunc_TextMsg( bf_read &msg )
 	case HUD_PRINTTALK:
 	case HUD_PRINTCONSOLE:
 		bool printToChat = (msg_dest == HUD_PRINTTALK);
-		ConstructString(outputBuf, printToChat, texts[0], texts[1], texts[2], texts[3], texts[4]);
+		ConstructString(outputBuf, printToChat, texts[0], texts[1], texts[2], texts[3], texts[4], texts[5]);
 		ConvertCRtoNL(outputBuf);
 		StripEndNewlineFromString(outputBuf);
 

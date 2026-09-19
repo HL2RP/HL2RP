@@ -24,6 +24,8 @@ public:
 		CreateVarCharColumn(HL2RP_MAP_ALIAS_FIELD_NAME, MAX_PATH);
 		CreateIntColumn("type");
 		CreateVarCharColumn("name", HL2RP_PROPERTY_NAME_SIZE);
+		CreateIntColumn("price");
+		CreateIntColumn("lastBuyPrice");
 		AddForeignKey(CreateUInt64Column("ownerId"), PLAYER_DAO_MAIN_COLLECTION_NAME, IDTO_PRIMARY_COLUMN_NAME, false);
 		CreateIntColumn("ownerLastSeenTime");
 		CreateIntColumn("hasZone");
@@ -210,9 +212,11 @@ void CPropertiesLoadDAO::HandleCompletion()
 				propertyById.Insert(propertyId, pProperty);
 				HL2RPRules()->mProperties.Insert(pProperty);
 
-				// For the shake of further consistency and efficiency, limit owner data to home properties
+				// For the shake of further consistency and efficiency, limit specific data to home properties
 				if (pProperty->mType == EHL2RP_PropertyType::Home)
 				{
+					pProperty->mPrice = propertyData.GetInt("price");
+					pProperty->mLastBuyPrice = propertyData.GetInt("lastBuyPrice");
 					pProperty->mOwnerSteamIdNumber = propertyData.GetUInt64("ownerId");
 					pProperty->mOwnerLastSeenTime = propertyData.GetInt("ownerLastSeenTime");
 				}
@@ -313,6 +317,7 @@ void CPropertiesLoadDAO::HandleCompletion()
 				{
 					pOwner->mHomes.Insert(pProperty);
 					VCRHook_Time(&pProperty->mOwnerLastSeenTime);
+					DAL().AddDAO(new CPropertiesSaveDAO(pProperty));
 				}
 			}
 		}
@@ -351,6 +356,8 @@ CPropertiesSaveDAO::CPropertiesSaveDAO(CHL2RP_Property* pProperty, bool save) : 
 	{
 		pPropertyData->AddNormalField("type", pProperty->mType);
 		pPropertyData->AddNormalField("name", pProperty->mName);
+		pPropertyData->AddNormalField("price", (int)pProperty->mPrice);
+		pPropertyData->AddNormalField("lastBuyPrice", (int)pProperty->mLastBuyPrice);
 		pPropertyData->AddNormalField("ownerId", pProperty->HasOwner() ? pProperty->mOwnerSteamIdNumber : SUtlField());
 		pPropertyData->AddNormalField("ownerLastSeenTime", (int)pProperty->mOwnerLastSeenTime);
 		pPropertyData->AddNormalField("hasZone", pProperty->mhZone.IsValid());
