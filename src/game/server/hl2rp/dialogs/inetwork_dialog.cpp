@@ -24,6 +24,12 @@ INetworkDialog::INetworkDialog(CHL2Roleplayer* pPlayer, const char* pTitle, cons
 	V_strcpy_safe(mMessage, pMessage);
 }
 
+void INetworkDialog::SetMessageArgs(const SUtlField& arg1, const SUtlField& arg2)
+{
+	mMessageArg1 = arg1;
+	mMessageArg2 = arg2;
+}
+
 void INetworkDialog::Think()
 {
 	int index = mStackIndex; // Get stack index for safety in case parent deletes current dialog (below)
@@ -61,7 +67,7 @@ void INetworkDialog::Send(bool allowMOTDFwd)
 void INetworkDialog::InitSendData(DIALOG_TYPE& type, KeyValues* pData, bool forMOTD, bool allowESCHint)
 {
 	CLocalizeFmtCStr localizedMessage(mpPlayer);
-	localizedMessage.Localize(mMessage, mMessageArg.ToString().Get());
+	localizedMessage.Localize(mMessage, mMessageArg1.ToString().Get(), mMessageArg2.ToString().Get());
 
 	if (!forMOTD)
 	{
@@ -453,10 +459,9 @@ void CPlayerListMenu::OnPreSendDialog(int pageStartIndex, int pageEndIndex, KeyV
 	pSendData->SetString("msg", localizedMessage);
 }
 
-CConfirmMenu::CConfirmMenu(CHL2Roleplayer* pPlayer, int acceptAction, const char* pWarning, const SUtlField& warningArg)
-	: CNetworkMenu(pPlayer, "#GameUI_Confirm", pWarning)
+CConfirmMenu::CConfirmMenu(CHL2Roleplayer* pPlayer, int acceptAction, const char* pWarning, bool allowParentThink)
+	: CNetworkMenu(pPlayer, "#GameUI_Confirm", pWarning, NETWORK_MENU_ACTION_FROM_ITEM, false, allowParentThink)
 {
-	mMessageArg = warningArg;
 	AddItem(acceptAction, "#GameUI_Accept");
 	AddItem(NETWORK_MENU_ACTION_NONE, "#GameUI_Cancel");
 }

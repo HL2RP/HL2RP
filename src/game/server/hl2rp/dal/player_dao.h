@@ -40,4 +40,21 @@ public:
 	CPlayersWeaponsSaveDAO(CBasePlayer*, CBaseCombatWeapon*, bool save);
 };
 
+// NOTE: Must NOT inherit from CLoadDAO to prevent MustBeRemovedOnLevelShutdown returning true
+class COfflinePlayerRefundDAO : public CSaveDAO
+{
+	bool MergeFrom(IDAO*) OVERRIDE;
+	void ExecuteIO(CKeyValuesDriver*) OVERRIDE;
+	void ExecuteIO(ISQLDriver*) OVERRIDE;
+
+	void HandleIOLoad();
+
+	CLoadDAO mLoadDAO;
+	uint64 mSteamIdNumber;
+	CPositiveVar<> mAmount;
+
+public:
+	COfflinePlayerRefundDAO(uint64 steamIdNumber, int amount);
+};
+
 #endif // !PLAYER_DAO_H

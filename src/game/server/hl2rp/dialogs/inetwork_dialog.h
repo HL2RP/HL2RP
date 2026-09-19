@@ -21,6 +21,7 @@ abstract_class INetworkDialog
 {
 	void ForwardToMOTD(); // Sends dialog URL to the MOTD, pointing to our MOTDDialogBuilder web module
 
+	SUtlField mMessageArg1, mMessageArg2;
 	bool mAllowParentThink; // Useful for shared logic within a hierarchy
 
 public:
@@ -34,8 +35,9 @@ public:
 	virtual void InitSendData(DIALOG_TYPE&, KeyValues*, bool forMOTD, bool allowESCHint) = 0;
 	virtual void HandleCommandText(const char*, bool fromMOTD) {}
 
+	void SetMessageArgs(const SUtlField&, const SUtlField & = {});
+
 	int mStackIndex = -1;
-	SUtlField mMessageArg;
 
 protected:
 	virtual void HandleChildNotice(int action, const SUtlField& info) {}
@@ -155,7 +157,7 @@ public:
 class CConfirmMenu : public CNetworkMenu
 {
 public:
-	CConfirmMenu(CHL2Roleplayer*, int acceptAction, const char* pWarning, const SUtlField& warningArg = {});
+	CConfirmMenu(CHL2Roleplayer*, int acceptAction, const char* pWarning = "", bool allowParentThink = true);
 };
 
 #endif // !INETWORK_DIALOG_H

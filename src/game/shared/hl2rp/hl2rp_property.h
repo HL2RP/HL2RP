@@ -3,10 +3,9 @@
 #pragma once
 
 #include "hl2rp_shareddefs.h"
-
-#ifdef GAME_DLL
 #include "hl2rp_util_shared.h"
 
+#ifdef GAME_DLL
 EXTERN_SEND_TABLE(DT_HL2RP_PropertyDoorData)
 #else
 EXTERN_RECV_TABLE(DT_HL2RP_PropertyDoorData)
@@ -40,8 +39,8 @@ public:
 	void LinkZone(CCityZone*, const Vector& samplePoint);
 	void UnlinkZone();
 	void LinkDoor(CBaseEntity*);
-	bool Disown(CHL2Roleplayer* pIssuer, int refundPercent);
-	void Synchronize(bool create = true, bool save = true, CRecipientFilter && = CBroadcastRecipientFilter());
+	bool Disown(CHL2Roleplayer* pIssuer);
+	void Synchronize(bool sendFull = true, bool save = true, CRecipientFilter && = CBroadcastRecipientFilter());
 	void SendSteamIdGrantToPlayers(uint64, bool grant = true, CRecipientFilter && = CBroadcastRecipientFilter()) HL2RP_FULL_FUNCTION;
 
 	SDatabaseId mDatabaseId;
@@ -54,6 +53,7 @@ public:
 
 	EHL2RP_PropertyType mType;
 	char mName[HL2RP_PROPERTY_NAME_SIZE];
+	CPositiveVar<> mPrice, mLastBuyPrice; // mLastBuyPrice ensures safe refunding, in case current sale price changes
 	uint64 mOwnerSteamIdNumber = 0;
 	CAutoLessFuncAdapter<CUtlRBTree<uint64>> mGrantedSteamIdNumbers; // Additional Steam IDs with "keys" (for homes)
 };

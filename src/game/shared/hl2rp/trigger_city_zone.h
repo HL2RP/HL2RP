@@ -32,7 +32,7 @@ class CCityZone : public CServerOnlyEntity
 public:
 	bool IsEntityWithin(CBaseEntity*);
 	bool IsPointWithin(const Vector&);
-	void SendToPlayers(bool create = true, CRecipientFilter && = CBroadcastRecipientFilter()) HL2RP_FULL_FUNCTION;
+	void SendToPlayers(bool sendFull = true, CRecipientFilter && = CBroadcastRecipientFilter()) HL2RP_FULL_FUNCTION;
 
 	ECityZoneType mType;
 #endif // GAME_DLL

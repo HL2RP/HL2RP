@@ -118,13 +118,13 @@ bool CCityZone::IsPointWithin(const Vector& origin)
 }
 
 #ifdef HL2RP_FULL
-void CCityZone::SendToPlayers(bool create, CRecipientFilter&& filter)
+void CCityZone::SendToPlayers(bool sendFull, CRecipientFilter&& filter)
 {
 	filter.MakeReliable();
 	UserMessageBegin(filter, HL2RP_CITY_ZONE_UPDATE_MESSAGE);
 	WRITE_LONG(GetRefEHandle().GetEntryIndex());
 
-	if (create)
+	if (sendFull)
 	{
 		WRITE_LONG(mpProperty != NULL ? mpProperty->mDatabaseId : SDatabaseId());
 	}

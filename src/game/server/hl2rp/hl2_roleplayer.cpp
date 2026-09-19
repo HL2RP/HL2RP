@@ -145,6 +145,7 @@ void CHL2Roleplayer::InitialSpawn()
 		{
 			mHomes.InsertIfNotFound(properties[i]);
 			VCRHook_Time(&properties[i]->mOwnerLastSeenTime);
+			DAL().AddDAO(new CPropertiesSaveDAO(properties[i]));
 		}
 
 #ifdef HL2RP_FULL

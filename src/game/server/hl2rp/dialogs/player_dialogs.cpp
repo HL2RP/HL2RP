@@ -13,7 +13,7 @@
 
 #define DISPENSER_MANAGE_MOVE_STEP_DIST 1.0f
 
-extern ConVar gMaxMapPlayerHomesCVar, gMaxHomeKeysCVar;
+extern ConVar gMaxMapPlayerHomesCVar, gMaxHomeKeysCVar, gHouseRefundPercentCVar;
 
 CMainMenu::CMainMenu(CHL2Roleplayer* pPlayer) : CNetworkMenu(pPlayer, "#HL2RP_Menu_Main_Title")
 {
@@ -350,7 +350,7 @@ void CSettingsMenu::SelectItem(CItem* pItem)
 #ifdef HL2RP_LEGACY
 	case EItemAction::ClearHUDHints:
 	{
-		return mpPlayer->SendChildDialog(new CConfirmMenu(mpPlayer, pItem->mAction, "#HL2RP_HUDHints_Clear_Warning"));
+		return mpPlayer->SendChildDialog(new CConfirmMenu(mpPlayer, pItem->mAction, "#HL2RP_HUDHints_Clear_Warning", false));
 	}
 #endif // HL2RP_LEGACY
 	case EItemAction::EnableMOTDDialogs:
@@ -360,8 +360,9 @@ void CSettingsMenu::SelectItem(CItem* pItem)
 	}
 	case EItemAction::DisableMOTDDialogs:
 	{
-		return mpPlayer->SendChildDialog(new CConfirmMenu(mpPlayer,
-			pItem->mAction, "#HL2RP_MOTDDialogs_Disable_Warning", PLUGIN_DIALOGS_CVAR_NAME " 1"));
+		INetworkDialog* pMenu = new CConfirmMenu(mpPlayer, pItem->mAction, "#HL2RP_MOTDDialogs_Disable_Warning", false);
+		pMenu->SetMessageArgs(PLUGIN_DIALOGS_CVAR_NAME " 1");
+		return mpPlayer->SendChildDialog(pMenu);
 	}
 	case EItemAction::Money:
 	{
@@ -550,6 +551,13 @@ void CPropertyDoorMenu::UpdateItems()
 			AddItem(EItemAction::DeleteProperty, "#HL2RP_Menu_Property_Delete");
 			AddMapLinkItems(mpProperty->mpMapAlias, EItemAction::LinkToMap, EItemAction::LinkToMapGroup);
 
+			if (mpProperty->mType == EHL2RP_PropertyType::Home)
+			{
+				message.Format("\n- %t: %s", "#HL2RP_Menu_Property_CurrentPrice",
+					UTIL_FormatMoney(mpPlayer, mpProperty->mPrice));
+				AddItem(EItemAction::SetHousePrice, "#HL2RP_Menu_Property_SetPrice");
+			}
+
 			if (mpProperty->mhZone.IsValid())
 			{
 				AddItem(EItemAction::UnlinkZone, "#HL2RP_Menu_Property_UnlinkZone");
@@ -570,6 +578,8 @@ void CPropertyDoorMenu::UpdateItems()
 		{
 			if (mpProperty->HasAccess(mpPlayer, false))
 			{
+				message.Format("\n- %t: %s", "#HL2RP_Menu_Property_PurchasePrice",
+					UTIL_FormatMoney(mpPlayer, mpProperty->mLastBuyPrice));
 				AddItem(EItemAction::SellHouse, "#HL2RP_Menu_Property_SellHouse");
 
 				if (mpProperty->IsOwner(mpPlayer)
@@ -586,8 +596,9 @@ void CPropertyDoorMenu::UpdateItems()
 
 			message.Format("\n- %t: %s", "#HL2RP_Menu_Property_Msg_OwnerID", mpProperty->mOwnerSteamIdNumber);
 		}
-		else if (mpProperty->mType == EHL2RP_PropertyType::Home
+		else if (mpProperty->mType == EHL2RP_PropertyType::Home && mpPlayer->mPocket >= mpProperty->mPrice
 			&& HL2RPRules()->mDatabaseIOFlags.IsBitSet(EHL2RPDatabaseIOFlag::ArePropertiesLoaded)
+			&& mpPlayer->mDatabaseIOFlags.IsBitSet(EPlayerDatabaseIOFlag::IsLoaded)
 			&& (int)mpPlayer->mHomes.Count() < gMaxMapPlayerHomesCVar.GetInt())
 		{
 			AddItem(EItemAction::BuyHouse, "#HL2RP_Menu_Property_BuyHouse");
@@ -779,23 +790,40 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 		if ((int)mpPlayer->mHomes.Count() < gMaxMapPlayerHomesCVar.GetInt() && ValidateProperty()
 			&& mpProperty->mType == EHL2RP_PropertyType::Home && !mpProperty->HasOwner())
 		{
+			if (mpPlayer->mPocket < mpProperty->mPrice)
+			{
+				mpPlayer->Print(HUD_PRINTTALK, "#HL2RP_Not_Enough_Money", UTIL_FormatMoney(mpPlayer, mpProperty->mPrice));
+				break;
+			}
+
+			mpPlayer->AddPocket(-mpProperty->mPrice);
 			mpPlayer->mHomes.Insert(mpProperty);
+			mpProperty->mLastBuyPrice = mpProperty->mPrice;
 			mpProperty->mOwnerSteamIdNumber = mpPlayer->GetSteamIDAsUInt64();
 			VCRHook_Time(&mpProperty->mOwnerLastSeenTime);
 			HL2RPRules()->AddPlayerName(mpProperty->mOwnerSteamIdNumber, mpPlayer->GetPlayerName());
 			mpProperty->Synchronize();
+			mpPlayer->Print(HUD_PRINTTALK, "#HL2RP_House_Bought",
+				mpProperty->mName, UTIL_FormatMoney(mpPlayer, mpProperty->mPrice));
 		}
 
 		break;
 	}
 	case EItemAction::SellHouse:
 	{
-		if (ValidateProperty() && mpProperty->HasOwner() && mpProperty->HasAccess(mpPlayer, false))
+		if (ValidateProperty() && mpProperty->IsOwner(mpPlayer) && gHouseRefundPercentCVar.GetInt() < 100)
 		{
-			mpProperty->Disown(mpPlayer, 50);
+			INetworkDialog* pMenu = new CConfirmMenu(mpPlayer, pItem->mAction, "#HL2RP_House_Refund_Warning");
+			pMenu->SetMessageArgs(gHouseRefundPercentCVar.GetInt(), (int)mpProperty->mLastBuyPrice);
+			return mpPlayer->SendChildDialog(pMenu);
 		}
 
-		break;
+		return mpPlayer->SendChildDialog(new CConfirmMenu(mpPlayer, pItem->mAction));
+	}
+	case EItemAction::SetHousePrice:
+	{
+		return mpPlayer->SendChildDialog(new CNetworkEntryBox(mpPlayer,
+			"#HL2RP_Menu_Property_SetPrice", "", pItem->mAction, true));
 	}
 	case EItemAction::SetDoorName:
 	{
@@ -808,7 +836,7 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 		{
 			CPlayerListMenu* pMenu = new CPlayerListMenu(mpPlayer, pItem->mDisplay,
 				"#HL2RP_Menu_Property_GiveKey_Msg", pItem->mAction, false, true);
-			pMenu->mMessageArg = gMaxHomeKeysCVar.GetInt() - (int)mpProperty->mGrantedSteamIdNumbers.Count();
+			pMenu->SetMessageArgs(gMaxHomeKeysCVar.GetInt() - (int)mpProperty->mGrantedSteamIdNumbers.Count());
 
 			ForEachRoleplayer([&](CHL2Roleplayer* pTarget)
 			{
@@ -874,31 +902,7 @@ void CPropertyDoorMenu::SelectItem(CItem* pItem)
 	}
 	case EItemAction::DeleteProperty:
 	{
-		if (mpPlayer->IsAdmin() && ValidateProperty() && (!mpProperty->HasOwner() || mpProperty->Disown(mpPlayer, 100)))
-		{
-			FOR_EACH_DICT_FAST(mpProperty->mDoors, i)
-			{
-				if (mpProperty->mDoors[i] != NULL)
-				{
-					CHL2RP_PropertyDoorData* pPropertyData = mpProperty->mDoors[i]->GetPropertyDoorData();
-
-					if (pPropertyData->mDatabaseId.IsValid())
-					{
-						DAL().AddDAO(new CPropertyDoorsSaveDAO(mpProperty->mDoors[i], false));
-					}
-
-					pPropertyData->mProperty = NULL;
-				}
-			}
-
-			mpProperty->Synchronize(false);
-			HL2RPRules()->mProperties.Remove(mpProperty);
-			delete mpProperty;
-			mpProperty = NULL;
-			mDoorId = {};
-		}
-
-		break;
+		return mpPlayer->SendChildDialog(new CConfirmMenu(mpPlayer, pItem->mAction));
 	}
 	}
 
@@ -927,6 +931,25 @@ void CPropertyDoorMenu::HandleChildNotice(int action, const SUtlField& info)
 		if (mpPlayer->IsAdmin() && ValidateProperty())
 		{
 			V_strcpy_safe(mpProperty->mName, UTIL_TrimQuotableString(info.mString.Get()));
+			mpProperty->Synchronize();
+		}
+
+		return;
+	}
+	case EItemAction::SellHouse:
+	{
+		if (ValidateProperty() && mpProperty->HasOwner() && mpProperty->HasAccess(mpPlayer, false))
+		{
+			mpProperty->Disown(mpPlayer);
+		}
+
+		return;
+	}
+	case EItemAction::SetHousePrice:
+	{
+		if (mpPlayer->IsAdmin() && ValidateProperty())
+		{
+			mpProperty->mPrice = info.ToInt();
 			mpProperty->Synchronize();
 		}
 
@@ -978,6 +1001,34 @@ void CPropertyDoorMenu::HandleChildNotice(int action, const SUtlField& info)
 				pTarget->Print(HUD_PRINTTALK,
 					"#HL2RP_Property_Key_Taken_Target", mpPlayer->GetPlayerName(), mpProperty->mName);
 			}
+		}
+
+		return;
+	}
+	case EItemAction::DeleteProperty:
+	{
+		if (mpPlayer->IsAdmin() && ValidateProperty() && (!mpProperty->HasOwner() || mpProperty->Disown(mpPlayer)))
+		{
+			FOR_EACH_DICT_FAST(mpProperty->mDoors, i)
+			{
+				if (mpProperty->mDoors[i] != NULL)
+				{
+					CHL2RP_PropertyDoorData* pPropertyData = mpProperty->mDoors[i]->GetPropertyDoorData();
+
+					if (pPropertyData->mDatabaseId.IsValid())
+					{
+						DAL().AddDAO(new CPropertyDoorsSaveDAO(mpProperty->mDoors[i], false));
+					}
+
+					pPropertyData->mProperty = NULL;
+				}
+			}
+
+			mpProperty->Synchronize(false);
+			HL2RPRules()->mProperties.Remove(mpProperty);
+			delete mpProperty;
+			mpProperty = NULL;
+			mDoorId = {};
 		}
 
 		return;
@@ -1321,10 +1372,7 @@ void CDispensersMenu::SelectItem(CItem* pItem)
 		}
 		case EItemAction::Delete:
 		{
-			DAL().AddDAO(new CDispensersSaveDAO(mhDispenser, false));
-			mhDispenser->Remove();
-			mhDispenser.Term();
-			break;
+			return mpPlayer->SendChildDialog(new CConfirmMenu(mpPlayer, pItem->mAction));
 		}
 		}
 	}
@@ -1336,10 +1384,19 @@ void CDispensersMenu::HandleChildNotice(int action, const SUtlField& info)
 {
 	if (mhDispenser != NULL)
 	{
-		if (action == EItemAction::SetRations)
+		switch (action)
+		{
+		case EItemAction::SetRations:
 		{
 			mhDispenser->mRationsAmmo = info.ToInt();
 			return DAL().AddDAO(new CDispensersSaveDAO(mhDispenser));
+		}
+		case EItemAction::Delete:
+		{
+			DAL().AddDAO(new CDispensersSaveDAO(mhDispenser, false));
+			mhDispenser->Remove();
+			return mhDispenser.Term();
+		}
 		}
 
 		LinkToMapAlias(HL2RPRules()->mMapGroups.GetElementOrDefault(info, "")); // EItemAction::LinkToMapGroup

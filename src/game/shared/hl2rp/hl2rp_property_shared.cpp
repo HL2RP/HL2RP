@@ -58,7 +58,7 @@ END_NETWORK_TABLE()
 
 CHL2RP_Property::CHL2RP_Property(const char* pMapAlias, int type) : mType((EHL2RP_PropertyType)type)
 #ifdef GAME_DLL
-	, mpMapAlias(pMapAlias)
+, mpMapAlias(pMapAlias)
 #endif // GAME_DLL
 {
 	*mName = '\0';
@@ -119,7 +119,7 @@ void CHL2RP_PropertyDoorData::GetHUDInfo(CBaseEntity* pDoor, CHL2Roleplayer* pPl
 			}
 			else
 			{
-				text.Format("%t\n", "#HL2RP_House_ForSale");
+				text.Format("%t\n", "#HL2RP_House_ForSale", UTIL_FormatMoney(pPlayer, pProperty->mPrice));
 			}
 		}
 
