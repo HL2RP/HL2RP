@@ -168,6 +168,7 @@ class CPropertyDoorMenu : public CNetworkMenu
 		LinkToMapGroup,
 		BuyHouse,
 		SellHouse,
+		SetHousePrice,
 		SetDoorName,
 		GiveKey,
 		ViewOrTakeKeys,

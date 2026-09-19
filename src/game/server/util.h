@@ -415,10 +415,12 @@ inline void		UTIL_CenterPrintAll( const char *msg_name, const char *param1 = NUL
 
 void UTIL_ValidateSoundName( string_t &name, const char *defaultStr );
 
-void UTIL_ClientPrintFilter( IRecipientFilter& filter, int msg_dest, const char *msg_name, const char *param1 = NULL, const char *param2 = NULL, const char *param3 = NULL, const char *param4 = NULL );
+void UTIL_ClientPrintFilter( IRecipientFilter& filter, int msg_dest, const char *msg_name,
+	const char *param1 = NULL, const char *param2 = NULL, const char *param3 = NULL, const char *param4 = NULL, const char *param5 = NULL );
 
 // prints messages through the HUD
-void ClientPrint( CBasePlayer *player, int msg_dest, const char *msg_name, const char *param1 = NULL, const char *param2 = NULL, const char *param3 = NULL, const char *param4 = NULL );
+void ClientPrint( CBasePlayer *player, int msg_dest, const char *msg_name, const char *param1 = NULL,
+	const char *param2 = NULL, const char *param3 = NULL, const char *param4 = NULL, const char *param5 = NULL );
 
 // prints a message to the HUD say (chat)
 void		UTIL_SayText( const char *pText, CBasePlayer *pEntity );

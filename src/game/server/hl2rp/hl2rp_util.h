@@ -41,7 +41,9 @@ void UTIL_LogAdminAction(CHL2Roleplayer*, const char*, ...); // Logs an admin ac
 
 void UTIL_SendDialog(CBasePlayer*, DIALOG_TYPE, KeyValues* pData);
 
+// WARNING: Temporary result buffer functions
 CUtlString& UTIL_TrimQuotableString(CUtlString&&);
+const char* UTIL_FormatPercentage(float, CFmtStr32 && = {});
 
 bool UTIL_IsPropertyDoor(CBaseEntity*);
 CHL2RP_PropertyDoorData* UTIL_GetPropertyDoorData(CBaseEntity*);

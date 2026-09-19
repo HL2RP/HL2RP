@@ -346,6 +346,11 @@ CUtlString& UTIL_TrimQuotableString(CUtlString&& dest)
 	return dest;
 }
 
+const char* UTIL_FormatPercentage(float value, CFmtStr32&& dest)
+{
+	return dest.Format(IsIntegralValue(value) ? "%.f%%" : "%.2f%%", value); // Format without padding empty fractions
+}
+
 bool UTIL_IsPropertyDoor(CBaseEntity* pEntity)
 {
 	return (UTIL_GetPropertyDoorData(pEntity) != NULL);
