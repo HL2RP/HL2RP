@@ -20,6 +20,8 @@ class CHL2RPLocalizer : CAutoGameSystemPerFrame
 	void AddLocalizationFromFile(const char* pBasePath, const char* pLanguage = "%language%");
 	template<typename... T>
 	void AddLocalizationFromFileEx(const char* pBasePath, const char* pLanguage, T... tokenPrefixes); // Filtering version
+	void InternalAddLocalizationFromFile(const char* pBasePath,
+		const char* pLanguage, const char* tokenPrefixes[], int prefixCount);
 	const char* LocalizeAsUTF8(CBasePlayer*, const char* pToken, char* pAuxDest, int maxLen);
 	int Format(CBasePlayer*, char* pDest, int maxLen, bool colorize, const char* pFormat,
 		const char* args[], int argsCount, bool& closeArgColor);

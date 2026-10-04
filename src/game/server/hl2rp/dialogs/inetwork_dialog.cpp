@@ -130,7 +130,7 @@ void CNetworkEntryBox::InitSendData(DIALOG_TYPE& type, KeyValues* pData, bool fo
 	}
 }
 
-void CNetworkEntryBox::HandleCommandText(const char* pText, bool)
+void CNetworkEntryBox::HandleCommandText(const char* pText, bool, bool)
 {
 	NoticeParent(mAction, pText);
 }
@@ -303,11 +303,11 @@ void CNetworkMenu::AddItemSendData(KeyValues* pData, int index,
 	pItemsKV->SetString(CNumStr(index), pLocalizedDisplay);
 }
 
-void CNetworkMenu::HandleCommandText(const char* pText, bool fromMOTD)
+void CNetworkMenu::HandleCommandText(const char* pText, bool fromMOTD, bool secretOK)
 {
 	int index;
 
-	if (sscanf(pText, "%i", &index) > 0 && index < mItems.Size())
+	if (secretOK && sscanf(pText, "%i", &index) > 0 && index < mItems.Size())
 	{
 		switch (index)
 		{
@@ -478,7 +478,7 @@ static void HandleDialogCommand(const CCommand& args, bool validateSecret)
 
 		if (!validateSecret || pPlayer->mDialogSecret == Q_atoi(args.Arg(2)))
 		{
-			pDialog->HandleCommandText(args.ArgS(), false);
+			pDialog->HandleCommandText(args.ArgS(), false, validateSecret);
 		}
 	}
 }
