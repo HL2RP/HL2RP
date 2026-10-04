@@ -85,7 +85,7 @@ static void HandleMOTDDialogCmd(EMOTDDialogAction action, const CCommand& args)
 			}
 
 			data[len] = '\0';
-			pDialog->HandleCommandText(data, true);
+			pDialog->HandleCommandText(data, true, true);
 		}
 		}
 

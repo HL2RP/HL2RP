@@ -33,7 +33,7 @@ public:
 	virtual void Think();
 	virtual void Send(bool allowMOTDFwd = true);
 	virtual void InitSendData(DIALOG_TYPE&, KeyValues*, bool forMOTD, bool allowESCHint) = 0;
-	virtual void HandleCommandText(const char*, bool fromMOTD) {}
+	virtual void HandleCommandText(const char*, bool fromMOTD, bool secretOK) {}
 
 	void SetMessageArgs(const SUtlField&, const SUtlField & = {}, const SUtlField & = {});
 
@@ -62,7 +62,7 @@ public:
 class CNetworkEntryBox : public INetworkDialog
 {
 	void InitSendData(DIALOG_TYPE&, KeyValues*, bool, bool) OVERRIDE;
-	void HandleCommandText(const char*, bool) OVERRIDE;
+	void HandleCommandText(const char*, bool, bool) OVERRIDE;
 
 public:
 	CNetworkEntryBox(CHL2Roleplayer*, const char* pTitle,
@@ -123,7 +123,7 @@ private:
 	};
 
 	void InitSendData(DIALOG_TYPE&, KeyValues*, bool, bool) OVERRIDE;
-	void HandleCommandText(const char*, bool) OVERRIDE;
+	void HandleCommandText(const char*, bool, bool) OVERRIDE;
 
 	virtual void UpdateItems() {} // NOTE: Never delete the menu here, for safety (Send calls this)
 	virtual void OnPreSendDialog(int pageStartIndex, int pageEndIndex, KeyValues* pSendData) {} // Called after current page index is shifted

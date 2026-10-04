@@ -137,7 +137,7 @@ void CHL2RPConfiguration::PostInit()
 
 void CHL2RPConfiguration::Shutdown()
 {
-	mUserData->SaveToFile(filesystem, HL2RP_CONFIGURATION_USER_DATA_FILE);
+	mUserData->SaveToFile(filesystem, HL2RP_CONFIG_PATH "/" HL2RP_CONFIGURATION_USER_DATA_FILE);
 }
 
 void CHL2RPConfiguration::CmdDisplayRoleplayMenu(const CCommand&)

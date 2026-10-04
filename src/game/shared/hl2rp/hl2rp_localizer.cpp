@@ -65,12 +65,11 @@ void CHL2RPLocalizer::LevelInitPostEntity()
 		const char* pLangShortName = GetLanguageShortName((ELanguage)language);
 		AddLocalizationFromFile("hl2rp_server", pLangShortName);
 		AddLocalizationFromFile("hl2rp_shared", pLangShortName);
-		AddLocalizationFromFileEx("gameui", pLangShortName, "GameUI_Submit");
+		AddLocalizationFromFileEx("gameui", pLangShortName, "GameUI_Submit", "GameUI_Confirm", "GameUI_Accept", "GameUI_Cancel");
 
 #ifdef HL2RP_LEGACY
 		AddLocalizationFromFile("hl2rp_legacy", pLangShortName);
 		AddLocalizationFromFile("hl2rp_client_legacy", pLangShortName);
-		AddLocalizationFromFileEx("gameui", pLangShortName, "GameUI_Confirm", "GameUI_Accept", "GameUI_Cancel");
 #endif // HL2RP_LEGACY
 	}
 #endif // GAME_DLL
@@ -93,6 +92,13 @@ void CHL2RPLocalizer::AddLocalizationFromFile(const char* pBasePath, const char*
 // NOTE: Requires 1+ filtering token prefixes
 template<typename... T>
 void CHL2RPLocalizer::AddLocalizationFromFileEx(const char* pBasePath, const char* pLanguage, T... tokenPrefixes)
+{
+	const char* buffer[] = { tokenPrefixes... };
+	InternalAddLocalizationFromFile(pBasePath, pLanguage, buffer, sizeof...(T));
+}
+
+void CHL2RPLocalizer::InternalAddLocalizationFromFile(const char* pBasePath,
+	const char* pLanguage, const char* tokenPrefixes[], int prefixCount)
 {
 	char path[MAX_PATH];
 	V_sprintf_safe(path, "resource/%s_%s.txt", pBasePath, pLanguage);
@@ -129,14 +135,18 @@ void CHL2RPLocalizer::AddLocalizationFromFileEx(const char* pBasePath, const cha
 				if (pLanguageTokens != NULL)
 				{
 					CUtlPooledStringMap<>* pPhraseByToken = CreateLocalization(pLanguage);
-					const char* prefixesBuffer[] = { tokenPrefixes... };
-					int prefixLengths[] = { Q_strlen(tokenPrefixes)... };
+					CUtlVector<int> prefixLengths;
+
+					for (int i = 0; i < prefixCount; ++i)
+					{
+						prefixLengths.AddToTail(Q_strlen(tokenPrefixes[i]));
+					}
 
 					FOR_EACH_VALUE(pLanguageTokens, pToken)
 					{
-						for (int i = 0; i < ARRAYSIZE(prefixesBuffer); ++i)
+						for (int i = 0; i < prefixCount; ++i)
 						{
-							if (Q_strnicmp(pToken->GetName(), prefixesBuffer[i], prefixLengths[i]) == 0)
+							if (Q_strnicmp(pToken->GetName(), tokenPrefixes[i], prefixLengths[i]) == 0)
 							{
 								pPhraseByToken->Insert(pToken->GetName(), pToken->GetString());
 								break;
@@ -284,6 +294,12 @@ int CHL2RPLocalizer::InternalFormat(CBasePlayer* pPlayer, LC* pDest, int maxLen,
 			{
 				if (*pFormat == '}')
 				{
+					if (closeArgColor)
+					{
+						len += Copy(pDest + len, mVariables.GetElementOrDefault("static", ""), maxLen - len);
+						closeArgColor = false;
+					}
+
 					// Resolve and copy variable
 					char varName[32]{};
 					V_strcat_safe(varName, pCurToken + 1, pFormat - pCurToken - 1);

@@ -240,6 +240,11 @@ bool UTIL_CheckCmdArgCount(const CCommand& args, int minCount)
 
 bool UTIL_CheckCommandAccess(int minAccessFlag)
 {
+	if (UTIL_IsCommandIssuedByServerAdmin())
+	{
+		return true;
+	}
+
 	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(UTIL_GetCommandClient());
 
 	if (pPlayer != NULL)
@@ -252,7 +257,7 @@ bool UTIL_CheckCommandAccess(int minAccessFlag)
 		pPlayer->Print(HUD_PRINTTALK, "#HL2RP_Command_Access_Denied");
 	}
 
-	return UTIL_IsCommandIssuedByServerAdmin();
+	return false;
 }
 
 void UTIL_ReplyToCommand(int type, const char* pText, const char* pArg1, const char* pArg2)
@@ -311,9 +316,10 @@ void UTIL_LogAdminAction(CHL2Roleplayer* pPlayer, const char* pActionFmt, ...)
 		va_list args;
 		va_start(args, pActionFmt);
 		CLocalizeFmtCStr msg;
-		msg.Format("%t '%s' (%s) %s\n", pPlayer->mAccessFlags.IsBitSet(EPlayerAccessFlag::Root) ?
-			"#HL2RP_Root" : "#HL2RP_Admin", pPlayer->GetPlayerName(), pPlayer->GetNetworkIDString(), pActionFmt);
-		LogV(msg, args);
+		msg.Format("%t '%s' (%s) ", pPlayer->mAccessFlags.IsBitSet(EPlayerAccessFlag::Root) ?
+			"#HL2RP_Root" : "#HL2RP_Admin", pPlayer->GetPlayerName(), pPlayer->GetNetworkIDString());
+		Q_vsnprintf(msg.mDest + msg.mLength, sizeof(msg.mDest) - msg.mLength, pActionFmt, args);
+		Log("%s\n", msg.mDest);
 		va_end(args);
 	}
 }
