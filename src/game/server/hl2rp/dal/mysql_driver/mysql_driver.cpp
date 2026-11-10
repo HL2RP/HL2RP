@@ -225,7 +225,7 @@ class CMySQLDriver : public ISQLDriver
 	void GetDuplicateKeyConflictInfo(CRecordNodeDTO*, CSQLQuery&, SSQLDuplicateKeyConflictInfo&) OVERRIDE;
 	uint64 GetLastInsertId() OVERRIDE;
 
-	MYSQL mConnection;
+	MYSQL* mpConnection = NULL; // Use a pointer (heap) instead of a plain object to safely call mysql_close
 
 public:
 	CMySQLDriver()
@@ -243,24 +243,33 @@ public:
 bool CMySQLDriver::Connect(const char* pDatabaseName, const char* pHostName,
 	const char* pUserName, const char* pPassword, int port)
 {
-	mysql_init(&mConnection);
-	bool reportDataTruncation = false;
-	mysql_options(&mConnection, MYSQL_REPORT_DATA_TRUNCATION, &reportDataTruncation);
-	mysql_options(&mConnection, MYSQL_SET_CHARSET_NAME, "utf8mb4");
+	mpConnection = mysql_init(NULL);
 
-	if (mysql_real_connect(&mConnection, pHostName, pUserName, pPassword, pDatabaseName, port, NULL, 0) != NULL)
+	if (mpConnection != NULL)
 	{
-		return true;
+		bool reportDataTruncation = false;
+		mysql_options(mpConnection, MYSQL_REPORT_DATA_TRUNCATION, &reportDataTruncation);
+		mysql_options(mpConnection, MYSQL_SET_CHARSET_NAME, "utf8mb4");
+
+		if (mysql_real_connect(mpConnection, pHostName, pUserName, pPassword, pDatabaseName, port, NULL, 0) != NULL)
+		{
+			return true;
+		}
+
+		CMySQLIOException e(mpConnection);
+		CMySQLDriver::Close();
 	}
 
-	CMySQLIOException e(&mConnection);
 	return false;
 }
 
 void CMySQLDriver::Close()
 {
-	mysql_close(&mConnection);
-	mConnection = {}; // Clear internal pointers for safety, in case Close gets called twice
+	if (mpConnection != NULL)
+	{
+		mysql_close(mpConnection);
+		mpConnection = NULL;
+	}
 }
 
 void CMySQLDriver::DispatchExecuteIO(IDAO* pDAO)
@@ -272,13 +281,13 @@ void CMySQLDriver::DispatchExecuteIO(IDAO* pDAO)
 
 void CMySQLDriver::ExecuteQuery(const char* pQuery, CRecordListDTO* pDestResults)
 {
-	if (mysql_query(&mConnection, pQuery) != 0)
+	if (mysql_query(mpConnection, pQuery) != 0)
 	{
-		throw CMySQLIOException(&mConnection);
+		throw CMySQLIOException(mpConnection);
 	}
 	else if (pDestResults != NULL)
 	{
-		MYSQL_RES* pSrcResult = mysql_store_result(&mConnection);
+		MYSQL_RES* pSrcResult = mysql_store_result(mpConnection);
 
 		if (pSrcResult != NULL)
 		{
@@ -321,15 +330,17 @@ void CMySQLDriver::ExecuteQuery(const char* pQuery, CRecordListDTO* pDestResults
 
 ISQLPreparedStatement* CMySQLDriver::PrepareStatement(const char* pQuery)
 {
-	MYSQL_STMT* pStmt = mysql_stmt_init(&mConnection);
+	MYSQL_STMT* pStmt = mysql_stmt_init(mpConnection);
 
 	if (pStmt == NULL)
 	{
-		throw CMySQLIOException(&mConnection);
+		throw CMySQLIOException(mpConnection);
 	}
 	else if (mysql_stmt_prepare(pStmt, pQuery, Q_strlen(pQuery)) != 0)
 	{
-		throw CMySQLIOException(pStmt);
+		CMySQLIOException e(pStmt);
+		mysql_stmt_close(pStmt);
+		throw e;
 	}
 
 	return (new CMySQLPreparedStatement(pStmt));
@@ -366,7 +377,7 @@ void CMySQLDriver::GetDuplicateKeyConflictInfo(CRecordNodeDTO* pRecord,
 
 uint64 CMySQLDriver::GetLastInsertId()
 {
-	return mysql_insert_id(&mConnection);
+	return mysql_insert_id(mpConnection);
 }
 
 EXPOSE_SINGLE_INTERFACE(CMySQLDriver, ISQLDriver, MYSQL_DRIVER_IMPL_VERSION_STRING);

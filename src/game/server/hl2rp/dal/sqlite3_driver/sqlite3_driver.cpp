@@ -76,7 +76,8 @@ void CSQLite3PreparedStatement::Execute(CRecordListDTO* pDestResults)
 					}
 					}
 				}
-			} while (sqlite3_step(mpStmt) == SQLITE_ROW);
+			}
+			while (sqlite3_step(mpStmt) == SQLITE_ROW);
 		}
 	}
 	case SQLITE_OK:
@@ -135,6 +136,7 @@ bool CSQLite3Driver::Connect(const char* pDatabaseName, const char* pHostName,
 	}
 
 	Warning("SQLite3 error: %s [Code: %i]\n", sqlite3_errmsg(mpConnection), sqlite3_errcode(mpConnection));
+	CSQLite3Driver::Close();
 	return false;
 }
 
