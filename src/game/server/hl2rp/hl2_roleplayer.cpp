@@ -391,7 +391,10 @@ void CHL2Roleplayer::ChangeTeam(int team)
 		}
 
 		ClearActiveWeapon();
-		CommitSuicide(false, true); // Force suicide, as default HL2MP does when joining spectator
+
+		// Force suicide (safe now), as default HL2MP does when joining spectator
+		SETBITS(m_iSuicideCustomKillFlags, EPlayerSuicideFlag_LockScore);
+		CommitSuicide(false, true);
 	}
 
 	BaseClass::ChangeTeam(team);
