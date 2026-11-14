@@ -52,6 +52,7 @@ public:
 	int	ObjectCaps();
 
 	void HandleAnimEvent( animevent_t *pEvent );
+	void Use(CBaseEntity * pActivator, CBaseEntity * pCaller, USE_TYPE useType, float value);
 
 	// Base class services.
 	// Do not make the functions in this block virtual!!
@@ -153,7 +154,6 @@ private:
 	void Lock();
 	void Unlock();
 
-	void Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
 	void OnUse( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
 
 	inline bool WillAutoReturn() { return m_flAutoReturnDelay != -1; }

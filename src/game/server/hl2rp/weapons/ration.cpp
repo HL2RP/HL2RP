@@ -53,11 +53,10 @@ void CRation::MergeNearbyRations()
 		{
 			if (pRation->GetOwnerEntity() == NULL && FVisible(pRation))
 			{
-				m_iClip1.Set(CPositiveVar<>(m_iClip1 + pRation->MyCombatWeaponPointer()->m_iClip1));
-				CPVSFilter filter(GetAbsOrigin());
 				QAngle angles;
+				m_iClip1.Set(CPositiveVar<>(m_iClip1 + pRation->MyCombatWeaponPointer()->m_iClip1));
 				VectorAngles(GetAbsOrigin() - pRation->GetAbsOrigin(), angles);
-				te->MuzzleFlash(filter, 0.0f, pRation->GetAbsOrigin(), angles, 1.0f, MUZZLEFLASH_TYPE_STRIDER);
+				UTIL_MuzzleFlash(pRation->GetAbsOrigin(), angles, 1.0f, MUZZLEFLASH_TYPE_STRIDER);
 				pRation->Remove();
 			}
 		}

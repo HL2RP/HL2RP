@@ -44,6 +44,9 @@
 
 #ifdef TF_DLL
 #include "nav_mesh/tf_nav_mesh.h"
+#elif (defined HL2RP)
+#include <hl2_roleplayer.h>
+#include <in_buttons.h>
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -57,6 +60,10 @@
 // How many times to remind the player that supply crates can be broken
 // (displayed when the supply crate is picked up)
 #define NUM_SUPPLY_CRATE_HUD_HINTS		3
+
+#ifdef HL2RP
+#define DOOR_BANG_OPEN_SPEED_RATIO 2.0f // Speed multiplier to apply when banging door with stunstick from cops (raid)
+#endif // HL2RP
 
 extern CBaseEntity *FindPickerEntity( CBasePlayer *pPlayer );
 
@@ -4723,6 +4730,10 @@ public:
 
 private:
 
+#ifdef HL2RP
+	void TraceAttack(const CTakeDamageInfo&, const Vector&, trace_t*, CDmgAccumulator*) OVERRIDE;
+#endif // HL2RP
+
 	bool	IsHingeOnLeft();
 
 	void	AngularMove(const QAngle &vecDestAngle, float flSpeed);
@@ -4845,6 +4856,32 @@ void CPropDoorRotating::Spawn()
 	CalculateDoorVolume( GetLocalAngles(), m_angRotationOpenForward, &m_vecForwardBoundsMin, &m_vecForwardBoundsMax );
 	CalculateDoorVolume( GetLocalAngles(), m_angRotationOpenBack, &m_vecBackBoundsMin, &m_vecBackBoundsMax );
 }
+
+#ifdef HL2RP
+void CPropDoorRotating::TraceAttack(const CTakeDamageInfo& info, const Vector& direction, trace_t* pTrace, CDmgAccumulator*)
+{
+	// Simulate a raiding (banging door)
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(info.GetAttacker());
+
+	if (!IsLocked() && IsDoorClosed() && info.GetWeapon() != NULL && FClassnameIs(info.GetWeapon(), "weapon_stunstick")
+		&& pPlayer != NULL && pPlayer->mFaction == EFaction::Combine && FBitSet(pPlayer->m_nButtons, IN_ATTACK2))
+	{
+		float oldSpeed = m_flSpeed;
+		m_flSpeed *= DOOR_BANG_OPEN_SPEED_RATIO;
+		Use(pPlayer, pPlayer, USE_ON, 0.0f);
+		m_flSpeed = oldSpeed;
+
+		if (IsDoorOpening()) // Check open succeeded, before taking action
+		{
+			QAngle angles;
+			VectorAngles(direction, angles);
+			UTIL_MuzzleFlash(pTrace->startpos, angles, 1.0f, MUZZLEFLASH_TYPE_STRIDER);
+			ScriptEmitSound("d1_trainstation_03.Breakin_DoorKick");
+			pPlayer->ScriptEmitSound("d1_trainstation_03.Breakin_TakeEmDown");
+		}
+	}
+}
+#endif // HL2RP
 
 //-----------------------------------------------------------------------------
 // Purpose: Setup the m_angRotationOpenForward and m_angRotationOpenBack variables based on
