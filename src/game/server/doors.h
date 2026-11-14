@@ -169,4 +169,31 @@ private:
 	void CloseAreaPortalsThink( void );	///< Delays turning off area portals when closing doors to prevent visual artifacts
 };
 
+//==================================================
+// CRotDoor 
+//==================================================
+
+class CRotDoor : public CBaseDoor
+{
+#ifdef HL2RP
+	DECLARE_HL2RP_SERVERCLASS()
+
+	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_toggle_state);
+	void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtCStr&) OVERRIDE HL2RP_LEGACY_FUNCTION;
+	void TraceAttack(const CTakeDamageInfo&, const Vector&, trace_t*, CDmgAccumulator*) OVERRIDE;
+#endif // HL2RP
+
+public:
+	DECLARE_CLASS(CRotDoor, CBaseDoor);
+	DECLARE_DATADESC();
+
+	void Spawn(void);
+	bool CreateVPhysics();
+	// This is ONLY used by the node graph to test movement through a door
+	virtual void SetToggleState(int state);
+	virtual bool IsRotatingDoor() { return true; }
+
+	bool m_bSolidBsp;
+};
+
 #endif // DOORS_H

@@ -7,6 +7,7 @@
 	"Tokens"
 	{
 		"HL2RP_GameExperience"			"Game experience"
+		"HL2RP_Hint_BangRotatingDoor"	"%%+attack2%% (HOLD) + %%+attack%% BANG (RAID)"
 		"HL2RP_Hint_PropertyDoorAll"	"%1t %%+reload%% (X2) (UN)LOCK DOOR"
 		"HL2RP_Hint_PropertyDoorMenu"	"%%+reload%% (HOLD) %1t"
 		"HL2RP_Hint_RationDeployed"		"%%+attack%% (HOLD) PREPARE THROW %%+attack2%% HEAL"

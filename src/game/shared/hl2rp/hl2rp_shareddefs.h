@@ -76,6 +76,9 @@
 #define HL2RP_PROPERTY_DOOR_LOCK_SOUND   "Buttons.snd28"
 #define HL2RP_PROPERTY_DOOR_UNLOCK_SOUND "Buttons.snd21"
 
+#define HL2RP_ROTATING_DOOR_BANG_SOUND "d1_trainstation_03.Breakin_DoorKick" // From door itself
+#define HL2RP_ROTATING_DOOR_RAID_SOUND "d1_trainstation_03.Breakin_TakeEmDown" // From player
+
 SCOPED_ENUM(EFaction, // NOTE: Don't change order
 	Citizen,
 	Combine

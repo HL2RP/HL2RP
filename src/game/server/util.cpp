@@ -2457,7 +2457,12 @@ bool UTIL_TransferPoseParameters( CBaseEntity *pSourceEntity, CBaseEntity *pDest
 //-----------------------------------------------------------------------------
 void UTIL_MuzzleFlash( const Vector &origin, const QAngle &angles, int scale, int type )
 {
-	CPASFilter filter( origin );
+#ifdef HL2RP
+	CPVSFilter filter(origin); // Use visibility filter, as it's more suitable
+	filter.SetIgnorePredictionCull(true); // Allow rendering to local client during player think
+#else
+	CPASFilter filter(origin);
+#endif // HL2RP
 
 	te->MuzzleFlash( filter, 0.0f, origin, angles, scale, type );
 }

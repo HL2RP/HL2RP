@@ -59,7 +59,7 @@ public:
 	inline bool IsDoorOpen();
 	inline bool IsDoorAjar();
 	inline bool IsDoorOpening();
-	inline bool IsDoorClosed();
+	bool IsDoorClosed();
 	inline bool IsDoorClosing();
 	inline bool IsDoorLocked();
 	inline bool IsDoorBlocked() const;
@@ -68,6 +68,7 @@ public:
 	inline bool IsOpener(CBaseEntity *pEnt);
 
 	bool NPCOpenDoor(CAI_BaseNPC *pNPC);
+	void DoorOpen(CBaseEntity * pOpenAwayFrom);
 	bool TestCollision( const Ray_t &ray, unsigned int mask, trace_t& trace );
 	// }
 
@@ -89,19 +90,11 @@ public:
 
 protected:
 
-	enum DoorState_t
-	{
-		DOOR_STATE_CLOSED = 0,
-		DOOR_STATE_OPENING,
-		DOOR_STATE_OPEN,
-		DOOR_STATE_CLOSING,
-		DOOR_STATE_AJAR,
-	};
-
 	// dvs: FIXME: make these private
 	void DoorClose();
 
-	CBasePropDoor *GetMaster( void ) { return m_hMaster; }
+	CBasePropDoor *GetMaster( void );
+	CBasePropDoor* GetMainDoor(); // Returns master (if any) or self
 	bool HasSlaves( void ) { return ( m_hDoorList.Count() > 0 ); }
 
 	inline void SetDoorState( DoorState_t eDoorState );
@@ -110,6 +103,8 @@ protected:
 	CUtlVector< CHandle< CBasePropDoor > >	m_hDoorList;	// List of doors linked to us
 
 	inline CBaseEntity *GetActivator();
+
+	EHANDLE m_hActivator;
 
 private:
 
@@ -143,7 +138,6 @@ private:
 	// Do not make the functions in this block virtual!!
 	// {
 	bool DoorActivate();
-	void DoorOpen( CBaseEntity *pOpenAwayFrom );
 	void OpenIfUnlocked(CBaseEntity *pActivator, CBaseEntity *pOpenAwayFrom);
 
 	void DoorOpenMoveDone();
@@ -185,14 +179,18 @@ private:
 
 	int		m_nHardwareType;
 	
-	DoorState_t m_eDoorState;	// Holds whether the door is open, closed, opening, or closing.
-
 	locksound_t m_ls;			// The sounds the door plays when being locked, unlocked, etc.
-	EHANDLE		m_hActivator;		
 	
-#ifndef HL2RP
-	bool	m_bLocked;				// True if the door is locked.  
-#endif // !HL2RP
+#ifdef HL2RP
+	void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtCStr&) OVERRIDE HL2RP_LEGACY_FUNCTION;
+
+	CNetworkVar(DoorState_t, m_eDoorState); // Holds whether the door is open, closed, opening, or closing.
+	CNetworkHandle(CBasePropDoor, m_hMaster);
+#else
+	bool	m_bLocked;			// True if the door is locked.  
+	DoorState_t m_eDoorState;	// Holds whether the door is open, closed, opening, or closing.
+	CHandle<CBasePropDoor> m_hMaster;
+#endif // HL2RP
 
 	EHANDLE	m_hBlocker;				// Entity blocking the door currently
 	bool	m_bFirstBlocked;		// Marker for being the first door (in a group) to be blocked (needed for motion control)
@@ -209,8 +207,6 @@ private:
 	DECLARE_DATADESC();
 
 	string_t m_SlaveName;
-
-	CHandle< CBasePropDoor > m_hMaster;
 
 	static void RegisterPrivateActivities();
 
@@ -245,11 +241,6 @@ bool CBasePropDoor::IsDoorAjar()
 bool CBasePropDoor::IsDoorOpening()
 {
 	return m_eDoorState == DOOR_STATE_OPENING;
-}
-
-bool CBasePropDoor::IsDoorClosed()
-{
-	return m_eDoorState == DOOR_STATE_CLOSED;
 }
 
 bool CBasePropDoor::IsDoorClosing()

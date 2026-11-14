@@ -28,6 +28,8 @@
 
 #ifdef HL2RP
 #include "ai_basenpc.h"
+#include <hl2_roleplayer.h>
+#include <in_buttons.h>
 #endif // HL2RP
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -1352,31 +1354,19 @@ button or trigger field activates the door.
 "dmg"		damage to inflict when blocked (2 default)
 */
 
-//==================================================
-// CRotDoor 
-//==================================================
-
-class CRotDoor : public CBaseDoor
-{
-public:
-	DECLARE_CLASS( CRotDoor, CBaseDoor );
-
-	void Spawn( void );
-	bool CreateVPhysics();
-	// This is ONLY used by the node graph to test movement through a door
-	virtual void SetToggleState( int state );
-	virtual bool IsRotatingDoor() { return true; }
-
-	bool m_bSolidBsp;
-
-	DECLARE_DATADESC();
-};
-
 LINK_ENTITY_TO_CLASS( func_door_rotating, CRotDoor );
 
 BEGIN_DATADESC( CRotDoor )
 	DEFINE_KEYFIELD( m_bSolidBsp, FIELD_BOOLEAN, "solidbsp" ),
 END_DATADESC()
+
+#ifdef HL2RP_FULL
+IMPLEMENT_HL2RP_NETWORKCLASS(RotDoor)
+SendPropDataTable(SENDINFO_DT(mPropertyDoorData), &REFERENCE_SEND_TABLE(DT_HL2RP_PropertyDoorData)),
+SendPropBool(SENDINFO(m_bLocked)),
+SendPropInt(SENDINFO(m_toggle_state))
+END_NETWORK_TABLE()
+#endif // HL2RP_FULL
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -1464,3 +1454,25 @@ void CRotDoor::SetToggleState( int state )
 	else
 		SetLocalAngles( m_vecAngle1 );
 }
+
+#ifdef HL2RP
+void CRotDoor::TraceAttack(const CTakeDamageInfo& info, const Vector& direction, trace_t* pTrace, CDmgAccumulator*)
+{
+	// Simulate a raiding (banging door)
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(info.GetAttacker());
+
+	if (m_toggle_state == TS_AT_BOTTOM && pPlayer != NULL
+		&& pPlayer->CanBangDoor(this, info.GetWeapon()) && FBitSet(pPlayer->m_nButtons, IN_ATTACK2))
+	{
+		m_hActivator = pPlayer;
+
+		// Start moving instantly with temporary bang speed
+		float oldSpeed = m_flSpeed;
+		m_flSpeed *= HL2RP_DOOR_BANG_SPEED_RATIO;
+		DoorGoUp();
+		m_flSpeed = oldSpeed;
+
+		UTIL_MakeDoorBangEffects(this, pPlayer, direction, pTrace); // Finish up
+	}
+}
+#endif // HL2RP

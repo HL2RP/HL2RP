@@ -129,6 +129,8 @@ void CHL2Roleplayer::Precache()
 	PrecacheScriptSound(NETWORK_MENU_ITEM_SOUND);
 	PrecacheScriptSound(HL2RP_PROPERTY_DOOR_LOCK_SOUND);
 	PrecacheScriptSound(HL2RP_PROPERTY_DOOR_UNLOCK_SOUND);
+	PrecacheScriptSound(HL2RP_ROTATING_DOOR_BANG_SOUND);
+	PrecacheScriptSound(HL2RP_ROTATING_DOOR_RAID_SOUND);
 }
 
 void CHL2Roleplayer::InitialSpawn()

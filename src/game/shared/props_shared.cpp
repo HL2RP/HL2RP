@@ -16,6 +16,22 @@
 
 #ifdef CLIENT_DLL
 #include "gamestringpool.h"
+
+#ifdef HL2RP
+#include <c_props.h>
+#include <c_basedoor.h>
+#include <c_hl2_roleplayer.h>
+#endif // HL2RP
+
+#define CBasePropDoor	C_BasePropDoor
+#define CRotDoor		C_RotDoor
+#else
+#include <BasePropDoor.h>
+
+#ifdef HL2RP_LEGACY
+#include <doors.h>
+#include <hl2_roleplayer.h>
+#endif // HL2RP_LEGACY
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -1660,3 +1676,44 @@ CBaseEntity *CreateGibsFromList( CUtlVector<breakmodel_t> &list, int modelindex,
 	return pFirstBreakable;
 }
 
+#if (defined GAME_DLL || defined HL2RP_FULL)
+CBasePropDoor* CBasePropDoor::GetMaster()
+{
+	return m_hMaster;
+}
+
+bool CBasePropDoor::IsDoorClosed()
+{
+	return (m_eDoorState == DOOR_STATE_CLOSED);
+}
+#endif // (defined GAME_DLL || HL2RP_FULL)
+
+#ifdef HL2RP
+CBasePropDoor* CBasePropDoor::GetMainDoor()
+{
+	return (GetMaster() != NULL ? GetMaster() : this);
+}
+
+#ifdef HL2RP_CLIENT_OR_LEGACY
+void CBasePropDoor::GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtStr<>& text)
+{
+	BaseClass::GetHUDInfo(pPlayer, text);
+
+	if (IsDoorClosed() && pPlayer->CanBangDoor(GetMainDoor(), pPlayer->GetActiveWeapon()))
+	{
+		pPlayer->LocalDisplayHUDHint(EPlayerHUDHintType::BangRotatingDoor, "#HL2RP_Hint_BangRotatingDoor");
+	}
+}
+
+// NOTE: Added here since brush-based doors don't have a proper shared file
+void CRotDoor::GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtStr<>& text)
+{
+	BaseClass::GetHUDInfo(pPlayer, text);
+
+	if (m_toggle_state == TS_AT_BOTTOM && pPlayer->CanBangDoor(this, pPlayer->GetActiveWeapon()))
+	{
+		pPlayer->LocalDisplayHUDHint(EPlayerHUDHintType::BangRotatingDoor, "#HL2RP_Hint_BangRotatingDoor");
+	}
+}
+#endif // HL2RP_CLIENT_OR_LEGACY
+#endif // HL2RP

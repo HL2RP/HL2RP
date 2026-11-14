@@ -74,6 +74,16 @@ enum propdata_interactions_t
 	PROPINTER_NUM_INTERACTIONS,
 };
 
+// NOTE: Moved from CBasePropDoor, for shared state in HL2RP
+enum DoorState_t
+{
+	DOOR_STATE_CLOSED = 0,
+	DOOR_STATE_OPENING,
+	DOOR_STATE_OPEN,
+	DOOR_STATE_CLOSING,
+	DOOR_STATE_AJAR,
+};
+
 // Entities using COLLISION_GROUP_SPECIAL_PHYSICS should support this interface.
 abstract_class IMultiplayerPhysics
 {

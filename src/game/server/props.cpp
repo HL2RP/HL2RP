@@ -46,6 +46,11 @@
 #include "nav_mesh/tf_nav_mesh.h"
 #endif
 
+#ifdef HL2RP
+#include <hl2_roleplayer.h>
+#include <in_buttons.h>
+#endif // HL2RP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -3577,7 +3582,9 @@ END_DATADESC()
 IMPLEMENT_SERVERCLASS_ST(CBasePropDoor, DT_BasePropDoor)
 #ifdef HL2RP_FULL
 SendPropDataTable(SENDINFO_DT(mPropertyDoorData), &REFERENCE_SEND_TABLE(DT_HL2RP_PropertyDoorData)),
-SendPropBool(SENDINFO(m_bLocked))
+SendPropBool(SENDINFO(m_bLocked)),
+SendPropInt(SENDINFO(m_eDoorState)),
+SendPropEHandle(SENDINFO(m_hMaster))
 #endif // HL2RP_FULL
 END_SEND_TABLE()
 
@@ -3722,7 +3729,11 @@ void CBasePropDoor::HandleAnimEvent(animevent_t *pEvent)
 {
 	// Opening is called here via an animation event if the open sequence has one,
 	// otherwise it is called immediately when the open sequence is set.
-	if (pEvent->event == AE_DOOR_OPEN)
+	if (pEvent->event == AE_DOOR_OPEN
+#ifdef HL2RP
+		&& GetMaster() == NULL // Prevent slaves being activated twice from both sequence and default master usage, de-syncing
+#endif // HL2RP
+		)
 	{
 		DoorActivate();
 	}
@@ -3926,7 +3937,8 @@ void CBasePropDoor::OnUse( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TY
 			m_hActivator = pActivator;
 
 			PlayLockSounds(this, &m_ls, FALSE, FALSE);
-			int nSequence = SelectWeightedSequence((Activity)ACT_DOOR_OPEN);
+			Activity activity = (Activity)ACT_DOOR_OPEN;
+			int nSequence = SelectWeightedSequence(activity);
 			PropSetSequence(nSequence);
 
 			if ((nSequence == -1) || !HasAnimEvent(nSequence, AE_DOOR_OPEN))
@@ -3934,6 +3946,18 @@ void CBasePropDoor::OnUse( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TY
 				// No open anim event, we need to open the door here.
 				DoorActivate();
 			}
+
+#ifdef HL2RP
+			// Play open animation on children as well
+			for (auto& slave : m_hDoorList)
+			{
+				if (slave != NULL)
+				{
+					nSequence = slave->SelectWeightedSequence(activity);
+					slave->PropSetSequence(nSequence);
+				}
+			}
+#endif // HL2RP
 		}
 	}
 	else if ( IsDoorOpening() && HasSpawnFlags(SF_DOOR_USE_CLOSES) )
@@ -4722,6 +4746,9 @@ public:
 	DECLARE_DATADESC();
 
 private:
+#ifdef HL2RP
+	void TraceAttack(const CTakeDamageInfo&, const Vector&, trace_t*, CDmgAccumulator*) OVERRIDE;
+#endif // HL2RP
 
 	bool	IsHingeOnLeft();
 
@@ -4845,6 +4872,54 @@ void CPropDoorRotating::Spawn()
 	CalculateDoorVolume( GetLocalAngles(), m_angRotationOpenForward, &m_vecForwardBoundsMin, &m_vecForwardBoundsMax );
 	CalculateDoorVolume( GetLocalAngles(), m_angRotationOpenBack, &m_vecBackBoundsMin, &m_vecBackBoundsMax );
 }
+
+#ifdef HL2RP
+void CPropDoorRotating::TraceAttack(const CTakeDamageInfo& info, const Vector& direction, trace_t* pTrace, CDmgAccumulator*)
+{
+	// Simulate a raiding (banging door)
+	CBasePropDoor* pMainDoor = GetMainDoor();
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(info.GetAttacker());
+
+	if (IsDoorClosed() && pPlayer != NULL
+		&& pPlayer->CanBangDoor(pMainDoor, info.GetWeapon()) && FBitSet(pPlayer->m_nButtons, IN_ATTACK2))
+	{
+		// Make analogous space checks to normal usage handling
+		doorCheck_e checkDir = DOOR_CHECK_FORWARD;
+		Vector forward, delta = pPlayer->GetAbsOrigin() - GetAbsOrigin();
+		GetVectors(&forward, NULL, NULL);
+		vec_t dot = forward.Dot(delta);
+
+		if (m_eOpenDirection == DOOR_ROTATING_OPEN_BOTH_WAYS)
+		{
+			if (dot > 0)
+			{
+				checkDir = DOOR_CHECK_BACKWARD;
+			}
+		}
+		else if (m_eOpenDirection == DOOR_ROTATING_OPEN_FORWARD ? (dot > 0) : (dot < 0))
+		{
+			return; // Move direction wouldn't go along the hit. Stop.
+		}
+
+		EHANDLE oldActivator = m_hActivator;
+		m_hActivator = pPlayer; // Required for CheckDoorClear
+
+		if (!CheckDoorClear(checkDir))
+		{
+			m_hActivator = oldActivator;
+			return;
+		}
+
+		// Start moving instantly with temporary bang speed, not calling Use, as open animation is unneeded
+		float oldSpeed = m_flSpeed;
+		m_flSpeed *= HL2RP_DOOR_BANG_SPEED_RATIO;
+		pMainDoor->DoorOpen(pPlayer);
+		m_flSpeed = oldSpeed;
+
+		UTIL_MakeDoorBangEffects(this, pPlayer, direction, pTrace); // Finish up
+	}
+}
+#endif // HL2RP
 
 //-----------------------------------------------------------------------------
 // Purpose: Setup the m_angRotationOpenForward and m_angRotationOpenBack variables based on

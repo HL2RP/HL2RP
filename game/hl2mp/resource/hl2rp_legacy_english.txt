@@ -4,6 +4,7 @@
 
 	"Tokens"
 	{
+		"HL2RP_Hint_BangRotatingDoor"	"<ATTACK2> (HOLD) + <ATTACK> = BANG (RAID)"
 		"HL2RP_Hint_PropertyDoorAll"	"%1t\n{+reload} (X2) = (UN)LOCK DOOR"
 		"HL2RP_Hint_PropertyDoorMenu"	"{+reload} (HOLD) = %1t"
 		"HL2RP_Hint_RationDeployed"		"<ATTACK> (HOLD) = PREPARE THROW\n<ATTACK2> = HEAL"

@@ -85,11 +85,6 @@ class CHL2RP_PropertyDoor : public S
 		return &mPropertyDoorData;
 	}
 
-	void GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtStr<>& text) OVERRIDE
-	{
-		mPropertyDoorData.GetHUDInfo(this, pPlayer, text);
-	}
-
 public:
 	bool IsLocked() OVERRIDE
 	{
@@ -99,6 +94,11 @@ public:
 	CNetworkVar(bool, m_bLocked);
 
 protected:
+	void GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtStr<>& text) OVERRIDE
+	{
+		mPropertyDoorData.GetHUDInfo(this, pPlayer, text);
+	}
+
 	CNetworkVarEmbedded(CHL2RP_PropertyDoorData, mPropertyDoorData);
 };
 

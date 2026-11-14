@@ -4,6 +4,8 @@
 
 #include <utlpair.h>
 
+#define HL2RP_DOOR_BANG_SPEED_RATIO 2.0f // Speed multiplier to apply when banging door with stunstick as a cop (raid)
+
 class CPlayerEquipment
 {
 	bool mAllowClipsFallback; // Whether to keep default clip/s from a new weapon when we don't have
@@ -49,5 +51,6 @@ const char* UTIL_FormatPercentage(float, CFmtStr32 && = {});
 bool UTIL_IsPropertyDoor(CBaseEntity*);
 CHL2RP_PropertyDoorData* UTIL_GetPropertyDoorData(CBaseEntity*);
 void UTIL_SetDoorLockState(CBaseEntity*, CHL2Roleplayer* pActivator, bool lock, bool save);
+void UTIL_MakeDoorBangEffects(CBaseEntity*, CBaseEntity* pActivator, const Vector& hitDir, trace_t*);
 
 #endif // !HL2RP_UTIL_H
