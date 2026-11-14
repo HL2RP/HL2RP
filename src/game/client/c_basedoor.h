@@ -34,16 +34,14 @@ public:
 };
 
 #ifdef HL2RP
-class C_FuncMoveLinear : public DOOR_BASECLASS(C_BaseEntity)
+class C_RotDoor : public C_BaseDoor
 {
-	DECLARE_CLASS(C_FuncMoveLinear, DOOR_BASECLASS(C_BaseEntity))
+	DECLARE_CLASS(C_RotDoor, C_BaseDoor)
 	DECLARE_CLIENTCLASS()
-};
 
-class C_BaseButton : public DOOR_BASECLASS(C_BaseEntity)
-{
-	DECLARE_CLASS(C_BaseButton, DOOR_BASECLASS(C_BaseEntity))
-	DECLARE_CLIENTCLASS()
+	void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtStr<>&) OVERRIDE;
+
+	TOGGLE_STATE m_toggle_state;
 };
 #endif // HL2RP
 

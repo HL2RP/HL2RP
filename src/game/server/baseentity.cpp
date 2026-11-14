@@ -68,6 +68,10 @@
 #include "tf_gamerules.h"
 #endif
 
+#ifdef HL2RP
+#include <hl2rp_property.h>
+#endif // HL2RP
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -2657,6 +2661,12 @@ void CBaseEntity::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE u
 }
 
 #ifdef HL2RP
+CHL2RP_Property* CBaseEntity::GetProperty()
+{
+	auto pData = GetPropertyDoorData();
+	return (pData != NULL ? pData->mProperty.Get() : NULL);
+}
+
 CBasePlayer* CBaseEntity::UTIL_GetLocalPlayer()
 {
 	CBasePlayer* pPlayer = ToBasePlayer(GetEnemy());
@@ -3585,7 +3595,11 @@ int CBaseEntity::ShouldToggle( USE_TYPE useType, int currentState )
 {
 	if ( useType != USE_TOGGLE && useType != USE_SET )
 	{
-		if ( (currentState && useType == USE_ON) || (!currentState && useType == USE_OFF) )
+		if ( (currentState && useType == USE_ON) || (!currentState && useType == USE_OFF)
+#ifdef HL2RP
+			|| (useType == USE_SPECIAL1) || (useType == USE_SPECIAL2) // Prevent unintended toggles from special uses
+#endif // HL2RP
+		)
 			return 0;
 	}
 	return 1;

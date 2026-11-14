@@ -4,6 +4,7 @@
 
 	"Tokens"
 	{
+		"HL2RP_Hint_BangRotatingDoor"	"<ATACAR2> (MANTÉN) + <ATACAR> = PORTAZO (REDADA)"
 		"HL2RP_Hint_PropertyDoorAll"	"%1t\n{+reload} (X2) = (DES)BLOQUEAR PUERTA"
 		"HL2RP_Hint_PropertyDoorMenu"	"{+reload} (MANTÉN) = %1t"
 		"HL2RP_Hint_RationDeployed"		"<ATACAR> (MANTÉN) = PREPARAR LANZAMIENTO\n<ATACAR2> = CURARSE"

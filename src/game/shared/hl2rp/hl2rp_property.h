@@ -67,8 +67,12 @@ public:
 	void GetHUDInfo(CBaseEntity*, CHL2Roleplayer*, CLocalizeFmtStr<>&) HL2RP_CLIENT_OR_LEGACY_FUNCTION;
 	void SpecialUse(CBaseEntity*, CBaseEntity* pActivator, USE_TYPE, bool isLocked);
 
+	// Checks if a USE request should fail while opening for a different activator than the opener (based on the attempt)
+	bool BlockDoorCloseSpam(CBaseEntity* pOldActivator, CBaseEntity* pNewActivator);
+
 #ifdef GAME_DLL
 	SDatabaseId mDatabaseId;
+	bool mCloseSpamBegun:1; // True when a different activator started closing while opening, to block next attempt for current move
 #endif // GAME_DLL
 
 	CNetworkVar(CHL2RP_Property*, mProperty);
@@ -85,11 +89,6 @@ class CHL2RP_PropertyDoor : public S
 		return &mPropertyDoorData;
 	}
 
-	void GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtStr<>& text) OVERRIDE
-	{
-		mPropertyDoorData.GetHUDInfo(this, pPlayer, text);
-	}
-
 public:
 	bool IsLocked() OVERRIDE
 	{
@@ -99,6 +98,24 @@ public:
 	CNetworkVar(bool, m_bLocked);
 
 protected:
+#ifdef GAME_DLL
+	void MoveDone() OVERRIDE
+	{
+		BaseClass::MoveDone();
+		mPropertyDoorData.mCloseSpamBegun = false;
+	}
+
+	void StartBlocked(CBaseEntity*) OVERRIDE
+	{
+		mPropertyDoorData.mCloseSpamBegun = false; // Prevent an unrelated blocker from causing further close requests to fail indefinitely
+	}
+#endif // GAME_DLL
+
+	void GetHUDInfo(CHL2Roleplayer* pPlayer, CLocalizeFmtStr<>& text) OVERRIDE
+	{
+		mPropertyDoorData.GetHUDInfo(this, pPlayer, text);
+	}
+
 	CNetworkVarEmbedded(CHL2RP_PropertyDoorData, mPropertyDoorData);
 };
 

@@ -16,11 +16,6 @@ class CBaseToggle : public CBaseEntity
 {
 	DECLARE_CLASS( CBaseToggle, CBaseEntity );
 
-#ifdef HL2RP
-protected:
-	int ObjectCaps() OVERRIDE;
-#endif // HL2RP
-
 public:
 	CBaseToggle();
 
@@ -28,7 +23,16 @@ public:
 	virtual bool		KeyValue( const char *szKeyName, Vector vec ) { return BaseClass::KeyValue( szKeyName, vec ); };
 	virtual bool		KeyValue( const char *szKeyName, float flValue ) { return BaseClass::KeyValue( szKeyName, flValue ); };
 
-	TOGGLE_STATE		m_toggle_state;
+#ifdef HL2RP
+	int ObjectCaps() OVERRIDE;
+
+	virtual bool IsSlidingDoor();
+
+	CNetworkVarForDerived(TOGGLE_STATE, m_toggle_state); // Networking only required for C_RotDoor
+#else
+	TOGGLE_STATE m_toggle_state;
+#endif // HL2RP
+
 	float				m_flMoveDistance;// how far a door should slide or rotate
 	float				m_flWait;
 	float				m_flLip;

@@ -12,6 +12,7 @@
 		"HL2RP_Dialog_Entity_Contact_Lost"		"Has perdido contacto con la última Entidad"
 		"HL2RP_Dialog_Open_Hint"				"Pulsa ESC para abrir"
 		"HL2RP_Dialog_Player_Contact_Lost"		"Has perdido contacto con el último Jugador/a"
+		"HL2RP_Door_Close_Exploit_Warning"		"Cierre denegado - ¡Por favor, no abuses de la Puerta!"
 		"HL2RP_Faction_Citizen"					"Ciudadano/a"
 		"HL2RP_Faction_Combine"					"La Alianza"
 		"HL2RP_House_Sell_Warning"				"AVISO: Obtendrás una devolución de %1 (%2t). ¿Estás seguro/a?"

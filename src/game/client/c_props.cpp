@@ -11,10 +11,6 @@
 #include "c_physbox.h"
 #include "c_props.h"
 
-#ifdef HL2RP
-#include <hl2rp_property.h>
-#endif // HL2RP
-
 #define CPhysBox C_PhysBox
 #define CPhysicsProp C_PhysicsProp
 
@@ -120,30 +116,12 @@ unsigned int C_DynamicProp::ComputeClientSideAnimationFlags()
 	return 0;
 }
 
-// ------------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------------ //
-class C_BasePropDoor : public DOOR_BASECLASS(C_DynamicProp)
-{
-	DECLARE_CLASS( C_BasePropDoor, DOOR_BASECLASS(C_DynamicProp) );
-public:
-	DECLARE_CLIENTCLASS();
-
-	// constructor, destructor
-	C_BasePropDoor( void );
-	virtual ~C_BasePropDoor( void );
-
-	virtual void OnDataChanged( DataUpdateType_t type );
-
-	virtual bool TestCollision( const Ray_t &ray, unsigned int mask, trace_t& trace );
-
-private:
-	C_BasePropDoor( const C_BasePropDoor & );
-};
-
 IMPLEMENT_CLIENTCLASS_DT(C_BasePropDoor, DT_BasePropDoor, CBasePropDoor)
 #ifdef HL2RP
 RecvPropDataTable(RECVINFO_DT(mPropertyDoorData), 0, &REFERENCE_RECV_TABLE(DT_HL2RP_PropertyDoorData)),
-RecvPropBool(RECVINFO(m_bLocked))
+RecvPropBool(RECVINFO(m_bLocked)),
+RecvPropInt(RECVINFO(m_eDoorState)),
+RecvPropEHandle(RECVINFO(m_hMaster))
 #endif // HL2RP
 END_RECV_TABLE()
 

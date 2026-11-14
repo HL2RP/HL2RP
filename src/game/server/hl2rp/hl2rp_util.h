@@ -49,5 +49,6 @@ const char* UTIL_FormatPercentage(float, CFmtStr32 && = {});
 bool UTIL_IsPropertyDoor(CBaseEntity*);
 CHL2RP_PropertyDoorData* UTIL_GetPropertyDoorData(CBaseEntity*);
 void UTIL_SetDoorLockState(CBaseEntity*, CHL2Roleplayer* pActivator, bool lock, bool save);
+void UTIL_MakeDoorBangEffects(CBaseEntity*, CBaseEntity* pActivator, const Vector& hitDir, trace_t*);
 
 #endif // !HL2RP_UTIL_H

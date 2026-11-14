@@ -395,3 +395,12 @@ void UTIL_SetDoorLockState(CBaseEntity* pDoor, CHL2Roleplayer* pActivator, bool 
 		DAL().AddDAO(new CPropertyDoorsSaveDAO(pDoor));
 	}
 }
+
+void UTIL_MakeDoorBangEffects(CBaseEntity* pDoor, CBaseEntity* pActivator, const Vector& hitDir, trace_t* pTrace)
+{
+	QAngle angles;
+	VectorAngles(hitDir, angles);
+	UTIL_MuzzleFlash(pTrace->startpos, angles, 1.0f, MUZZLEFLASH_TYPE_STRIDER);
+	pDoor->ScriptEmitSound(HL2RP_DOOR_BANG_SOUND);
+	pActivator->ScriptEmitSound(HL2RP_DOOR_RAID_SOUND);
+}

@@ -25,6 +25,7 @@
 
 class CDamageModifier;
 class CDmgAccumulator;
+class CHL2RP_Property;
 class CHL2RP_PropertyDoorData;
 
 struct CSoundParameters;
@@ -261,16 +262,6 @@ typedef void (CBaseEntity::*USEPTR)( CBaseEntity *pActivator, CBaseEntity *pCall
 #define DEFINE_THINKFUNC( function ) DEFINE_FUNCTION_RAW( function, BASEPTR )
 #define DEFINE_ENTITYFUNC( function ) DEFINE_FUNCTION_RAW( function, ENTITYFUNCPTR )
 #define DEFINE_USEFUNC( function ) DEFINE_FUNCTION_RAW( function, USEPTR )
-
-// Things that toggle (buttons/triggers/doors) need this
-enum TOGGLE_STATE
-{
-	TS_AT_TOP,
-	TS_AT_BOTTOM,
-	TS_GOING_UP,
-	TS_GOING_DOWN
-};
-
 
 // Debug overlay bits
 enum DebugOverlayBits_t
@@ -1245,6 +1236,7 @@ public:
 	virtual CHL2RP_PropertyDoorData* GetPropertyDoorData();
 	virtual void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtCStr&) {}
 
+	CHL2RP_Property* GetProperty();
 	CBasePlayer* UTIL_GetLocalPlayer();
 
 	CNetworkVarForDerived(int, m_iHealth, virtual);

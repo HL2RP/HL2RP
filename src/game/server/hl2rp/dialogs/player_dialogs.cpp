@@ -916,7 +916,7 @@ void CPropertyDoorMenu::HandleChildNotice(int action, const SUtlField& info)
 	{
 	case EItemAction::CreateProperty:
 	{
-		if (mhDoor != NULL && mhDoor->GetPropertyDoorData()->mProperty == NULL && mpPlayer->IsAdmin())
+		if (mhDoor != NULL && mhDoor->GetProperty() == NULL && mpPlayer->IsAdmin())
 		{
 			mpProperty = new CHL2RP_Property(HL2RPRules()->GetIdealMapAlias(), info.mInt);
 			mpProperty->LinkDoor(mhDoor);

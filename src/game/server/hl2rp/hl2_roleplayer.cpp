@@ -129,6 +129,8 @@ void CHL2Roleplayer::Precache()
 	PrecacheScriptSound(NETWORK_MENU_ITEM_SOUND);
 	PrecacheScriptSound(HL2RP_PROPERTY_DOOR_LOCK_SOUND);
 	PrecacheScriptSound(HL2RP_PROPERTY_DOOR_UNLOCK_SOUND);
+	PrecacheScriptSound(HL2RP_DOOR_BANG_SOUND);
+	PrecacheScriptSound(HL2RP_DOOR_RAID_SOUND);
 }
 
 void CHL2Roleplayer::InitialSpawn()
@@ -527,28 +529,37 @@ void CHL2Roleplayer::PlayerUse()
 			isMainEntityNearby = true;
 		}
 
-		CBaseToggle* pBaseToggle;
-		auto pPropertyData = pUsableEntity->GetPropertyDoorData();
+		CBaseToggle* pDoor;
+		CHL2RP_Property* pProperty;
+		auto pData = pUsableEntity->GetPropertyDoorData();
 
-		// Try toggling sliding property door
-		if (FBitSet(m_afButtonPressed, IN_USE) && pPropertyData != NULL && pPropertyData->mProperty != NULL
-			&& pPropertyData->mProperty.Get()->HasAccess(this) && (mAimInfo.mEndDistance < PLAYER_USE_RADIUS
-				|| pPropertyData->mProperty.Get()->mType > EHL2RP_PropertyType::Home)
-			&& (pBaseToggle = dynamic_cast<CBaseToggle*>(pUsableEntity)) != NULL)
+		// Force open/close possible sliding door with a valid Property
+		if (FBitSet(m_afButtonPressed, IN_USE)
+			&& pData != NULL && (pProperty = pData->mProperty) != NULL && pProperty->HasAccess(this)
+			&& (mAimInfo.mEndDistance < PLAYER_USE_RADIUS || pProperty->mType > EHL2RP_PropertyType::Home)
+			&& (pDoor = dynamic_cast<CBaseToggle*>(pUsableEntity)) != NULL && pDoor->IsSlidingDoor())
 		{
-			// Auto-unlock Combine doors, for players fluency
-			if (pPropertyData->mProperty.Get()->mType == EHL2RP_PropertyType::Combine)
-			{
-				UTIL_SetDoorLockState(pBaseToggle, NULL, false, pPropertyData->mDatabaseId.IsValid());
-			}
+			bool isOpening = (pDoor->m_toggle_state == TS_GOING_UP);
 
-			pBaseToggle->AcceptInput(pBaseToggle->m_toggle_state == TS_AT_TOP
-				|| pBaseToggle->m_toggle_state == TS_GOING_UP ? "Close" : "Open", this, this);
-			CLEARBITS(m_afButtonPressed, IN_USE); // Debounce USE key as we used the door (avoid deny sound)
+			if (!isOpening || !pData->BlockDoorCloseSpam(pDoor->m_hActivator, this))
+			{
+				// Auto-unlock Combine doors, for movement fluency across Police Department
+				if (pProperty->mType == EHL2RP_PropertyType::Combine)
+				{
+					UTIL_SetDoorLockState(pDoor, NULL, false, pData->mDatabaseId.IsValid());
+				}
+
+				if (!pDoor->IsLocked())
+				{
+					pDoor->m_hActivator = this; // NOTE: Currently missing in Open/Close door inputfuncs
+					pDoor->AcceptInput((isOpening || pDoor->m_toggle_state == TS_AT_TOP) ? "Close" : "Open", this, this);
+					CLEARBITS(m_afButtonPressed, IN_USE); // Debounce USE key as we used the door. Avoids deny sound from BaseClass.
+				}
+			}
 		}
 	}
 
-	BaseClass::PlayerUse(); // Call late to be unaffected by possible IN_USE strip from pressed buttons
+	BaseClass::PlayerUse();
 
 	// Handle special use
 	if (FBitSet(m_afButtonPressed, IN_RELOAD))

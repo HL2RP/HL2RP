@@ -172,8 +172,12 @@ CBaseToggle::CBaseToggle()
 #ifdef HL2RP
 int CBaseToggle::ObjectCaps()
 {
-	CHL2RP_PropertyDoorData* pData = GetPropertyDoorData();
-	return (BaseClass::ObjectCaps() | ((pData != NULL && pData->mProperty != NULL) ? FCAP_HL2RP_USE_BEHIND_ANY : 0));
+	return (BaseClass::ObjectCaps() | ((IsSlidingDoor() && GetProperty() != NULL) ? FCAP_HL2RP_USE_BEHIND_ANY : 0));
+}
+
+bool CBaseToggle::IsSlidingDoor()
+{
+	return false;
 }
 #endif // HL2RP
 
@@ -249,6 +253,10 @@ void CBaseToggle::MoveDone( void )
 	}
 	m_movementType = MOVE_TOGGLE_NONE;
 	BaseClass::MoveDone();
+
+#ifdef HL2RP
+	m_hActivator.Term();
+#endif // HL2RP
 }
 //-----------------------------------------------------------------------------
 // Purpose: After moving, set origin to exact final destination, call "move done" function.

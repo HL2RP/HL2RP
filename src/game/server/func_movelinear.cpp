@@ -303,10 +303,12 @@ void CFuncMoveLinear::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TY
 	{
 		return mPropertyDoorData.SpecialUse(this, pActivator, useType, m_bLocked);
 	}
-	else if (m_bLocked)
+	else if (m_bLocked || (m_toggle_state == TS_GOING_UP && mPropertyDoorData.BlockDoorCloseSpam(m_hActivator, pActivator)))
 	{
 		return;
 	}
+
+	m_hActivator = pActivator;
 #endif // HL2RP
 
 	if ( useType != USE_SET )		// Momentary buttons will pass down a float in here
@@ -341,14 +343,14 @@ void CFuncMoveLinear::SetPosition( float flPosition )
 //------------------------------------------------------------------------------
 void CFuncMoveLinear::InputOpen( inputdata_t &inputdata )
 {
-	if (
-#ifdef HL2RP
-		!m_bLocked &&
-#endif // HL2RP
-		GetLocalOrigin() != m_vecPosition2
-		)
+	if (GetLocalOrigin() != m_vecPosition2)
 	{
 #ifdef HL2RP
+		if (m_bLocked)
+		{
+			return;
+		}
+
 		m_toggle_state = TS_GOING_UP;
 #endif // HL2RP
 
@@ -362,14 +364,14 @@ void CFuncMoveLinear::InputOpen( inputdata_t &inputdata )
 //------------------------------------------------------------------------------
 void CFuncMoveLinear::InputClose( inputdata_t &inputdata )
 {
-	if (
-#ifdef HL2RP
-		!m_bLocked &&
-#endif // HL2RP
-		GetLocalOrigin() != m_vecPosition1
-		)
+	if (GetLocalOrigin() != m_vecPosition1)
 	{
 #ifdef HL2RP
+		if (m_bLocked)
+		{
+			return;
+		}
+
 		m_toggle_state = TS_GOING_DOWN;
 #endif // HL2RP
 
@@ -378,6 +380,11 @@ void CFuncMoveLinear::InputClose( inputdata_t &inputdata )
 }
 
 #ifdef HL2RP
+bool CFuncMoveLinear::IsSlidingDoor()
+{
+	return true;
+}
+
 void CFuncMoveLinear::InputLock(inputdata_t&)
 {
 	m_bLocked = true;

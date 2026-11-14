@@ -90,6 +90,11 @@ bool CBaseHL2Roleplayer::IsWithinInteractRadius(CBaseEntity* pOther, float radiu
 	return (pOther->GetAbsOrigin() - GetAbsOrigin()).IsLengthLessThan(radius);
 }
 
+bool CBaseHL2Roleplayer::CanBangDoor(CBaseEntity* pDoor, CBaseEntity* pWeapon)
+{
+	return (mFaction == EFaction::Combine && !pDoor->IsLocked() && pWeapon != NULL && FClassnameIs(pWeapon, "weapon_stunstick"));
+}
+
 void CHL2Roleplayer::HandleWalkChanges(CMoveData* pMv)
 {
 	if (!IsSprinting())

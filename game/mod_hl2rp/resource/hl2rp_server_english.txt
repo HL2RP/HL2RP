@@ -12,6 +12,7 @@
 		"HL2RP_Dialog_Entity_Contact_Lost"		"You lost contact with last Entity"
 		"HL2RP_Dialog_Open_Hint"				"Press ESC to open"
 		"HL2RP_Dialog_Player_Contact_Lost"		"You lost contact with last Player"
+		"HL2RP_Door_Close_Exploit_Warning"		"Close denied - Please, don't exploit the Door!"
 		"HL2RP_Faction_Citizen"					"Citizen"
 		"HL2RP_Faction_Combine"					"Combine"
 		"HL2RP_House_Sell_Warning"				"WARNING: You'll get a refund of %1 (%2t). Are you sure?"

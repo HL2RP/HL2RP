@@ -197,3 +197,27 @@ void CHL2RP_PropertyDoorData::SpecialUse(CBaseEntity* pDoor, CBaseEntity* pActiv
 		}
 	}
 }
+
+bool CHL2RP_PropertyDoorData::BlockDoorCloseSpam(CBaseEntity* pOldActivator, CBaseEntity* pNewActivator)
+{
+	// If a different activator wants to close the door, either flag as potential spam (first time) or block the request
+	if (pOldActivator != NULL && pNewActivator != pOldActivator)
+	{
+		if (mCloseSpamBegun)
+		{
+			CHL2Roleplayer* pPlayer = ToHL2Roleplayer(pNewActivator);
+
+			if (pPlayer != NULL)
+			{
+				// NOTE: Using center print, which lasts 2 seconds by default from 'scr_screentime', is suitable here (unlike Hints)
+				pPlayer->Print(HUD_PRINTCENTER, "#HL2RP_Door_Close_Exploit_Warning");
+			}
+
+			return true;
+		}
+
+		mCloseSpamBegun = true;
+	}
+
+	return false;
+}

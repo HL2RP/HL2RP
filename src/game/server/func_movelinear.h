@@ -27,6 +27,8 @@ class CFuncMoveLinear : public DOOR_BASECLASS(CBaseToggle)
 #ifdef HL2RP
 	DECLARE_HL2RP_SERVERCLASS()
 
+	bool IsSlidingDoor() OVERRIDE;
+
 	void InputLock(inputdata_t&);
 	void InputUnlock(inputdata_t&);
 #endif // HL2RP

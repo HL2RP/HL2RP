@@ -117,9 +117,11 @@ public:
 	bool	m_bForceClosed;			// If set, always close, even if we're blocked.
 	bool	m_bDoorGroup;
 
-#ifndef HL2RP
+#ifdef HL2RP
+	bool IsSlidingDoor() OVERRIDE;
+#else
 	bool	m_bLocked;				// Whether the door is locked  
-#endif // !HL2RP
+#endif // HL2RP
 
 	bool	m_bIgnoreDebris;
 	bool	m_bIgnoreNonPlayerEntsOnBlock;	// Non-player entities should never block.  This variable needs more letters.
@@ -167,6 +169,33 @@ private:
 	bool m_isChaining;
 
 	void CloseAreaPortalsThink( void );	///< Delays turning off area portals when closing doors to prevent visual artifacts
+};
+
+//==================================================
+// CRotDoor 
+//==================================================
+
+class CRotDoor : public CBaseDoor
+{
+#ifdef HL2RP
+	DECLARE_HL2RP_SERVERCLASS()
+
+	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_toggle_state);
+	void GetHUDInfo(CHL2Roleplayer*, CLocalizeFmtCStr&) OVERRIDE HL2RP_LEGACY_FUNCTION;
+	void TraceAttack(const CTakeDamageInfo&, const Vector&, trace_t*, CDmgAccumulator*) OVERRIDE;
+#endif // HL2RP
+
+public:
+	DECLARE_CLASS(CRotDoor, CBaseDoor);
+	DECLARE_DATADESC();
+
+	void Spawn(void);
+	bool CreateVPhysics();
+	// This is ONLY used by the node graph to test movement through a door
+	virtual void SetToggleState(int state);
+	virtual bool IsRotatingDoor() { return true; }
+
+	bool m_bSolidBsp;
 };
 
 #endif // DOORS_H

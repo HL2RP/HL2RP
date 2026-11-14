@@ -28,6 +28,8 @@
 
 #ifdef HL2RP
 #include "ai_basenpc.h"
+#include <hl2_roleplayer.h>
+#include <in_buttons.h>
 #endif // HL2RP
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -359,6 +361,13 @@ void CBaseDoor::Spawn()
 	m_bIgnoreNonPlayerEntsOnBlock = false;
 #endif // TF_DLL
 }
+
+#ifdef HL2RP
+bool CBaseDoor::IsSlidingDoor()
+{
+	return !IsRotatingDoor();
+}
+#endif // HL2RP
 
 void CBaseDoor::MovingSoundThink( void )
 {
@@ -734,6 +743,10 @@ void CBaseDoor::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE use
 	{
 		return mPropertyDoorData.SpecialUse(this, pActivator, useType, m_bLocked);
 	}
+	else if (m_toggle_state == TS_GOING_UP && mPropertyDoorData.BlockDoorCloseSpam(m_hActivator, pActivator))
+	{
+		return;
+	}
 #endif // HL2RP
 
 	m_hActivator = pActivator;
@@ -1076,7 +1089,6 @@ void CBaseDoor::DoorHitTop( void )
 
 #ifdef HL2RP
 	CAI_BaseNPC* pNPC = dynamic_cast<CAI_BaseNPC*>(m_hActivator.Get());
-	m_hActivator = NULL;
 
 	if (pNPC != NULL)
 	{
@@ -1157,10 +1169,6 @@ void CBaseDoor::DoorHitBottom( void )
 
 	// Close the area portals just after the door closes, to prevent visual artifacts in multiplayer games
 	SetContextThink( &CBaseDoor::CloseAreaPortalsThink, gpGlobals->curtime + 0.5f, CLOSE_AREAPORTAL_THINK_CONTEXT );
-
-#ifdef HL2RP
-	m_hActivator = NULL;
-#endif // HL2RP
 }
 
 
@@ -1202,6 +1210,8 @@ int CBaseDoor::GetDoorMovementGroup( CBaseDoor *pDoorList[], int listMax )
 //-----------------------------------------------------------------------------
 void CBaseDoor::StartBlocked( CBaseEntity *pOther )
 {
+	BaseClass::StartBlocked(pOther); // For HL2RP
+
 	//
 	// Fire whatever events we need to due to our blocked state.
 	//
@@ -1352,31 +1362,19 @@ button or trigger field activates the door.
 "dmg"		damage to inflict when blocked (2 default)
 */
 
-//==================================================
-// CRotDoor 
-//==================================================
-
-class CRotDoor : public CBaseDoor
-{
-public:
-	DECLARE_CLASS( CRotDoor, CBaseDoor );
-
-	void Spawn( void );
-	bool CreateVPhysics();
-	// This is ONLY used by the node graph to test movement through a door
-	virtual void SetToggleState( int state );
-	virtual bool IsRotatingDoor() { return true; }
-
-	bool m_bSolidBsp;
-
-	DECLARE_DATADESC();
-};
-
 LINK_ENTITY_TO_CLASS( func_door_rotating, CRotDoor );
 
 BEGIN_DATADESC( CRotDoor )
 	DEFINE_KEYFIELD( m_bSolidBsp, FIELD_BOOLEAN, "solidbsp" ),
 END_DATADESC()
+
+#ifdef HL2RP_FULL
+IMPLEMENT_HL2RP_NETWORKCLASS(RotDoor)
+SendPropDataTable(SENDINFO_DT(mPropertyDoorData), &REFERENCE_SEND_TABLE(DT_HL2RP_PropertyDoorData)),
+SendPropBool(SENDINFO(m_bLocked)),
+SendPropInt(SENDINFO(m_toggle_state))
+END_NETWORK_TABLE()
+#endif // HL2RP_FULL
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -1464,3 +1462,25 @@ void CRotDoor::SetToggleState( int state )
 	else
 		SetLocalAngles( m_vecAngle1 );
 }
+
+#ifdef HL2RP
+void CRotDoor::TraceAttack(const CTakeDamageInfo& info, const Vector& direction, trace_t* pTrace, CDmgAccumulator*)
+{
+	// Simulate a raiding (banging door)
+	CHL2Roleplayer* pPlayer = ToHL2Roleplayer(info.GetAttacker());
+
+	if (m_toggle_state == TS_AT_BOTTOM && pPlayer != NULL
+		&& pPlayer->CanBangDoor(this, info.GetWeapon()) && FBitSet(pPlayer->m_nButtons, IN_ATTACK2))
+	{
+		m_hActivator = pPlayer;
+
+		// Start moving instantly with temporary bang speed
+		float oldSpeed = m_flSpeed;
+		m_flSpeed *= HL2RP_DOOR_BANG_SPEED_RATIO;
+		DoorGoUp();
+		m_flSpeed = oldSpeed;
+
+		UTIL_MakeDoorBangEffects(this, pPlayer, direction, pTrace); // Finish up
+	}
+}
+#endif // HL2RP

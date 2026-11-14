@@ -109,6 +109,7 @@ SCOPED_ENUM(EPlayerHUDHintType,
 	StickyWalking,
 	RationDeployed,
 	RationThrowing,
+	BangRotatingDoor,
 	PropertyDoorMenu,
 	PropertyDoorAll // Menu + door (un)locking
 )
@@ -179,6 +180,7 @@ public:
 	bool HasCombineGrants(bool extraCombineCheck = true);
 	bool IsDamageProtected();
 	bool IsWithinInteractRadius(CBaseEntity*, float radius = HL2_ROLEPLAYER_USE_KEEP_MAX_DIST);
+	bool CanBangDoor(CBaseEntity*, CBaseEntity* pWeapon); // Checks initial conditions (e.g. being a cop, and passed weapon)
 	void GetAimInfo(SPlayerAimInfo&);
 	bool GetZoneHUD(CLocalizeFmtStr<>&);
 	void GetPlayersInRegion(CUtlVector<CBasePlayer*>&);
